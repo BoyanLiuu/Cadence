@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Harbour Wire</title>
+    <link>https://harbourwire.example</link>
+    <description>News from the estuary</description>
+    <item>
+      <title>Council votes to raise the tidal barrier</title>
+      <link>https://harbourwire.example/2026/11/12/tidal-barrier-vote</link>
+      <description><![CDATA[A teaser with <em>markup</em> &amp; an ampersand&hellip;]]></description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:1842</guid>
+      <pubDate>Thu, 12 Nov 2026 09:12:00 GMT</pubDate>
+      <content:encoded><![CDATA[<p>The harbour council voted last night to raise the tidal barrier by a metre.</p><p>The motion passed by nine votes to four.</p>]]></content:encoded>
+      <dc:creator>Dana Okoro</dc:creator>
+    </item>
+  </channel>
+</rss>

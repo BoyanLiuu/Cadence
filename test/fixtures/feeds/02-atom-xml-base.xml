@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:base="https://fenwickreview.example/essays/">
+  <title>The Fenwick Review</title>
+  <link rel="alternate" href="https://fenwickreview.example"/>
+  <link rel="self" href="https://fenwickreview.example/feed.atom"/>
+  <updated>2026-11-11T06:00:00Z</updated>
+  <entry>
+    <id>urn:uuid:9f2a-ferry</id>
+    <title>What the ferry timetable knows</title>
+    <link rel="alternate" href="ferry-timetable"/>
+    <link rel="replies" href="ferry-timetable/comments"/>
+    <published>2026-11-11T06:00:00Z</published>
+    <updated>2026-11-12T02:14:00Z</updated>
+    <summary>A timetable is a record of what a town agreed to wait for.</summary>
+    <content type="html">&lt;p&gt;A timetable is a record of what a town agreed to wait for.&lt;/p&gt;</content>
+    <author><name>Ines Calloway</name></author>
+  </entry>
+</feed>

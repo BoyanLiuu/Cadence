@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>The Lowland Hour</title>
+    <link>https://lowlandcourier.example/podcast</link>
+    <description>Conversations from the lowlands</description>
+    <itunes:author>Owen Marsh</itunes:author>
+    <item>
+      <title>The bakery that never closed</title>
+      <link>https://lowlandcourier.example/podcast/1</link>
+      <guid>lowland-ep-1</guid>
+      <pubDate>Wed, 11 Nov 2026 08:00:00 GMT</pubDate>
+      <enclosure url="https://lowlandcourier.example/audio/1.mp3" length="18422041" type="audio/mpeg"/>
+      <itunes:duration>19:12</itunes:duration>
+      <itunes:episode>1</itunes:episode>
+    </item>
+  </channel>
+</rss>

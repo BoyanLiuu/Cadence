@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Saltmarsh Almanac
+    <link>https://saltmarshalmanac.example
+    <description>Notes from the marsh
+    <item>
+      <title>Sowing broad beans before the frost</title>
+      <link>https://saltmarshalmanac.example/almanac/broad-beans</link>
+      <guid>broad-beans-2026</guid>
+    </item>
+  </channel>
+</rss>

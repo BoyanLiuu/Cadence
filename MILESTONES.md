@@ -7,15 +7,15 @@ The plan is `docs/project-idea/20-personal-rss-reader/IMPLEMENTATION_PLAN.md`; t
 `ARCHITECTURE.md` beside it. Read Appendix C (the data access boundary) before touching the service
 layer — it is what makes the static-then-data build order safe.
 
-**Last verified:** 2026-11-19 — M0 and M1 complete. `pnpm check` runs 53 unit tests; `pnpm test:e2e`
+**Last verified:** 2026-11-19 — M0, M1 and M2 complete. `pnpm check` runs 215 unit tests; `pnpm test:e2e`
 runs 1 browser test. No database, no ingestion, nobody signed in, and that is on purpose.
 
 |     | Milestone                                        | Status  |
 | --- | ------------------------------------------------ | ------- |
 | M0  | The design system renders                        | ✅ done |
 | M1  | Fixtures, async services, and the viewer         | ✅ done |
-| M2  | The format core and the 30-feed corpus           | ☐ next  |
-| M3  | The identity primitives                          | ☐       |
+| M2  | The format core and the 30-feed corpus           | ✅ done |
+| M3  | The identity primitives                          | ☐ next  |
 | M4  | The reader shell                                 | ☐       |
 | M5  | Add a feed, saved, and the health screen         | ☐       |
 | M6  | Schema and the constraints that enforce identity | ☐       |
@@ -106,6 +106,63 @@ Do not tidy the designed rows; a screen loses its only sample.
 `blocked` and `failed` are **new** — the prototype boarded only `none`, `ok` and `thin`, but
 Appendix D's enum has five values and §6.5 gives those two their own copy, so each needed a row or
 its screen would render nothing.
+
+## M2 — The format core and the 30-feed corpus ✅
+
+Four pure modules over bytes — `sniff`, `preclean`, `parse`, `normalize` — and a 30-body hazard
+corpus in `test/fixtures/feeds/` with a `manifest.ts` recording what each body is supposed to do.
+31 bodies, in fact — the review added one. Nothing calls any of it yet; M7 is the first caller.
+
+**The corpus was written before the modules**, as the plan instructs, and it paid for itself twice on
+the first run:
+
+- **`05-bare-ampersand.xml` needed no repair at all.** fast-xml-parser tolerates a bare `&` and
+  yields the correct value. The manifest said otherwise, so the _manifest_ was wrong — recorded in
+  place rather than quietly deleted, because the fixture is what will catch a future swap to a
+  strict parser.
+- **`20-c0-control-chars.xml` exposed a real bug.** fast-xml-parser _accepts_ a `0x08` mid-title and
+  carries it into the data. The repair pass only ran after a parse _failure_, so the control byte
+  reached the article title — and rung 3's `content_hash`, where an invisible byte makes one article
+  hash two ways. Control stripping is now unconditional: `sanitize()` before every first attempt,
+  `repair()` only after a failure. That split is the corpus's doing.
+
+**One deviation from the plan, and one deviation reversed:**
+
+- **No `fast-xml-parser` as a direct dependency.** The plan calls for using it directly on the retry
+  path. The retry instead re-parses through feedsmith after a string repair, which keeps ONE item
+  mapping path rather than two — a second parser would mean a second set of field-precedence rules
+  to keep in sync, which is the bug §6.3 exists to prevent.
+- ~~**`xml:base` is read at feed level only.**~~ **Closed, not deviated.** The first write of this
+  read only the feed-level base, on the grounds that a per-item base would mean widening `RawItem`.
+  That reasoning was wrong about the stakes: `xml:base` nests, so an entry can narrow the feed's
+  base, and a wrong URL is a wrong `url_hash` — rung 2's dedupe key. The cost is not a broken link,
+  it is a duplicate reaching the reader, which is the one failure this whole project is organised
+  against. `RawItem` gained a nullable `xmlBase`, `normalize` resolves an item's base against the
+  feed's before resolving the URL against that, and
+  `test/fixtures/feeds/31-entry-level-xml-base.xml` covers all three shapes (inherited, relative
+  own, absolute own). Done now because `RawItem` has exactly one consumer today; after M7 the
+  contract is expensive to widen.
+
+### Review round on M2
+
+Nine findings, all fixed, and they clustered in one place: **the repair pass, which only one corpus
+body exercises.** Six were outright bugs in code the corpus barely touched.
+
+| Fix                                                                            | Why it mattered                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `closeUnclosedTags` now checks tag balance first and refuses self-closing tags | It closed `<description>A teaser with <em>markup</em></description>` at the `<em`, orphaning the rest — so a feed whose only defect was an unclosed `<language>` came back with **every description empty**. And `[^>]*` ate the trailing slash of `<link href="…"/>`, rewriting it to `…/></link>` and making a failing Atom feed _less_ parseable |
+| `escapeBareAmpersands` and `closeUnclosedTags` skip CDATA                      | `Smith & Sons` inside CDATA is already valid; "repairing" it writes a literal `&amp;` into the article body and into the content hash                                                                                                                                                                                                               |
+| RSS `isPermaLink` now tested as `!== false`                                    | **It defaults to `true` in RSS 2.0** and feedsmith leaves it undefined when absent. Testing `=== true` meant the commonest form in the wild — `<guid>https://…</guid>` with no `<link>` — produced **no URL at all**, leaving rung 2 nothing to key on                                                                                              |
+| Atom URL no longer falls back to `links[0]`                                    | A podcast entry carrying only `rel="enclosure"` handed back the `.mp3` as the article URL, and therefore as rung 2's dedupe key                                                                                                                                                                                                                     |
+| `resolveUrl` enforces an http/https allowlist                                  | Feed content is remote user input and this value lands in an `href`. `new URL()` resolves `javascript:` and `data:` perfectly happily — it is a parser, not a filter                                                                                                                                                                                |
+| JSON sniffing falls back to a structural check                                 | The JSON branch did a full `JSON.parse`, so sniffing the first 1 KB of a 50 KB JSON Feed always threw and reported `unsupported`. Every JSON fixture was under 1 KB, so the corpus could not catch it                                                                                                                                               |
+| Every `TextDecoder` construction is guarded                                    | Two branches built one unguarded, which on the Edge runtime throws straight out of `parse` — against its "nothing here throws" contract                                                                                                                                                                                                             |
+| `precleaned` renamed `repaired`                                                | It meant "a repair was attempted", not "only parsed after a repair"                                                                                                                                                                                                                                                                                 |
+| Dropped the unused `fast-xml-parser` dep                                       | Declared but never imported                                                                                                                                                                                                                                                                                                                         |
+
+Each fix has a regression test in `repair.test.ts`, and each was verified by reverting the fix and
+watching the test fail — including restoring the original `closeUnclosedTags` wholesale, which fails
+three.
 
 ---
 

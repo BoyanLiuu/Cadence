@@ -13,6 +13,14 @@
 export type FeedFormat = "rss2" | "rss1" | "atom" | "json" | "unknown";
 
 /**
+ * What `sniff` concluded a body is, from its bytes.
+ *
+ * Wider than `FeedFormat` by one value: `not_a_feed` means "this is a web
+ * page", which carries its own copy and its own terminal feed state (§6.3).
+ */
+export type Dialect = FeedFormat | "not_a_feed";
+
+/**
  * Appendix D: `feeds.status`.
  *
  * `not_a_feed` is a terminal, *reported* state rather than an error — a 200 with
@@ -199,6 +207,19 @@ export type RawItem = {
   /** Prefers `content:encoded` over `description`, so a teaser does not win (§6.3). */
   contentHtml: string | null;
   summaryHtml: string | null;
+  /**
+   * This item's own `xml:base`, when it declares one.
+   *
+   * `xml:base` is legal on any element and it NESTS, so an entry can narrow
+   * the feed's base. Carried per item rather than per feed because getting it
+   * wrong does not merely break a link: a wrong URL is a wrong `url_hash`,
+   * which is rung 2's dedupe key, so the same article arriving through two
+   * feeds would fail to collapse and a duplicate would reach the reader.
+   *
+   * Usually null. Often relative, so it resolves against the feed's base
+   * before the item's URL resolves against it (§6.3's chain, nested).
+   */
+  xmlBase: string | null;
 };
 
 /** One `POST /api/cron/poll` run, grouped from `fetch_log` (§6.4). */

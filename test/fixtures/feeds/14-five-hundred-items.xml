@@ -1,0 +1,3508 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Harbour Wire</title>
+    <link>https://harbourwire.example</link>
+    <description>News from the estuary</description>
+    <item>
+      <title>Bulletin 1</title>
+      <link>https://harbourwire.example/bulletin/1</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:1</guid>
+      <pubDate>Thu, 12 Nov 2026 09:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 2</title>
+      <link>https://harbourwire.example/bulletin/2</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:2</guid>
+      <pubDate>Thu, 12 Nov 2026 08:59:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 3</title>
+      <link>https://harbourwire.example/bulletin/3</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:3</guid>
+      <pubDate>Thu, 12 Nov 2026 08:58:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 4</title>
+      <link>https://harbourwire.example/bulletin/4</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:4</guid>
+      <pubDate>Thu, 12 Nov 2026 08:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 5</title>
+      <link>https://harbourwire.example/bulletin/5</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:5</guid>
+      <pubDate>Thu, 12 Nov 2026 08:56:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 6</title>
+      <link>https://harbourwire.example/bulletin/6</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:6</guid>
+      <pubDate>Thu, 12 Nov 2026 08:55:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 7</title>
+      <link>https://harbourwire.example/bulletin/7</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:7</guid>
+      <pubDate>Thu, 12 Nov 2026 08:54:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 8</title>
+      <link>https://harbourwire.example/bulletin/8</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:8</guid>
+      <pubDate>Thu, 12 Nov 2026 08:53:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 9</title>
+      <link>https://harbourwire.example/bulletin/9</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:9</guid>
+      <pubDate>Thu, 12 Nov 2026 08:52:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 10</title>
+      <link>https://harbourwire.example/bulletin/10</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:10</guid>
+      <pubDate>Thu, 12 Nov 2026 08:51:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 11</title>
+      <link>https://harbourwire.example/bulletin/11</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:11</guid>
+      <pubDate>Thu, 12 Nov 2026 08:50:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 12</title>
+      <link>https://harbourwire.example/bulletin/12</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:12</guid>
+      <pubDate>Thu, 12 Nov 2026 08:49:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 13</title>
+      <link>https://harbourwire.example/bulletin/13</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:13</guid>
+      <pubDate>Thu, 12 Nov 2026 08:48:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 14</title>
+      <link>https://harbourwire.example/bulletin/14</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:14</guid>
+      <pubDate>Thu, 12 Nov 2026 08:47:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 15</title>
+      <link>https://harbourwire.example/bulletin/15</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:15</guid>
+      <pubDate>Thu, 12 Nov 2026 08:46:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 16</title>
+      <link>https://harbourwire.example/bulletin/16</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:16</guid>
+      <pubDate>Thu, 12 Nov 2026 08:45:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 17</title>
+      <link>https://harbourwire.example/bulletin/17</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:17</guid>
+      <pubDate>Thu, 12 Nov 2026 08:44:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 18</title>
+      <link>https://harbourwire.example/bulletin/18</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:18</guid>
+      <pubDate>Thu, 12 Nov 2026 08:43:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 19</title>
+      <link>https://harbourwire.example/bulletin/19</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:19</guid>
+      <pubDate>Thu, 12 Nov 2026 08:42:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 20</title>
+      <link>https://harbourwire.example/bulletin/20</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:20</guid>
+      <pubDate>Thu, 12 Nov 2026 08:41:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 21</title>
+      <link>https://harbourwire.example/bulletin/21</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:21</guid>
+      <pubDate>Thu, 12 Nov 2026 08:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 22</title>
+      <link>https://harbourwire.example/bulletin/22</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:22</guid>
+      <pubDate>Thu, 12 Nov 2026 08:39:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 23</title>
+      <link>https://harbourwire.example/bulletin/23</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:23</guid>
+      <pubDate>Thu, 12 Nov 2026 08:38:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 24</title>
+      <link>https://harbourwire.example/bulletin/24</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:24</guid>
+      <pubDate>Thu, 12 Nov 2026 08:37:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 25</title>
+      <link>https://harbourwire.example/bulletin/25</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:25</guid>
+      <pubDate>Thu, 12 Nov 2026 08:36:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 26</title>
+      <link>https://harbourwire.example/bulletin/26</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:26</guid>
+      <pubDate>Thu, 12 Nov 2026 08:35:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 27</title>
+      <link>https://harbourwire.example/bulletin/27</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:27</guid>
+      <pubDate>Thu, 12 Nov 2026 08:34:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 28</title>
+      <link>https://harbourwire.example/bulletin/28</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:28</guid>
+      <pubDate>Thu, 12 Nov 2026 08:33:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 29</title>
+      <link>https://harbourwire.example/bulletin/29</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:29</guid>
+      <pubDate>Thu, 12 Nov 2026 08:32:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 30</title>
+      <link>https://harbourwire.example/bulletin/30</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:30</guid>
+      <pubDate>Thu, 12 Nov 2026 08:31:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 31</title>
+      <link>https://harbourwire.example/bulletin/31</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:31</guid>
+      <pubDate>Thu, 12 Nov 2026 08:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 32</title>
+      <link>https://harbourwire.example/bulletin/32</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:32</guid>
+      <pubDate>Thu, 12 Nov 2026 08:29:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 33</title>
+      <link>https://harbourwire.example/bulletin/33</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:33</guid>
+      <pubDate>Thu, 12 Nov 2026 08:28:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 34</title>
+      <link>https://harbourwire.example/bulletin/34</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:34</guid>
+      <pubDate>Thu, 12 Nov 2026 08:27:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 35</title>
+      <link>https://harbourwire.example/bulletin/35</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:35</guid>
+      <pubDate>Thu, 12 Nov 2026 08:26:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 36</title>
+      <link>https://harbourwire.example/bulletin/36</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:36</guid>
+      <pubDate>Thu, 12 Nov 2026 08:25:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 37</title>
+      <link>https://harbourwire.example/bulletin/37</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:37</guid>
+      <pubDate>Thu, 12 Nov 2026 08:24:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 38</title>
+      <link>https://harbourwire.example/bulletin/38</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:38</guid>
+      <pubDate>Thu, 12 Nov 2026 08:23:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 39</title>
+      <link>https://harbourwire.example/bulletin/39</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:39</guid>
+      <pubDate>Thu, 12 Nov 2026 08:22:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 40</title>
+      <link>https://harbourwire.example/bulletin/40</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:40</guid>
+      <pubDate>Thu, 12 Nov 2026 08:21:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 41</title>
+      <link>https://harbourwire.example/bulletin/41</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:41</guid>
+      <pubDate>Thu, 12 Nov 2026 08:20:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 42</title>
+      <link>https://harbourwire.example/bulletin/42</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:42</guid>
+      <pubDate>Thu, 12 Nov 2026 08:19:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 43</title>
+      <link>https://harbourwire.example/bulletin/43</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:43</guid>
+      <pubDate>Thu, 12 Nov 2026 08:18:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 44</title>
+      <link>https://harbourwire.example/bulletin/44</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:44</guid>
+      <pubDate>Thu, 12 Nov 2026 08:17:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 45</title>
+      <link>https://harbourwire.example/bulletin/45</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:45</guid>
+      <pubDate>Thu, 12 Nov 2026 08:16:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 46</title>
+      <link>https://harbourwire.example/bulletin/46</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:46</guid>
+      <pubDate>Thu, 12 Nov 2026 08:15:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 47</title>
+      <link>https://harbourwire.example/bulletin/47</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:47</guid>
+      <pubDate>Thu, 12 Nov 2026 08:14:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 48</title>
+      <link>https://harbourwire.example/bulletin/48</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:48</guid>
+      <pubDate>Thu, 12 Nov 2026 08:13:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 49</title>
+      <link>https://harbourwire.example/bulletin/49</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:49</guid>
+      <pubDate>Thu, 12 Nov 2026 08:12:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 50</title>
+      <link>https://harbourwire.example/bulletin/50</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:50</guid>
+      <pubDate>Thu, 12 Nov 2026 08:11:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 51</title>
+      <link>https://harbourwire.example/bulletin/51</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:51</guid>
+      <pubDate>Thu, 12 Nov 2026 08:10:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 52</title>
+      <link>https://harbourwire.example/bulletin/52</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:52</guid>
+      <pubDate>Thu, 12 Nov 2026 08:09:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 53</title>
+      <link>https://harbourwire.example/bulletin/53</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:53</guid>
+      <pubDate>Thu, 12 Nov 2026 08:08:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 54</title>
+      <link>https://harbourwire.example/bulletin/54</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:54</guid>
+      <pubDate>Thu, 12 Nov 2026 08:07:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 55</title>
+      <link>https://harbourwire.example/bulletin/55</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:55</guid>
+      <pubDate>Thu, 12 Nov 2026 08:06:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 56</title>
+      <link>https://harbourwire.example/bulletin/56</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:56</guid>
+      <pubDate>Thu, 12 Nov 2026 08:05:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 57</title>
+      <link>https://harbourwire.example/bulletin/57</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:57</guid>
+      <pubDate>Thu, 12 Nov 2026 08:04:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 58</title>
+      <link>https://harbourwire.example/bulletin/58</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:58</guid>
+      <pubDate>Thu, 12 Nov 2026 08:03:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 59</title>
+      <link>https://harbourwire.example/bulletin/59</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:59</guid>
+      <pubDate>Thu, 12 Nov 2026 08:02:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 60</title>
+      <link>https://harbourwire.example/bulletin/60</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:60</guid>
+      <pubDate>Thu, 12 Nov 2026 08:01:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 61</title>
+      <link>https://harbourwire.example/bulletin/61</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:61</guid>
+      <pubDate>Thu, 12 Nov 2026 08:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 62</title>
+      <link>https://harbourwire.example/bulletin/62</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:62</guid>
+      <pubDate>Thu, 12 Nov 2026 07:59:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 63</title>
+      <link>https://harbourwire.example/bulletin/63</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:63</guid>
+      <pubDate>Thu, 12 Nov 2026 07:58:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 64</title>
+      <link>https://harbourwire.example/bulletin/64</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:64</guid>
+      <pubDate>Thu, 12 Nov 2026 07:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 65</title>
+      <link>https://harbourwire.example/bulletin/65</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:65</guid>
+      <pubDate>Thu, 12 Nov 2026 07:56:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 66</title>
+      <link>https://harbourwire.example/bulletin/66</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:66</guid>
+      <pubDate>Thu, 12 Nov 2026 07:55:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 67</title>
+      <link>https://harbourwire.example/bulletin/67</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:67</guid>
+      <pubDate>Thu, 12 Nov 2026 07:54:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 68</title>
+      <link>https://harbourwire.example/bulletin/68</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:68</guid>
+      <pubDate>Thu, 12 Nov 2026 07:53:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 69</title>
+      <link>https://harbourwire.example/bulletin/69</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:69</guid>
+      <pubDate>Thu, 12 Nov 2026 07:52:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 70</title>
+      <link>https://harbourwire.example/bulletin/70</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:70</guid>
+      <pubDate>Thu, 12 Nov 2026 07:51:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 71</title>
+      <link>https://harbourwire.example/bulletin/71</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:71</guid>
+      <pubDate>Thu, 12 Nov 2026 07:50:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 72</title>
+      <link>https://harbourwire.example/bulletin/72</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:72</guid>
+      <pubDate>Thu, 12 Nov 2026 07:49:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 73</title>
+      <link>https://harbourwire.example/bulletin/73</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:73</guid>
+      <pubDate>Thu, 12 Nov 2026 07:48:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 74</title>
+      <link>https://harbourwire.example/bulletin/74</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:74</guid>
+      <pubDate>Thu, 12 Nov 2026 07:47:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 75</title>
+      <link>https://harbourwire.example/bulletin/75</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:75</guid>
+      <pubDate>Thu, 12 Nov 2026 07:46:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 76</title>
+      <link>https://harbourwire.example/bulletin/76</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:76</guid>
+      <pubDate>Thu, 12 Nov 2026 07:45:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 77</title>
+      <link>https://harbourwire.example/bulletin/77</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:77</guid>
+      <pubDate>Thu, 12 Nov 2026 07:44:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 78</title>
+      <link>https://harbourwire.example/bulletin/78</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:78</guid>
+      <pubDate>Thu, 12 Nov 2026 07:43:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 79</title>
+      <link>https://harbourwire.example/bulletin/79</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:79</guid>
+      <pubDate>Thu, 12 Nov 2026 07:42:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 80</title>
+      <link>https://harbourwire.example/bulletin/80</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:80</guid>
+      <pubDate>Thu, 12 Nov 2026 07:41:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 81</title>
+      <link>https://harbourwire.example/bulletin/81</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:81</guid>
+      <pubDate>Thu, 12 Nov 2026 07:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 82</title>
+      <link>https://harbourwire.example/bulletin/82</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:82</guid>
+      <pubDate>Thu, 12 Nov 2026 07:39:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 83</title>
+      <link>https://harbourwire.example/bulletin/83</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:83</guid>
+      <pubDate>Thu, 12 Nov 2026 07:38:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 84</title>
+      <link>https://harbourwire.example/bulletin/84</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:84</guid>
+      <pubDate>Thu, 12 Nov 2026 07:37:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 85</title>
+      <link>https://harbourwire.example/bulletin/85</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:85</guid>
+      <pubDate>Thu, 12 Nov 2026 07:36:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 86</title>
+      <link>https://harbourwire.example/bulletin/86</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:86</guid>
+      <pubDate>Thu, 12 Nov 2026 07:35:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 87</title>
+      <link>https://harbourwire.example/bulletin/87</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:87</guid>
+      <pubDate>Thu, 12 Nov 2026 07:34:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 88</title>
+      <link>https://harbourwire.example/bulletin/88</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:88</guid>
+      <pubDate>Thu, 12 Nov 2026 07:33:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 89</title>
+      <link>https://harbourwire.example/bulletin/89</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:89</guid>
+      <pubDate>Thu, 12 Nov 2026 07:32:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 90</title>
+      <link>https://harbourwire.example/bulletin/90</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:90</guid>
+      <pubDate>Thu, 12 Nov 2026 07:31:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 91</title>
+      <link>https://harbourwire.example/bulletin/91</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:91</guid>
+      <pubDate>Thu, 12 Nov 2026 07:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 92</title>
+      <link>https://harbourwire.example/bulletin/92</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:92</guid>
+      <pubDate>Thu, 12 Nov 2026 07:29:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 93</title>
+      <link>https://harbourwire.example/bulletin/93</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:93</guid>
+      <pubDate>Thu, 12 Nov 2026 07:28:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 94</title>
+      <link>https://harbourwire.example/bulletin/94</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:94</guid>
+      <pubDate>Thu, 12 Nov 2026 07:27:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 95</title>
+      <link>https://harbourwire.example/bulletin/95</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:95</guid>
+      <pubDate>Thu, 12 Nov 2026 07:26:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 96</title>
+      <link>https://harbourwire.example/bulletin/96</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:96</guid>
+      <pubDate>Thu, 12 Nov 2026 07:25:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 97</title>
+      <link>https://harbourwire.example/bulletin/97</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:97</guid>
+      <pubDate>Thu, 12 Nov 2026 07:24:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 98</title>
+      <link>https://harbourwire.example/bulletin/98</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:98</guid>
+      <pubDate>Thu, 12 Nov 2026 07:23:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 99</title>
+      <link>https://harbourwire.example/bulletin/99</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:99</guid>
+      <pubDate>Thu, 12 Nov 2026 07:22:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 100</title>
+      <link>https://harbourwire.example/bulletin/100</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:100</guid>
+      <pubDate>Thu, 12 Nov 2026 07:21:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 101</title>
+      <link>https://harbourwire.example/bulletin/101</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:101</guid>
+      <pubDate>Thu, 12 Nov 2026 07:20:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 102</title>
+      <link>https://harbourwire.example/bulletin/102</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:102</guid>
+      <pubDate>Thu, 12 Nov 2026 07:19:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 103</title>
+      <link>https://harbourwire.example/bulletin/103</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:103</guid>
+      <pubDate>Thu, 12 Nov 2026 07:18:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 104</title>
+      <link>https://harbourwire.example/bulletin/104</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:104</guid>
+      <pubDate>Thu, 12 Nov 2026 07:17:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 105</title>
+      <link>https://harbourwire.example/bulletin/105</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:105</guid>
+      <pubDate>Thu, 12 Nov 2026 07:16:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 106</title>
+      <link>https://harbourwire.example/bulletin/106</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:106</guid>
+      <pubDate>Thu, 12 Nov 2026 07:15:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 107</title>
+      <link>https://harbourwire.example/bulletin/107</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:107</guid>
+      <pubDate>Thu, 12 Nov 2026 07:14:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 108</title>
+      <link>https://harbourwire.example/bulletin/108</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:108</guid>
+      <pubDate>Thu, 12 Nov 2026 07:13:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 109</title>
+      <link>https://harbourwire.example/bulletin/109</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:109</guid>
+      <pubDate>Thu, 12 Nov 2026 07:12:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 110</title>
+      <link>https://harbourwire.example/bulletin/110</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:110</guid>
+      <pubDate>Thu, 12 Nov 2026 07:11:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 111</title>
+      <link>https://harbourwire.example/bulletin/111</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:111</guid>
+      <pubDate>Thu, 12 Nov 2026 07:10:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 112</title>
+      <link>https://harbourwire.example/bulletin/112</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:112</guid>
+      <pubDate>Thu, 12 Nov 2026 07:09:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 113</title>
+      <link>https://harbourwire.example/bulletin/113</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:113</guid>
+      <pubDate>Thu, 12 Nov 2026 07:08:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 114</title>
+      <link>https://harbourwire.example/bulletin/114</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:114</guid>
+      <pubDate>Thu, 12 Nov 2026 07:07:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 115</title>
+      <link>https://harbourwire.example/bulletin/115</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:115</guid>
+      <pubDate>Thu, 12 Nov 2026 07:06:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 116</title>
+      <link>https://harbourwire.example/bulletin/116</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:116</guid>
+      <pubDate>Thu, 12 Nov 2026 07:05:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 117</title>
+      <link>https://harbourwire.example/bulletin/117</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:117</guid>
+      <pubDate>Thu, 12 Nov 2026 07:04:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 118</title>
+      <link>https://harbourwire.example/bulletin/118</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:118</guid>
+      <pubDate>Thu, 12 Nov 2026 07:03:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 119</title>
+      <link>https://harbourwire.example/bulletin/119</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:119</guid>
+      <pubDate>Thu, 12 Nov 2026 07:02:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 120</title>
+      <link>https://harbourwire.example/bulletin/120</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:120</guid>
+      <pubDate>Thu, 12 Nov 2026 07:01:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 121</title>
+      <link>https://harbourwire.example/bulletin/121</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:121</guid>
+      <pubDate>Thu, 12 Nov 2026 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 122</title>
+      <link>https://harbourwire.example/bulletin/122</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:122</guid>
+      <pubDate>Thu, 12 Nov 2026 06:59:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 123</title>
+      <link>https://harbourwire.example/bulletin/123</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:123</guid>
+      <pubDate>Thu, 12 Nov 2026 06:58:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 124</title>
+      <link>https://harbourwire.example/bulletin/124</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:124</guid>
+      <pubDate>Thu, 12 Nov 2026 06:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 125</title>
+      <link>https://harbourwire.example/bulletin/125</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:125</guid>
+      <pubDate>Thu, 12 Nov 2026 06:56:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 126</title>
+      <link>https://harbourwire.example/bulletin/126</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:126</guid>
+      <pubDate>Thu, 12 Nov 2026 06:55:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 127</title>
+      <link>https://harbourwire.example/bulletin/127</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:127</guid>
+      <pubDate>Thu, 12 Nov 2026 06:54:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 128</title>
+      <link>https://harbourwire.example/bulletin/128</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:128</guid>
+      <pubDate>Thu, 12 Nov 2026 06:53:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 129</title>
+      <link>https://harbourwire.example/bulletin/129</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:129</guid>
+      <pubDate>Thu, 12 Nov 2026 06:52:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 130</title>
+      <link>https://harbourwire.example/bulletin/130</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:130</guid>
+      <pubDate>Thu, 12 Nov 2026 06:51:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 131</title>
+      <link>https://harbourwire.example/bulletin/131</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:131</guid>
+      <pubDate>Thu, 12 Nov 2026 06:50:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 132</title>
+      <link>https://harbourwire.example/bulletin/132</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:132</guid>
+      <pubDate>Thu, 12 Nov 2026 06:49:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 133</title>
+      <link>https://harbourwire.example/bulletin/133</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:133</guid>
+      <pubDate>Thu, 12 Nov 2026 06:48:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 134</title>
+      <link>https://harbourwire.example/bulletin/134</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:134</guid>
+      <pubDate>Thu, 12 Nov 2026 06:47:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 135</title>
+      <link>https://harbourwire.example/bulletin/135</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:135</guid>
+      <pubDate>Thu, 12 Nov 2026 06:46:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 136</title>
+      <link>https://harbourwire.example/bulletin/136</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:136</guid>
+      <pubDate>Thu, 12 Nov 2026 06:45:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 137</title>
+      <link>https://harbourwire.example/bulletin/137</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:137</guid>
+      <pubDate>Thu, 12 Nov 2026 06:44:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 138</title>
+      <link>https://harbourwire.example/bulletin/138</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:138</guid>
+      <pubDate>Thu, 12 Nov 2026 06:43:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 139</title>
+      <link>https://harbourwire.example/bulletin/139</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:139</guid>
+      <pubDate>Thu, 12 Nov 2026 06:42:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 140</title>
+      <link>https://harbourwire.example/bulletin/140</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:140</guid>
+      <pubDate>Thu, 12 Nov 2026 06:41:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 141</title>
+      <link>https://harbourwire.example/bulletin/141</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:141</guid>
+      <pubDate>Thu, 12 Nov 2026 06:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 142</title>
+      <link>https://harbourwire.example/bulletin/142</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:142</guid>
+      <pubDate>Thu, 12 Nov 2026 06:39:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 143</title>
+      <link>https://harbourwire.example/bulletin/143</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:143</guid>
+      <pubDate>Thu, 12 Nov 2026 06:38:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 144</title>
+      <link>https://harbourwire.example/bulletin/144</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:144</guid>
+      <pubDate>Thu, 12 Nov 2026 06:37:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 145</title>
+      <link>https://harbourwire.example/bulletin/145</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:145</guid>
+      <pubDate>Thu, 12 Nov 2026 06:36:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 146</title>
+      <link>https://harbourwire.example/bulletin/146</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:146</guid>
+      <pubDate>Thu, 12 Nov 2026 06:35:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 147</title>
+      <link>https://harbourwire.example/bulletin/147</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:147</guid>
+      <pubDate>Thu, 12 Nov 2026 06:34:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 148</title>
+      <link>https://harbourwire.example/bulletin/148</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:148</guid>
+      <pubDate>Thu, 12 Nov 2026 06:33:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 149</title>
+      <link>https://harbourwire.example/bulletin/149</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:149</guid>
+      <pubDate>Thu, 12 Nov 2026 06:32:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 150</title>
+      <link>https://harbourwire.example/bulletin/150</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:150</guid>
+      <pubDate>Thu, 12 Nov 2026 06:31:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 151</title>
+      <link>https://harbourwire.example/bulletin/151</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:151</guid>
+      <pubDate>Thu, 12 Nov 2026 06:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 152</title>
+      <link>https://harbourwire.example/bulletin/152</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:152</guid>
+      <pubDate>Thu, 12 Nov 2026 06:29:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 153</title>
+      <link>https://harbourwire.example/bulletin/153</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:153</guid>
+      <pubDate>Thu, 12 Nov 2026 06:28:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 154</title>
+      <link>https://harbourwire.example/bulletin/154</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:154</guid>
+      <pubDate>Thu, 12 Nov 2026 06:27:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 155</title>
+      <link>https://harbourwire.example/bulletin/155</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:155</guid>
+      <pubDate>Thu, 12 Nov 2026 06:26:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 156</title>
+      <link>https://harbourwire.example/bulletin/156</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:156</guid>
+      <pubDate>Thu, 12 Nov 2026 06:25:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 157</title>
+      <link>https://harbourwire.example/bulletin/157</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:157</guid>
+      <pubDate>Thu, 12 Nov 2026 06:24:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 158</title>
+      <link>https://harbourwire.example/bulletin/158</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:158</guid>
+      <pubDate>Thu, 12 Nov 2026 06:23:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 159</title>
+      <link>https://harbourwire.example/bulletin/159</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:159</guid>
+      <pubDate>Thu, 12 Nov 2026 06:22:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 160</title>
+      <link>https://harbourwire.example/bulletin/160</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:160</guid>
+      <pubDate>Thu, 12 Nov 2026 06:21:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 161</title>
+      <link>https://harbourwire.example/bulletin/161</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:161</guid>
+      <pubDate>Thu, 12 Nov 2026 06:20:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 162</title>
+      <link>https://harbourwire.example/bulletin/162</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:162</guid>
+      <pubDate>Thu, 12 Nov 2026 06:19:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 163</title>
+      <link>https://harbourwire.example/bulletin/163</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:163</guid>
+      <pubDate>Thu, 12 Nov 2026 06:18:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 164</title>
+      <link>https://harbourwire.example/bulletin/164</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:164</guid>
+      <pubDate>Thu, 12 Nov 2026 06:17:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 165</title>
+      <link>https://harbourwire.example/bulletin/165</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:165</guid>
+      <pubDate>Thu, 12 Nov 2026 06:16:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 166</title>
+      <link>https://harbourwire.example/bulletin/166</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:166</guid>
+      <pubDate>Thu, 12 Nov 2026 06:15:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 167</title>
+      <link>https://harbourwire.example/bulletin/167</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:167</guid>
+      <pubDate>Thu, 12 Nov 2026 06:14:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 168</title>
+      <link>https://harbourwire.example/bulletin/168</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:168</guid>
+      <pubDate>Thu, 12 Nov 2026 06:13:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 169</title>
+      <link>https://harbourwire.example/bulletin/169</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:169</guid>
+      <pubDate>Thu, 12 Nov 2026 06:12:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 170</title>
+      <link>https://harbourwire.example/bulletin/170</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:170</guid>
+      <pubDate>Thu, 12 Nov 2026 06:11:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 171</title>
+      <link>https://harbourwire.example/bulletin/171</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:171</guid>
+      <pubDate>Thu, 12 Nov 2026 06:10:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 172</title>
+      <link>https://harbourwire.example/bulletin/172</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:172</guid>
+      <pubDate>Thu, 12 Nov 2026 06:09:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 173</title>
+      <link>https://harbourwire.example/bulletin/173</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:173</guid>
+      <pubDate>Thu, 12 Nov 2026 06:08:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 174</title>
+      <link>https://harbourwire.example/bulletin/174</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:174</guid>
+      <pubDate>Thu, 12 Nov 2026 06:07:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 175</title>
+      <link>https://harbourwire.example/bulletin/175</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:175</guid>
+      <pubDate>Thu, 12 Nov 2026 06:06:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 176</title>
+      <link>https://harbourwire.example/bulletin/176</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:176</guid>
+      <pubDate>Thu, 12 Nov 2026 06:05:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 177</title>
+      <link>https://harbourwire.example/bulletin/177</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:177</guid>
+      <pubDate>Thu, 12 Nov 2026 06:04:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 178</title>
+      <link>https://harbourwire.example/bulletin/178</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:178</guid>
+      <pubDate>Thu, 12 Nov 2026 06:03:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 179</title>
+      <link>https://harbourwire.example/bulletin/179</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:179</guid>
+      <pubDate>Thu, 12 Nov 2026 06:02:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 180</title>
+      <link>https://harbourwire.example/bulletin/180</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:180</guid>
+      <pubDate>Thu, 12 Nov 2026 06:01:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 181</title>
+      <link>https://harbourwire.example/bulletin/181</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:181</guid>
+      <pubDate>Thu, 12 Nov 2026 06:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 182</title>
+      <link>https://harbourwire.example/bulletin/182</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:182</guid>
+      <pubDate>Thu, 12 Nov 2026 05:59:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 183</title>
+      <link>https://harbourwire.example/bulletin/183</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:183</guid>
+      <pubDate>Thu, 12 Nov 2026 05:58:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 184</title>
+      <link>https://harbourwire.example/bulletin/184</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:184</guid>
+      <pubDate>Thu, 12 Nov 2026 05:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 185</title>
+      <link>https://harbourwire.example/bulletin/185</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:185</guid>
+      <pubDate>Thu, 12 Nov 2026 05:56:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 186</title>
+      <link>https://harbourwire.example/bulletin/186</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:186</guid>
+      <pubDate>Thu, 12 Nov 2026 05:55:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 187</title>
+      <link>https://harbourwire.example/bulletin/187</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:187</guid>
+      <pubDate>Thu, 12 Nov 2026 05:54:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 188</title>
+      <link>https://harbourwire.example/bulletin/188</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:188</guid>
+      <pubDate>Thu, 12 Nov 2026 05:53:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 189</title>
+      <link>https://harbourwire.example/bulletin/189</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:189</guid>
+      <pubDate>Thu, 12 Nov 2026 05:52:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 190</title>
+      <link>https://harbourwire.example/bulletin/190</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:190</guid>
+      <pubDate>Thu, 12 Nov 2026 05:51:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 191</title>
+      <link>https://harbourwire.example/bulletin/191</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:191</guid>
+      <pubDate>Thu, 12 Nov 2026 05:50:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 192</title>
+      <link>https://harbourwire.example/bulletin/192</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:192</guid>
+      <pubDate>Thu, 12 Nov 2026 05:49:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 193</title>
+      <link>https://harbourwire.example/bulletin/193</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:193</guid>
+      <pubDate>Thu, 12 Nov 2026 05:48:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 194</title>
+      <link>https://harbourwire.example/bulletin/194</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:194</guid>
+      <pubDate>Thu, 12 Nov 2026 05:47:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 195</title>
+      <link>https://harbourwire.example/bulletin/195</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:195</guid>
+      <pubDate>Thu, 12 Nov 2026 05:46:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 196</title>
+      <link>https://harbourwire.example/bulletin/196</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:196</guid>
+      <pubDate>Thu, 12 Nov 2026 05:45:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 197</title>
+      <link>https://harbourwire.example/bulletin/197</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:197</guid>
+      <pubDate>Thu, 12 Nov 2026 05:44:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 198</title>
+      <link>https://harbourwire.example/bulletin/198</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:198</guid>
+      <pubDate>Thu, 12 Nov 2026 05:43:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 199</title>
+      <link>https://harbourwire.example/bulletin/199</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:199</guid>
+      <pubDate>Thu, 12 Nov 2026 05:42:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 200</title>
+      <link>https://harbourwire.example/bulletin/200</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:200</guid>
+      <pubDate>Thu, 12 Nov 2026 05:41:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 201</title>
+      <link>https://harbourwire.example/bulletin/201</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:201</guid>
+      <pubDate>Thu, 12 Nov 2026 05:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 202</title>
+      <link>https://harbourwire.example/bulletin/202</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:202</guid>
+      <pubDate>Thu, 12 Nov 2026 05:39:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 203</title>
+      <link>https://harbourwire.example/bulletin/203</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:203</guid>
+      <pubDate>Thu, 12 Nov 2026 05:38:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 204</title>
+      <link>https://harbourwire.example/bulletin/204</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:204</guid>
+      <pubDate>Thu, 12 Nov 2026 05:37:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 205</title>
+      <link>https://harbourwire.example/bulletin/205</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:205</guid>
+      <pubDate>Thu, 12 Nov 2026 05:36:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 206</title>
+      <link>https://harbourwire.example/bulletin/206</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:206</guid>
+      <pubDate>Thu, 12 Nov 2026 05:35:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 207</title>
+      <link>https://harbourwire.example/bulletin/207</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:207</guid>
+      <pubDate>Thu, 12 Nov 2026 05:34:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 208</title>
+      <link>https://harbourwire.example/bulletin/208</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:208</guid>
+      <pubDate>Thu, 12 Nov 2026 05:33:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 209</title>
+      <link>https://harbourwire.example/bulletin/209</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:209</guid>
+      <pubDate>Thu, 12 Nov 2026 05:32:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 210</title>
+      <link>https://harbourwire.example/bulletin/210</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:210</guid>
+      <pubDate>Thu, 12 Nov 2026 05:31:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 211</title>
+      <link>https://harbourwire.example/bulletin/211</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:211</guid>
+      <pubDate>Thu, 12 Nov 2026 05:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 212</title>
+      <link>https://harbourwire.example/bulletin/212</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:212</guid>
+      <pubDate>Thu, 12 Nov 2026 05:29:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 213</title>
+      <link>https://harbourwire.example/bulletin/213</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:213</guid>
+      <pubDate>Thu, 12 Nov 2026 05:28:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 214</title>
+      <link>https://harbourwire.example/bulletin/214</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:214</guid>
+      <pubDate>Thu, 12 Nov 2026 05:27:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 215</title>
+      <link>https://harbourwire.example/bulletin/215</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:215</guid>
+      <pubDate>Thu, 12 Nov 2026 05:26:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 216</title>
+      <link>https://harbourwire.example/bulletin/216</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:216</guid>
+      <pubDate>Thu, 12 Nov 2026 05:25:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 217</title>
+      <link>https://harbourwire.example/bulletin/217</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:217</guid>
+      <pubDate>Thu, 12 Nov 2026 05:24:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 218</title>
+      <link>https://harbourwire.example/bulletin/218</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:218</guid>
+      <pubDate>Thu, 12 Nov 2026 05:23:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 219</title>
+      <link>https://harbourwire.example/bulletin/219</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:219</guid>
+      <pubDate>Thu, 12 Nov 2026 05:22:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 220</title>
+      <link>https://harbourwire.example/bulletin/220</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:220</guid>
+      <pubDate>Thu, 12 Nov 2026 05:21:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 221</title>
+      <link>https://harbourwire.example/bulletin/221</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:221</guid>
+      <pubDate>Thu, 12 Nov 2026 05:20:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 222</title>
+      <link>https://harbourwire.example/bulletin/222</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:222</guid>
+      <pubDate>Thu, 12 Nov 2026 05:19:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 223</title>
+      <link>https://harbourwire.example/bulletin/223</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:223</guid>
+      <pubDate>Thu, 12 Nov 2026 05:18:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 224</title>
+      <link>https://harbourwire.example/bulletin/224</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:224</guid>
+      <pubDate>Thu, 12 Nov 2026 05:17:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 225</title>
+      <link>https://harbourwire.example/bulletin/225</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:225</guid>
+      <pubDate>Thu, 12 Nov 2026 05:16:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 226</title>
+      <link>https://harbourwire.example/bulletin/226</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:226</guid>
+      <pubDate>Thu, 12 Nov 2026 05:15:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 227</title>
+      <link>https://harbourwire.example/bulletin/227</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:227</guid>
+      <pubDate>Thu, 12 Nov 2026 05:14:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 228</title>
+      <link>https://harbourwire.example/bulletin/228</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:228</guid>
+      <pubDate>Thu, 12 Nov 2026 05:13:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 229</title>
+      <link>https://harbourwire.example/bulletin/229</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:229</guid>
+      <pubDate>Thu, 12 Nov 2026 05:12:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 230</title>
+      <link>https://harbourwire.example/bulletin/230</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:230</guid>
+      <pubDate>Thu, 12 Nov 2026 05:11:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 231</title>
+      <link>https://harbourwire.example/bulletin/231</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:231</guid>
+      <pubDate>Thu, 12 Nov 2026 05:10:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 232</title>
+      <link>https://harbourwire.example/bulletin/232</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:232</guid>
+      <pubDate>Thu, 12 Nov 2026 05:09:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 233</title>
+      <link>https://harbourwire.example/bulletin/233</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:233</guid>
+      <pubDate>Thu, 12 Nov 2026 05:08:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 234</title>
+      <link>https://harbourwire.example/bulletin/234</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:234</guid>
+      <pubDate>Thu, 12 Nov 2026 05:07:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 235</title>
+      <link>https://harbourwire.example/bulletin/235</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:235</guid>
+      <pubDate>Thu, 12 Nov 2026 05:06:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 236</title>
+      <link>https://harbourwire.example/bulletin/236</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:236</guid>
+      <pubDate>Thu, 12 Nov 2026 05:05:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 237</title>
+      <link>https://harbourwire.example/bulletin/237</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:237</guid>
+      <pubDate>Thu, 12 Nov 2026 05:04:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 238</title>
+      <link>https://harbourwire.example/bulletin/238</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:238</guid>
+      <pubDate>Thu, 12 Nov 2026 05:03:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 239</title>
+      <link>https://harbourwire.example/bulletin/239</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:239</guid>
+      <pubDate>Thu, 12 Nov 2026 05:02:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 240</title>
+      <link>https://harbourwire.example/bulletin/240</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:240</guid>
+      <pubDate>Thu, 12 Nov 2026 05:01:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 241</title>
+      <link>https://harbourwire.example/bulletin/241</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:241</guid>
+      <pubDate>Thu, 12 Nov 2026 05:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 242</title>
+      <link>https://harbourwire.example/bulletin/242</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:242</guid>
+      <pubDate>Thu, 12 Nov 2026 04:59:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 243</title>
+      <link>https://harbourwire.example/bulletin/243</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:243</guid>
+      <pubDate>Thu, 12 Nov 2026 04:58:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 244</title>
+      <link>https://harbourwire.example/bulletin/244</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:244</guid>
+      <pubDate>Thu, 12 Nov 2026 04:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 245</title>
+      <link>https://harbourwire.example/bulletin/245</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:245</guid>
+      <pubDate>Thu, 12 Nov 2026 04:56:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 246</title>
+      <link>https://harbourwire.example/bulletin/246</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:246</guid>
+      <pubDate>Thu, 12 Nov 2026 04:55:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 247</title>
+      <link>https://harbourwire.example/bulletin/247</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:247</guid>
+      <pubDate>Thu, 12 Nov 2026 04:54:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 248</title>
+      <link>https://harbourwire.example/bulletin/248</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:248</guid>
+      <pubDate>Thu, 12 Nov 2026 04:53:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 249</title>
+      <link>https://harbourwire.example/bulletin/249</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:249</guid>
+      <pubDate>Thu, 12 Nov 2026 04:52:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 250</title>
+      <link>https://harbourwire.example/bulletin/250</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:250</guid>
+      <pubDate>Thu, 12 Nov 2026 04:51:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 251</title>
+      <link>https://harbourwire.example/bulletin/251</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:251</guid>
+      <pubDate>Thu, 12 Nov 2026 04:50:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 252</title>
+      <link>https://harbourwire.example/bulletin/252</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:252</guid>
+      <pubDate>Thu, 12 Nov 2026 04:49:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 253</title>
+      <link>https://harbourwire.example/bulletin/253</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:253</guid>
+      <pubDate>Thu, 12 Nov 2026 04:48:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 254</title>
+      <link>https://harbourwire.example/bulletin/254</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:254</guid>
+      <pubDate>Thu, 12 Nov 2026 04:47:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 255</title>
+      <link>https://harbourwire.example/bulletin/255</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:255</guid>
+      <pubDate>Thu, 12 Nov 2026 04:46:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 256</title>
+      <link>https://harbourwire.example/bulletin/256</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:256</guid>
+      <pubDate>Thu, 12 Nov 2026 04:45:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 257</title>
+      <link>https://harbourwire.example/bulletin/257</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:257</guid>
+      <pubDate>Thu, 12 Nov 2026 04:44:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 258</title>
+      <link>https://harbourwire.example/bulletin/258</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:258</guid>
+      <pubDate>Thu, 12 Nov 2026 04:43:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 259</title>
+      <link>https://harbourwire.example/bulletin/259</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:259</guid>
+      <pubDate>Thu, 12 Nov 2026 04:42:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 260</title>
+      <link>https://harbourwire.example/bulletin/260</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:260</guid>
+      <pubDate>Thu, 12 Nov 2026 04:41:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 261</title>
+      <link>https://harbourwire.example/bulletin/261</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:261</guid>
+      <pubDate>Thu, 12 Nov 2026 04:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 262</title>
+      <link>https://harbourwire.example/bulletin/262</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:262</guid>
+      <pubDate>Thu, 12 Nov 2026 04:39:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 263</title>
+      <link>https://harbourwire.example/bulletin/263</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:263</guid>
+      <pubDate>Thu, 12 Nov 2026 04:38:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 264</title>
+      <link>https://harbourwire.example/bulletin/264</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:264</guid>
+      <pubDate>Thu, 12 Nov 2026 04:37:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 265</title>
+      <link>https://harbourwire.example/bulletin/265</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:265</guid>
+      <pubDate>Thu, 12 Nov 2026 04:36:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 266</title>
+      <link>https://harbourwire.example/bulletin/266</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:266</guid>
+      <pubDate>Thu, 12 Nov 2026 04:35:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 267</title>
+      <link>https://harbourwire.example/bulletin/267</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:267</guid>
+      <pubDate>Thu, 12 Nov 2026 04:34:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 268</title>
+      <link>https://harbourwire.example/bulletin/268</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:268</guid>
+      <pubDate>Thu, 12 Nov 2026 04:33:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 269</title>
+      <link>https://harbourwire.example/bulletin/269</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:269</guid>
+      <pubDate>Thu, 12 Nov 2026 04:32:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 270</title>
+      <link>https://harbourwire.example/bulletin/270</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:270</guid>
+      <pubDate>Thu, 12 Nov 2026 04:31:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 271</title>
+      <link>https://harbourwire.example/bulletin/271</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:271</guid>
+      <pubDate>Thu, 12 Nov 2026 04:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 272</title>
+      <link>https://harbourwire.example/bulletin/272</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:272</guid>
+      <pubDate>Thu, 12 Nov 2026 04:29:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 273</title>
+      <link>https://harbourwire.example/bulletin/273</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:273</guid>
+      <pubDate>Thu, 12 Nov 2026 04:28:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 274</title>
+      <link>https://harbourwire.example/bulletin/274</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:274</guid>
+      <pubDate>Thu, 12 Nov 2026 04:27:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 275</title>
+      <link>https://harbourwire.example/bulletin/275</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:275</guid>
+      <pubDate>Thu, 12 Nov 2026 04:26:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 276</title>
+      <link>https://harbourwire.example/bulletin/276</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:276</guid>
+      <pubDate>Thu, 12 Nov 2026 04:25:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 277</title>
+      <link>https://harbourwire.example/bulletin/277</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:277</guid>
+      <pubDate>Thu, 12 Nov 2026 04:24:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 278</title>
+      <link>https://harbourwire.example/bulletin/278</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:278</guid>
+      <pubDate>Thu, 12 Nov 2026 04:23:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 279</title>
+      <link>https://harbourwire.example/bulletin/279</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:279</guid>
+      <pubDate>Thu, 12 Nov 2026 04:22:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 280</title>
+      <link>https://harbourwire.example/bulletin/280</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:280</guid>
+      <pubDate>Thu, 12 Nov 2026 04:21:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 281</title>
+      <link>https://harbourwire.example/bulletin/281</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:281</guid>
+      <pubDate>Thu, 12 Nov 2026 04:20:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 282</title>
+      <link>https://harbourwire.example/bulletin/282</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:282</guid>
+      <pubDate>Thu, 12 Nov 2026 04:19:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 283</title>
+      <link>https://harbourwire.example/bulletin/283</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:283</guid>
+      <pubDate>Thu, 12 Nov 2026 04:18:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 284</title>
+      <link>https://harbourwire.example/bulletin/284</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:284</guid>
+      <pubDate>Thu, 12 Nov 2026 04:17:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 285</title>
+      <link>https://harbourwire.example/bulletin/285</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:285</guid>
+      <pubDate>Thu, 12 Nov 2026 04:16:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 286</title>
+      <link>https://harbourwire.example/bulletin/286</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:286</guid>
+      <pubDate>Thu, 12 Nov 2026 04:15:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 287</title>
+      <link>https://harbourwire.example/bulletin/287</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:287</guid>
+      <pubDate>Thu, 12 Nov 2026 04:14:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 288</title>
+      <link>https://harbourwire.example/bulletin/288</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:288</guid>
+      <pubDate>Thu, 12 Nov 2026 04:13:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 289</title>
+      <link>https://harbourwire.example/bulletin/289</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:289</guid>
+      <pubDate>Thu, 12 Nov 2026 04:12:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 290</title>
+      <link>https://harbourwire.example/bulletin/290</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:290</guid>
+      <pubDate>Thu, 12 Nov 2026 04:11:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 291</title>
+      <link>https://harbourwire.example/bulletin/291</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:291</guid>
+      <pubDate>Thu, 12 Nov 2026 04:10:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 292</title>
+      <link>https://harbourwire.example/bulletin/292</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:292</guid>
+      <pubDate>Thu, 12 Nov 2026 04:09:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 293</title>
+      <link>https://harbourwire.example/bulletin/293</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:293</guid>
+      <pubDate>Thu, 12 Nov 2026 04:08:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 294</title>
+      <link>https://harbourwire.example/bulletin/294</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:294</guid>
+      <pubDate>Thu, 12 Nov 2026 04:07:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 295</title>
+      <link>https://harbourwire.example/bulletin/295</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:295</guid>
+      <pubDate>Thu, 12 Nov 2026 04:06:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 296</title>
+      <link>https://harbourwire.example/bulletin/296</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:296</guid>
+      <pubDate>Thu, 12 Nov 2026 04:05:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 297</title>
+      <link>https://harbourwire.example/bulletin/297</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:297</guid>
+      <pubDate>Thu, 12 Nov 2026 04:04:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 298</title>
+      <link>https://harbourwire.example/bulletin/298</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:298</guid>
+      <pubDate>Thu, 12 Nov 2026 04:03:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 299</title>
+      <link>https://harbourwire.example/bulletin/299</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:299</guid>
+      <pubDate>Thu, 12 Nov 2026 04:02:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 300</title>
+      <link>https://harbourwire.example/bulletin/300</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:300</guid>
+      <pubDate>Thu, 12 Nov 2026 04:01:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 301</title>
+      <link>https://harbourwire.example/bulletin/301</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:301</guid>
+      <pubDate>Thu, 12 Nov 2026 04:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 302</title>
+      <link>https://harbourwire.example/bulletin/302</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:302</guid>
+      <pubDate>Thu, 12 Nov 2026 03:59:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 303</title>
+      <link>https://harbourwire.example/bulletin/303</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:303</guid>
+      <pubDate>Thu, 12 Nov 2026 03:58:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 304</title>
+      <link>https://harbourwire.example/bulletin/304</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:304</guid>
+      <pubDate>Thu, 12 Nov 2026 03:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 305</title>
+      <link>https://harbourwire.example/bulletin/305</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:305</guid>
+      <pubDate>Thu, 12 Nov 2026 03:56:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 306</title>
+      <link>https://harbourwire.example/bulletin/306</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:306</guid>
+      <pubDate>Thu, 12 Nov 2026 03:55:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 307</title>
+      <link>https://harbourwire.example/bulletin/307</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:307</guid>
+      <pubDate>Thu, 12 Nov 2026 03:54:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 308</title>
+      <link>https://harbourwire.example/bulletin/308</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:308</guid>
+      <pubDate>Thu, 12 Nov 2026 03:53:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 309</title>
+      <link>https://harbourwire.example/bulletin/309</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:309</guid>
+      <pubDate>Thu, 12 Nov 2026 03:52:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 310</title>
+      <link>https://harbourwire.example/bulletin/310</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:310</guid>
+      <pubDate>Thu, 12 Nov 2026 03:51:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 311</title>
+      <link>https://harbourwire.example/bulletin/311</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:311</guid>
+      <pubDate>Thu, 12 Nov 2026 03:50:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 312</title>
+      <link>https://harbourwire.example/bulletin/312</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:312</guid>
+      <pubDate>Thu, 12 Nov 2026 03:49:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 313</title>
+      <link>https://harbourwire.example/bulletin/313</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:313</guid>
+      <pubDate>Thu, 12 Nov 2026 03:48:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 314</title>
+      <link>https://harbourwire.example/bulletin/314</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:314</guid>
+      <pubDate>Thu, 12 Nov 2026 03:47:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 315</title>
+      <link>https://harbourwire.example/bulletin/315</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:315</guid>
+      <pubDate>Thu, 12 Nov 2026 03:46:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 316</title>
+      <link>https://harbourwire.example/bulletin/316</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:316</guid>
+      <pubDate>Thu, 12 Nov 2026 03:45:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 317</title>
+      <link>https://harbourwire.example/bulletin/317</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:317</guid>
+      <pubDate>Thu, 12 Nov 2026 03:44:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 318</title>
+      <link>https://harbourwire.example/bulletin/318</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:318</guid>
+      <pubDate>Thu, 12 Nov 2026 03:43:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 319</title>
+      <link>https://harbourwire.example/bulletin/319</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:319</guid>
+      <pubDate>Thu, 12 Nov 2026 03:42:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 320</title>
+      <link>https://harbourwire.example/bulletin/320</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:320</guid>
+      <pubDate>Thu, 12 Nov 2026 03:41:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 321</title>
+      <link>https://harbourwire.example/bulletin/321</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:321</guid>
+      <pubDate>Thu, 12 Nov 2026 03:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 322</title>
+      <link>https://harbourwire.example/bulletin/322</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:322</guid>
+      <pubDate>Thu, 12 Nov 2026 03:39:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 323</title>
+      <link>https://harbourwire.example/bulletin/323</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:323</guid>
+      <pubDate>Thu, 12 Nov 2026 03:38:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 324</title>
+      <link>https://harbourwire.example/bulletin/324</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:324</guid>
+      <pubDate>Thu, 12 Nov 2026 03:37:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 325</title>
+      <link>https://harbourwire.example/bulletin/325</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:325</guid>
+      <pubDate>Thu, 12 Nov 2026 03:36:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 326</title>
+      <link>https://harbourwire.example/bulletin/326</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:326</guid>
+      <pubDate>Thu, 12 Nov 2026 03:35:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 327</title>
+      <link>https://harbourwire.example/bulletin/327</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:327</guid>
+      <pubDate>Thu, 12 Nov 2026 03:34:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 328</title>
+      <link>https://harbourwire.example/bulletin/328</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:328</guid>
+      <pubDate>Thu, 12 Nov 2026 03:33:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 329</title>
+      <link>https://harbourwire.example/bulletin/329</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:329</guid>
+      <pubDate>Thu, 12 Nov 2026 03:32:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 330</title>
+      <link>https://harbourwire.example/bulletin/330</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:330</guid>
+      <pubDate>Thu, 12 Nov 2026 03:31:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 331</title>
+      <link>https://harbourwire.example/bulletin/331</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:331</guid>
+      <pubDate>Thu, 12 Nov 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 332</title>
+      <link>https://harbourwire.example/bulletin/332</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:332</guid>
+      <pubDate>Thu, 12 Nov 2026 03:29:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 333</title>
+      <link>https://harbourwire.example/bulletin/333</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:333</guid>
+      <pubDate>Thu, 12 Nov 2026 03:28:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 334</title>
+      <link>https://harbourwire.example/bulletin/334</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:334</guid>
+      <pubDate>Thu, 12 Nov 2026 03:27:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 335</title>
+      <link>https://harbourwire.example/bulletin/335</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:335</guid>
+      <pubDate>Thu, 12 Nov 2026 03:26:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 336</title>
+      <link>https://harbourwire.example/bulletin/336</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:336</guid>
+      <pubDate>Thu, 12 Nov 2026 03:25:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 337</title>
+      <link>https://harbourwire.example/bulletin/337</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:337</guid>
+      <pubDate>Thu, 12 Nov 2026 03:24:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 338</title>
+      <link>https://harbourwire.example/bulletin/338</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:338</guid>
+      <pubDate>Thu, 12 Nov 2026 03:23:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 339</title>
+      <link>https://harbourwire.example/bulletin/339</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:339</guid>
+      <pubDate>Thu, 12 Nov 2026 03:22:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 340</title>
+      <link>https://harbourwire.example/bulletin/340</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:340</guid>
+      <pubDate>Thu, 12 Nov 2026 03:21:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 341</title>
+      <link>https://harbourwire.example/bulletin/341</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:341</guid>
+      <pubDate>Thu, 12 Nov 2026 03:20:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 342</title>
+      <link>https://harbourwire.example/bulletin/342</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:342</guid>
+      <pubDate>Thu, 12 Nov 2026 03:19:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 343</title>
+      <link>https://harbourwire.example/bulletin/343</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:343</guid>
+      <pubDate>Thu, 12 Nov 2026 03:18:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 344</title>
+      <link>https://harbourwire.example/bulletin/344</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:344</guid>
+      <pubDate>Thu, 12 Nov 2026 03:17:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 345</title>
+      <link>https://harbourwire.example/bulletin/345</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:345</guid>
+      <pubDate>Thu, 12 Nov 2026 03:16:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 346</title>
+      <link>https://harbourwire.example/bulletin/346</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:346</guid>
+      <pubDate>Thu, 12 Nov 2026 03:15:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 347</title>
+      <link>https://harbourwire.example/bulletin/347</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:347</guid>
+      <pubDate>Thu, 12 Nov 2026 03:14:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 348</title>
+      <link>https://harbourwire.example/bulletin/348</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:348</guid>
+      <pubDate>Thu, 12 Nov 2026 03:13:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 349</title>
+      <link>https://harbourwire.example/bulletin/349</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:349</guid>
+      <pubDate>Thu, 12 Nov 2026 03:12:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 350</title>
+      <link>https://harbourwire.example/bulletin/350</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:350</guid>
+      <pubDate>Thu, 12 Nov 2026 03:11:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 351</title>
+      <link>https://harbourwire.example/bulletin/351</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:351</guid>
+      <pubDate>Thu, 12 Nov 2026 03:10:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 352</title>
+      <link>https://harbourwire.example/bulletin/352</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:352</guid>
+      <pubDate>Thu, 12 Nov 2026 03:09:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 353</title>
+      <link>https://harbourwire.example/bulletin/353</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:353</guid>
+      <pubDate>Thu, 12 Nov 2026 03:08:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 354</title>
+      <link>https://harbourwire.example/bulletin/354</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:354</guid>
+      <pubDate>Thu, 12 Nov 2026 03:07:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 355</title>
+      <link>https://harbourwire.example/bulletin/355</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:355</guid>
+      <pubDate>Thu, 12 Nov 2026 03:06:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 356</title>
+      <link>https://harbourwire.example/bulletin/356</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:356</guid>
+      <pubDate>Thu, 12 Nov 2026 03:05:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 357</title>
+      <link>https://harbourwire.example/bulletin/357</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:357</guid>
+      <pubDate>Thu, 12 Nov 2026 03:04:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 358</title>
+      <link>https://harbourwire.example/bulletin/358</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:358</guid>
+      <pubDate>Thu, 12 Nov 2026 03:03:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 359</title>
+      <link>https://harbourwire.example/bulletin/359</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:359</guid>
+      <pubDate>Thu, 12 Nov 2026 03:02:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 360</title>
+      <link>https://harbourwire.example/bulletin/360</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:360</guid>
+      <pubDate>Thu, 12 Nov 2026 03:01:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 361</title>
+      <link>https://harbourwire.example/bulletin/361</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:361</guid>
+      <pubDate>Thu, 12 Nov 2026 03:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 362</title>
+      <link>https://harbourwire.example/bulletin/362</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:362</guid>
+      <pubDate>Thu, 12 Nov 2026 02:59:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 363</title>
+      <link>https://harbourwire.example/bulletin/363</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:363</guid>
+      <pubDate>Thu, 12 Nov 2026 02:58:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 364</title>
+      <link>https://harbourwire.example/bulletin/364</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:364</guid>
+      <pubDate>Thu, 12 Nov 2026 02:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 365</title>
+      <link>https://harbourwire.example/bulletin/365</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:365</guid>
+      <pubDate>Thu, 12 Nov 2026 02:56:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 366</title>
+      <link>https://harbourwire.example/bulletin/366</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:366</guid>
+      <pubDate>Thu, 12 Nov 2026 02:55:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 367</title>
+      <link>https://harbourwire.example/bulletin/367</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:367</guid>
+      <pubDate>Thu, 12 Nov 2026 02:54:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 368</title>
+      <link>https://harbourwire.example/bulletin/368</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:368</guid>
+      <pubDate>Thu, 12 Nov 2026 02:53:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 369</title>
+      <link>https://harbourwire.example/bulletin/369</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:369</guid>
+      <pubDate>Thu, 12 Nov 2026 02:52:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 370</title>
+      <link>https://harbourwire.example/bulletin/370</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:370</guid>
+      <pubDate>Thu, 12 Nov 2026 02:51:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 371</title>
+      <link>https://harbourwire.example/bulletin/371</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:371</guid>
+      <pubDate>Thu, 12 Nov 2026 02:50:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 372</title>
+      <link>https://harbourwire.example/bulletin/372</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:372</guid>
+      <pubDate>Thu, 12 Nov 2026 02:49:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 373</title>
+      <link>https://harbourwire.example/bulletin/373</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:373</guid>
+      <pubDate>Thu, 12 Nov 2026 02:48:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 374</title>
+      <link>https://harbourwire.example/bulletin/374</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:374</guid>
+      <pubDate>Thu, 12 Nov 2026 02:47:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 375</title>
+      <link>https://harbourwire.example/bulletin/375</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:375</guid>
+      <pubDate>Thu, 12 Nov 2026 02:46:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 376</title>
+      <link>https://harbourwire.example/bulletin/376</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:376</guid>
+      <pubDate>Thu, 12 Nov 2026 02:45:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 377</title>
+      <link>https://harbourwire.example/bulletin/377</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:377</guid>
+      <pubDate>Thu, 12 Nov 2026 02:44:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 378</title>
+      <link>https://harbourwire.example/bulletin/378</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:378</guid>
+      <pubDate>Thu, 12 Nov 2026 02:43:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 379</title>
+      <link>https://harbourwire.example/bulletin/379</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:379</guid>
+      <pubDate>Thu, 12 Nov 2026 02:42:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 380</title>
+      <link>https://harbourwire.example/bulletin/380</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:380</guid>
+      <pubDate>Thu, 12 Nov 2026 02:41:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 381</title>
+      <link>https://harbourwire.example/bulletin/381</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:381</guid>
+      <pubDate>Thu, 12 Nov 2026 02:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 382</title>
+      <link>https://harbourwire.example/bulletin/382</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:382</guid>
+      <pubDate>Thu, 12 Nov 2026 02:39:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 383</title>
+      <link>https://harbourwire.example/bulletin/383</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:383</guid>
+      <pubDate>Thu, 12 Nov 2026 02:38:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 384</title>
+      <link>https://harbourwire.example/bulletin/384</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:384</guid>
+      <pubDate>Thu, 12 Nov 2026 02:37:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 385</title>
+      <link>https://harbourwire.example/bulletin/385</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:385</guid>
+      <pubDate>Thu, 12 Nov 2026 02:36:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 386</title>
+      <link>https://harbourwire.example/bulletin/386</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:386</guid>
+      <pubDate>Thu, 12 Nov 2026 02:35:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 387</title>
+      <link>https://harbourwire.example/bulletin/387</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:387</guid>
+      <pubDate>Thu, 12 Nov 2026 02:34:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 388</title>
+      <link>https://harbourwire.example/bulletin/388</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:388</guid>
+      <pubDate>Thu, 12 Nov 2026 02:33:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 389</title>
+      <link>https://harbourwire.example/bulletin/389</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:389</guid>
+      <pubDate>Thu, 12 Nov 2026 02:32:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 390</title>
+      <link>https://harbourwire.example/bulletin/390</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:390</guid>
+      <pubDate>Thu, 12 Nov 2026 02:31:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 391</title>
+      <link>https://harbourwire.example/bulletin/391</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:391</guid>
+      <pubDate>Thu, 12 Nov 2026 02:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 392</title>
+      <link>https://harbourwire.example/bulletin/392</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:392</guid>
+      <pubDate>Thu, 12 Nov 2026 02:29:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 393</title>
+      <link>https://harbourwire.example/bulletin/393</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:393</guid>
+      <pubDate>Thu, 12 Nov 2026 02:28:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 394</title>
+      <link>https://harbourwire.example/bulletin/394</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:394</guid>
+      <pubDate>Thu, 12 Nov 2026 02:27:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 395</title>
+      <link>https://harbourwire.example/bulletin/395</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:395</guid>
+      <pubDate>Thu, 12 Nov 2026 02:26:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 396</title>
+      <link>https://harbourwire.example/bulletin/396</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:396</guid>
+      <pubDate>Thu, 12 Nov 2026 02:25:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 397</title>
+      <link>https://harbourwire.example/bulletin/397</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:397</guid>
+      <pubDate>Thu, 12 Nov 2026 02:24:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 398</title>
+      <link>https://harbourwire.example/bulletin/398</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:398</guid>
+      <pubDate>Thu, 12 Nov 2026 02:23:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 399</title>
+      <link>https://harbourwire.example/bulletin/399</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:399</guid>
+      <pubDate>Thu, 12 Nov 2026 02:22:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 400</title>
+      <link>https://harbourwire.example/bulletin/400</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:400</guid>
+      <pubDate>Thu, 12 Nov 2026 02:21:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 401</title>
+      <link>https://harbourwire.example/bulletin/401</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:401</guid>
+      <pubDate>Thu, 12 Nov 2026 02:20:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 402</title>
+      <link>https://harbourwire.example/bulletin/402</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:402</guid>
+      <pubDate>Thu, 12 Nov 2026 02:19:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 403</title>
+      <link>https://harbourwire.example/bulletin/403</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:403</guid>
+      <pubDate>Thu, 12 Nov 2026 02:18:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 404</title>
+      <link>https://harbourwire.example/bulletin/404</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:404</guid>
+      <pubDate>Thu, 12 Nov 2026 02:17:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 405</title>
+      <link>https://harbourwire.example/bulletin/405</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:405</guid>
+      <pubDate>Thu, 12 Nov 2026 02:16:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 406</title>
+      <link>https://harbourwire.example/bulletin/406</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:406</guid>
+      <pubDate>Thu, 12 Nov 2026 02:15:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 407</title>
+      <link>https://harbourwire.example/bulletin/407</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:407</guid>
+      <pubDate>Thu, 12 Nov 2026 02:14:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 408</title>
+      <link>https://harbourwire.example/bulletin/408</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:408</guid>
+      <pubDate>Thu, 12 Nov 2026 02:13:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 409</title>
+      <link>https://harbourwire.example/bulletin/409</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:409</guid>
+      <pubDate>Thu, 12 Nov 2026 02:12:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 410</title>
+      <link>https://harbourwire.example/bulletin/410</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:410</guid>
+      <pubDate>Thu, 12 Nov 2026 02:11:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 411</title>
+      <link>https://harbourwire.example/bulletin/411</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:411</guid>
+      <pubDate>Thu, 12 Nov 2026 02:10:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 412</title>
+      <link>https://harbourwire.example/bulletin/412</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:412</guid>
+      <pubDate>Thu, 12 Nov 2026 02:09:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 413</title>
+      <link>https://harbourwire.example/bulletin/413</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:413</guid>
+      <pubDate>Thu, 12 Nov 2026 02:08:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 414</title>
+      <link>https://harbourwire.example/bulletin/414</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:414</guid>
+      <pubDate>Thu, 12 Nov 2026 02:07:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 415</title>
+      <link>https://harbourwire.example/bulletin/415</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:415</guid>
+      <pubDate>Thu, 12 Nov 2026 02:06:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 416</title>
+      <link>https://harbourwire.example/bulletin/416</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:416</guid>
+      <pubDate>Thu, 12 Nov 2026 02:05:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 417</title>
+      <link>https://harbourwire.example/bulletin/417</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:417</guid>
+      <pubDate>Thu, 12 Nov 2026 02:04:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 418</title>
+      <link>https://harbourwire.example/bulletin/418</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:418</guid>
+      <pubDate>Thu, 12 Nov 2026 02:03:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 419</title>
+      <link>https://harbourwire.example/bulletin/419</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:419</guid>
+      <pubDate>Thu, 12 Nov 2026 02:02:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 420</title>
+      <link>https://harbourwire.example/bulletin/420</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:420</guid>
+      <pubDate>Thu, 12 Nov 2026 02:01:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 421</title>
+      <link>https://harbourwire.example/bulletin/421</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:421</guid>
+      <pubDate>Thu, 12 Nov 2026 02:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 422</title>
+      <link>https://harbourwire.example/bulletin/422</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:422</guid>
+      <pubDate>Thu, 12 Nov 2026 01:59:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 423</title>
+      <link>https://harbourwire.example/bulletin/423</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:423</guid>
+      <pubDate>Thu, 12 Nov 2026 01:58:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 424</title>
+      <link>https://harbourwire.example/bulletin/424</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:424</guid>
+      <pubDate>Thu, 12 Nov 2026 01:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 425</title>
+      <link>https://harbourwire.example/bulletin/425</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:425</guid>
+      <pubDate>Thu, 12 Nov 2026 01:56:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 426</title>
+      <link>https://harbourwire.example/bulletin/426</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:426</guid>
+      <pubDate>Thu, 12 Nov 2026 01:55:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 427</title>
+      <link>https://harbourwire.example/bulletin/427</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:427</guid>
+      <pubDate>Thu, 12 Nov 2026 01:54:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 428</title>
+      <link>https://harbourwire.example/bulletin/428</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:428</guid>
+      <pubDate>Thu, 12 Nov 2026 01:53:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 429</title>
+      <link>https://harbourwire.example/bulletin/429</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:429</guid>
+      <pubDate>Thu, 12 Nov 2026 01:52:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 430</title>
+      <link>https://harbourwire.example/bulletin/430</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:430</guid>
+      <pubDate>Thu, 12 Nov 2026 01:51:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 431</title>
+      <link>https://harbourwire.example/bulletin/431</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:431</guid>
+      <pubDate>Thu, 12 Nov 2026 01:50:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 432</title>
+      <link>https://harbourwire.example/bulletin/432</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:432</guid>
+      <pubDate>Thu, 12 Nov 2026 01:49:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 433</title>
+      <link>https://harbourwire.example/bulletin/433</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:433</guid>
+      <pubDate>Thu, 12 Nov 2026 01:48:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 434</title>
+      <link>https://harbourwire.example/bulletin/434</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:434</guid>
+      <pubDate>Thu, 12 Nov 2026 01:47:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 435</title>
+      <link>https://harbourwire.example/bulletin/435</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:435</guid>
+      <pubDate>Thu, 12 Nov 2026 01:46:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 436</title>
+      <link>https://harbourwire.example/bulletin/436</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:436</guid>
+      <pubDate>Thu, 12 Nov 2026 01:45:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 437</title>
+      <link>https://harbourwire.example/bulletin/437</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:437</guid>
+      <pubDate>Thu, 12 Nov 2026 01:44:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 438</title>
+      <link>https://harbourwire.example/bulletin/438</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:438</guid>
+      <pubDate>Thu, 12 Nov 2026 01:43:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 439</title>
+      <link>https://harbourwire.example/bulletin/439</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:439</guid>
+      <pubDate>Thu, 12 Nov 2026 01:42:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 440</title>
+      <link>https://harbourwire.example/bulletin/440</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:440</guid>
+      <pubDate>Thu, 12 Nov 2026 01:41:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 441</title>
+      <link>https://harbourwire.example/bulletin/441</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:441</guid>
+      <pubDate>Thu, 12 Nov 2026 01:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 442</title>
+      <link>https://harbourwire.example/bulletin/442</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:442</guid>
+      <pubDate>Thu, 12 Nov 2026 01:39:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 443</title>
+      <link>https://harbourwire.example/bulletin/443</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:443</guid>
+      <pubDate>Thu, 12 Nov 2026 01:38:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 444</title>
+      <link>https://harbourwire.example/bulletin/444</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:444</guid>
+      <pubDate>Thu, 12 Nov 2026 01:37:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 445</title>
+      <link>https://harbourwire.example/bulletin/445</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:445</guid>
+      <pubDate>Thu, 12 Nov 2026 01:36:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 446</title>
+      <link>https://harbourwire.example/bulletin/446</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:446</guid>
+      <pubDate>Thu, 12 Nov 2026 01:35:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 447</title>
+      <link>https://harbourwire.example/bulletin/447</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:447</guid>
+      <pubDate>Thu, 12 Nov 2026 01:34:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 448</title>
+      <link>https://harbourwire.example/bulletin/448</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:448</guid>
+      <pubDate>Thu, 12 Nov 2026 01:33:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 449</title>
+      <link>https://harbourwire.example/bulletin/449</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:449</guid>
+      <pubDate>Thu, 12 Nov 2026 01:32:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 450</title>
+      <link>https://harbourwire.example/bulletin/450</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:450</guid>
+      <pubDate>Thu, 12 Nov 2026 01:31:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 451</title>
+      <link>https://harbourwire.example/bulletin/451</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:451</guid>
+      <pubDate>Thu, 12 Nov 2026 01:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 452</title>
+      <link>https://harbourwire.example/bulletin/452</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:452</guid>
+      <pubDate>Thu, 12 Nov 2026 01:29:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 453</title>
+      <link>https://harbourwire.example/bulletin/453</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:453</guid>
+      <pubDate>Thu, 12 Nov 2026 01:28:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 454</title>
+      <link>https://harbourwire.example/bulletin/454</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:454</guid>
+      <pubDate>Thu, 12 Nov 2026 01:27:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 455</title>
+      <link>https://harbourwire.example/bulletin/455</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:455</guid>
+      <pubDate>Thu, 12 Nov 2026 01:26:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 456</title>
+      <link>https://harbourwire.example/bulletin/456</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:456</guid>
+      <pubDate>Thu, 12 Nov 2026 01:25:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 457</title>
+      <link>https://harbourwire.example/bulletin/457</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:457</guid>
+      <pubDate>Thu, 12 Nov 2026 01:24:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 458</title>
+      <link>https://harbourwire.example/bulletin/458</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:458</guid>
+      <pubDate>Thu, 12 Nov 2026 01:23:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 459</title>
+      <link>https://harbourwire.example/bulletin/459</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:459</guid>
+      <pubDate>Thu, 12 Nov 2026 01:22:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 460</title>
+      <link>https://harbourwire.example/bulletin/460</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:460</guid>
+      <pubDate>Thu, 12 Nov 2026 01:21:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 461</title>
+      <link>https://harbourwire.example/bulletin/461</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:461</guid>
+      <pubDate>Thu, 12 Nov 2026 01:20:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 462</title>
+      <link>https://harbourwire.example/bulletin/462</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:462</guid>
+      <pubDate>Thu, 12 Nov 2026 01:19:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 463</title>
+      <link>https://harbourwire.example/bulletin/463</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:463</guid>
+      <pubDate>Thu, 12 Nov 2026 01:18:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 464</title>
+      <link>https://harbourwire.example/bulletin/464</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:464</guid>
+      <pubDate>Thu, 12 Nov 2026 01:17:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 465</title>
+      <link>https://harbourwire.example/bulletin/465</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:465</guid>
+      <pubDate>Thu, 12 Nov 2026 01:16:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 466</title>
+      <link>https://harbourwire.example/bulletin/466</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:466</guid>
+      <pubDate>Thu, 12 Nov 2026 01:15:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 467</title>
+      <link>https://harbourwire.example/bulletin/467</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:467</guid>
+      <pubDate>Thu, 12 Nov 2026 01:14:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 468</title>
+      <link>https://harbourwire.example/bulletin/468</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:468</guid>
+      <pubDate>Thu, 12 Nov 2026 01:13:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 469</title>
+      <link>https://harbourwire.example/bulletin/469</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:469</guid>
+      <pubDate>Thu, 12 Nov 2026 01:12:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 470</title>
+      <link>https://harbourwire.example/bulletin/470</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:470</guid>
+      <pubDate>Thu, 12 Nov 2026 01:11:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 471</title>
+      <link>https://harbourwire.example/bulletin/471</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:471</guid>
+      <pubDate>Thu, 12 Nov 2026 01:10:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 472</title>
+      <link>https://harbourwire.example/bulletin/472</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:472</guid>
+      <pubDate>Thu, 12 Nov 2026 01:09:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 473</title>
+      <link>https://harbourwire.example/bulletin/473</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:473</guid>
+      <pubDate>Thu, 12 Nov 2026 01:08:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 474</title>
+      <link>https://harbourwire.example/bulletin/474</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:474</guid>
+      <pubDate>Thu, 12 Nov 2026 01:07:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 475</title>
+      <link>https://harbourwire.example/bulletin/475</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:475</guid>
+      <pubDate>Thu, 12 Nov 2026 01:06:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 476</title>
+      <link>https://harbourwire.example/bulletin/476</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:476</guid>
+      <pubDate>Thu, 12 Nov 2026 01:05:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 477</title>
+      <link>https://harbourwire.example/bulletin/477</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:477</guid>
+      <pubDate>Thu, 12 Nov 2026 01:04:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 478</title>
+      <link>https://harbourwire.example/bulletin/478</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:478</guid>
+      <pubDate>Thu, 12 Nov 2026 01:03:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 479</title>
+      <link>https://harbourwire.example/bulletin/479</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:479</guid>
+      <pubDate>Thu, 12 Nov 2026 01:02:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 480</title>
+      <link>https://harbourwire.example/bulletin/480</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:480</guid>
+      <pubDate>Thu, 12 Nov 2026 01:01:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 481</title>
+      <link>https://harbourwire.example/bulletin/481</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:481</guid>
+      <pubDate>Thu, 12 Nov 2026 01:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 482</title>
+      <link>https://harbourwire.example/bulletin/482</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:482</guid>
+      <pubDate>Thu, 12 Nov 2026 00:59:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 483</title>
+      <link>https://harbourwire.example/bulletin/483</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:483</guid>
+      <pubDate>Thu, 12 Nov 2026 00:58:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 484</title>
+      <link>https://harbourwire.example/bulletin/484</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:484</guid>
+      <pubDate>Thu, 12 Nov 2026 00:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 485</title>
+      <link>https://harbourwire.example/bulletin/485</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:485</guid>
+      <pubDate>Thu, 12 Nov 2026 00:56:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 486</title>
+      <link>https://harbourwire.example/bulletin/486</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:486</guid>
+      <pubDate>Thu, 12 Nov 2026 00:55:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 487</title>
+      <link>https://harbourwire.example/bulletin/487</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:487</guid>
+      <pubDate>Thu, 12 Nov 2026 00:54:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 488</title>
+      <link>https://harbourwire.example/bulletin/488</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:488</guid>
+      <pubDate>Thu, 12 Nov 2026 00:53:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 489</title>
+      <link>https://harbourwire.example/bulletin/489</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:489</guid>
+      <pubDate>Thu, 12 Nov 2026 00:52:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 490</title>
+      <link>https://harbourwire.example/bulletin/490</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:490</guid>
+      <pubDate>Thu, 12 Nov 2026 00:51:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 491</title>
+      <link>https://harbourwire.example/bulletin/491</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:491</guid>
+      <pubDate>Thu, 12 Nov 2026 00:50:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 492</title>
+      <link>https://harbourwire.example/bulletin/492</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:492</guid>
+      <pubDate>Thu, 12 Nov 2026 00:49:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 493</title>
+      <link>https://harbourwire.example/bulletin/493</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:493</guid>
+      <pubDate>Thu, 12 Nov 2026 00:48:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 494</title>
+      <link>https://harbourwire.example/bulletin/494</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:494</guid>
+      <pubDate>Thu, 12 Nov 2026 00:47:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 495</title>
+      <link>https://harbourwire.example/bulletin/495</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:495</guid>
+      <pubDate>Thu, 12 Nov 2026 00:46:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 496</title>
+      <link>https://harbourwire.example/bulletin/496</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:496</guid>
+      <pubDate>Thu, 12 Nov 2026 00:45:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 497</title>
+      <link>https://harbourwire.example/bulletin/497</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:497</guid>
+      <pubDate>Thu, 12 Nov 2026 00:44:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 498</title>
+      <link>https://harbourwire.example/bulletin/498</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:498</guid>
+      <pubDate>Thu, 12 Nov 2026 00:43:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 499</title>
+      <link>https://harbourwire.example/bulletin/499</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:499</guid>
+      <pubDate>Thu, 12 Nov 2026 00:42:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Bulletin 500</title>
+      <link>https://harbourwire.example/bulletin/500</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">tag:harbourwire.example,2026:bulletin:500</guid>
+      <pubDate>Thu, 12 Nov 2026 00:41:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

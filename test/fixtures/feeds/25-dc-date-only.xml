@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Harbour Wire</title>
+    <link>https://harbourwire.example</link>
+    <description>News from the estuary</description>
+    <item>
+      <title>Notes from the allotment committee</title>
+      <link>https://orchardstreet.example/journal/allotment-committee</link>
+      <guid>allotment-2026-10</guid>
+      <dc:date>2026-10-27T07:30:00Z</dc:date>
+      <dc:creator>Hugh Tamsin</dc:creator>
+    </item>
+  </channel>
+</rss>

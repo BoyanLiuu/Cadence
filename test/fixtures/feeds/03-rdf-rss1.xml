@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns="http://purl.org/rss/1.0/"
+         xmlns:dc="http://purl.org/dc/elements/1.1/"
+         xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel rdf:about="https://orchardstreet.example/index.rdf">
+    <title>Orchard Street Journal</title>
+    <link>https://orchardstreet.example</link>
+    <description>A year of walking the same street</description>
+  </channel>
+  <item rdf:about="https://orchardstreet.example/journal/same-street">
+    <title>A year of walking the same street</title>
+    <link>https://orchardstreet.example/journal/same-street</link>
+    <description>Fifty-two walks down Orchard Street.</description>
+    <dc:date>2026-11-10T07:30:00Z</dc:date>
+    <dc:creator>Hugh Tamsin</dc:creator>
+    <content:encoded>&lt;p&gt;I walked the length of Orchard Street every Sunday for a year.&lt;/p&gt;</content:encoded>
+  </item>
+</rdf:RDF>

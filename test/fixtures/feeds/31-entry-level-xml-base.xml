@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:base="https://fenwickreview.example/essays/">
+  <title>The Fenwick Review</title>
+  <link rel="alternate" href="https://fenwickreview.example"/>
+  <entry>
+    <id>urn:uuid:inherits-feed-base</id>
+    <title>Inherits the feed's base</title>
+    <link rel="alternate" href="ferry-timetable"/>
+    <published>2026-11-11T06:00:00Z</published>
+    <summary>Resolves against the feed's xml:base.</summary>
+  </entry>
+  <entry xml:base="2026/">
+    <id>urn:uuid:narrows-the-base</id>
+    <title>Narrows the base with its own relative xml:base</title>
+    <link rel="alternate" href="second-draft"/>
+    <published>2026-11-04T06:00:00Z</published>
+    <summary>Its xml:base is relative, so it resolves against the feed's first.</summary>
+  </entry>
+  <entry xml:base="https://elsewhere.example/reprints/">
+    <id>urn:uuid:absolute-own-base</id>
+    <title>Replaces the base outright</title>
+    <link rel="alternate" href="letters-to-a-harbourmaster"/>
+    <published>2026-10-28T06:00:00Z</published>
+    <summary>An absolute xml:base, as a syndicated reprint carries.</summary>
+  </entry>
+</feed>

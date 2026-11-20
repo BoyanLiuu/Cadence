@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Harbour Wire</title>
+    <link>https://harbourwire.example</link>
+    <description>News from the estuary</description>
+    <lastBuildDate>Thu, 12 Nov 2026 09:40:00 GMT</lastBuildDate>
+    <item>
+      <title>Rebuilt post 1</title>
+      <link>https://static.example/post/1</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">https://static.example/post/1?build=20261112T0940</guid>
+      <pubDate>Thu, 12 Nov 2026 09:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Rebuilt post 2</title>
+      <link>https://static.example/post/2</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">https://static.example/post/2?build=20261112T0940</guid>
+      <pubDate>Thu, 12 Nov 2026 09:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Rebuilt post 3</title>
+      <link>https://static.example/post/3</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">https://static.example/post/3?build=20261112T0940</guid>
+      <pubDate>Thu, 12 Nov 2026 09:40:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Rebuilt post 4</title>
+      <link>https://static.example/post/4</link>
+      <description>The harbour council approved the higher barrier.</description>
+      <guid isPermaLink="false">https://static.example/post/4?build=20261112T0940</guid>
+      <pubDate>Thu, 12 Nov 2026 09:40:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

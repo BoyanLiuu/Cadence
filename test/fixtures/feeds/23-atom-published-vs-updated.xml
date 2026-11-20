@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>The Fenwick Review</title>
+  <link rel="alternate" href="https://fenwickreview.example"/>
+  <entry>
+    <id>urn:uuid:letters-harbourmaster</id>
+    <title>Letters to a harbourmaster</title>
+    <link rel="alternate" href="https://fenwickreview.example/essays/letters-to-a-harbourmaster"/>
+    <published>2026-10-28T06:00:00Z</published>
+    <updated>2026-11-03T02:14:00Z</updated>
+    <summary>For forty years the harbourmaster answered every letter.</summary>
+  </entry>
+</feed>
