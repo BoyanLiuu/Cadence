@@ -7,7 +7,7 @@ The plan is `docs/project-idea/20-personal-rss-reader/IMPLEMENTATION_PLAN.md`; t
 `ARCHITECTURE.md` beside it. Read Appendix C (the data access boundary) before touching the service
 layer — it is what makes the static-then-data build order safe.
 
-**Last verified:** 2026-11-19 — M0, M1 and M2 complete. `pnpm check` runs 215 unit tests; `pnpm test:e2e`
+**Last verified:** 2026-11-20 — M0–M3 complete. `pnpm check` runs 362 unit tests; `pnpm test:e2e`
 runs 1 browser test. No database, no ingestion, nobody signed in, and that is on purpose.
 
 |     | Milestone                                        | Status  |
@@ -15,8 +15,8 @@ runs 1 browser test. No database, no ingestion, nobody signed in, and that is on
 | M0  | The design system renders                        | ✅ done |
 | M1  | Fixtures, async services, and the viewer         | ✅ done |
 | M2  | The format core and the 30-feed corpus           | ✅ done |
-| M3  | The identity primitives                          | ☐ next  |
-| M4  | The reader shell                                 | ☐       |
+| M3  | The identity primitives                          | ✅ done |
+| M4  | The reader shell                                 | ☐ next  |
 | M5  | Add a feed, saved, and the health screen         | ☐       |
 | M6  | Schema and the constraints that enforce identity | ☐       |
 | M7  | The ladder                                       | ☐       |
@@ -163,6 +163,82 @@ body exercises.** Six were outright bugs in code the corpus barely touched.
 Each fix has a regression test in `repair.test.ts`, and each was verified by reverting the fix and
 watching the test fail — including restoring the original `closeUnclosedTags` wholesale, which fails
 three.
+
+## M3 — The identity primitives ✅
+
+`canonicalUrl()` (rung 2) and `contentHash()` (rung 3), plus the replay-and-merge planner. Appendix F
+calls these the only files where a bug is silent and permanent, so they carry the heaviest coverage
+in the project: 142 new tests for three functions.
+
+Both failure directions are fatal and neither is reportable, which is why the negative cases get as
+much weight as the positive ones:
+
+- **too loose** — two articles collapse into one row, and the second is simply never shown. Nobody
+  reports an article they never saw.
+- **too strict** — one article becomes two rows, one read and one unread, and the sidebar starts
+  lying. §6.1 names that as the thing that actually loses readers.
+
+**The rule most easily got wrong**, per §6.1, is handled: the scheme is **dropped** from the key
+rather than rewritten `http`→`https`, so a publisher's TLS migration does not re-publish their
+archive. The architecture's six-variant worked example is reproduced verbatim as a test and collapses
+to exactly two keys.
+
+**The version guard works as the demo specifies.** Adding a tracking parameter without bumping
+`NORM_VERSION` fails the build — verified by doing it. Both rungs are fingerprinted: the fingerprint
+is derived from the exported rule data, so a hardcoded one fails too.
+
+`db/merge.ts` is split at the line where the database starts, which is the same seam Appendix C draws
+everywhere else. The **planner is pure and tested now** — grouping and the per-user state union are
+the dangerous parts, and they are what §6.1 means by "write that merge function alongside the
+normaliser, not when you first need it". The **executor throws `NotImplementedInStaticPhase`** and
+lands at M6, with its five-step contract documented. It is the same operation M12's manual merge
+needs, for a group of two.
+
+### Review round on M3
+
+Nine findings, all fixed. Four were silent data-corrupting bugs in exactly the code this milestone
+exists to be careful about — which is the argument for reviewing even heavily-tested pure functions.
+
+| Fix                                                                                       | Why it mattered                                                                                                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stripTags` only strips things that look like tags                                        | `/<[^>]*>/` ate everything between a `<` and the next `>`, so **"5 < 6 and the vote was 7 > 8" and "…was 9 > 8" hashed identically** — two different articles merged. Post-parse text is where it bites: XML decoding has already turned the author's `&lt;` into a real `<` |
+| The query is read from the raw string, not `url.searchParams`                             | `searchParams` percent-DECODES, so re-emitting the pairs collapsed `?p=b%26q%3Dc` (one parameter containing `&q=c`) with `?p=b&q=c` (two parameters). Two addresses, one `url_hash`. `%2541` was also decoded twice                                                          |
+| C0 controls are stripped AFTER entity decoding                                            | `&#0;` is an entity, so it survives M2's `sanitize` and decoded to a literal NUL — **forging the separator**, so `("a&#0;b","c")` and `("a","b&#0;c")` shared a digest. The comment claimed this was impossible                                                              |
+| Unkeyable rows are bucketed under their existing hash                                     | They still occupy that `url_hash`. Setting them aside meant a plan could target the same hash and violate the UNIQUE index **mid-migration**, after earlier groups had already merged                                                                                        |
+| Group `urlHashes` includes every member's current hash                                    | A loser's `url_hash` is the address a feed is publishing _now_. Without it the next poll resolves it to nothing and re-inserts — a migration meant to remove duplicates manufacturing them                                                                                   |
+| `earliest()` compares instants, not strings                                               | `+02:00` sorts after `Z` as text while being the earlier instant, so a non-UTC offset picked the **later** read time and moved a read forward — breaking the only guarantee the merge has                                                                                    |
+| Rung 3 gained `CONTENT_HASH_VERSION` and a fingerprint                                    | It had no version at all. Changing the entity table or the tag stripping invalidates every stored `content_hash`, with nothing failing and no record of which ruleset produced which row                                                                                     |
+| Two tests compared a call with itself                                                     | Deleting the surrogate guard left them green                                                                                                                                                                                                                                 |
+| The fingerprint-derivation test asserted only that a string substitution changed a string | True of any string, so a fully hardcoded fingerprint passed the whole suite                                                                                                                                                                                                  |
+
+Every fix was verified by reverting it and watching a test fail.
+
+### Second review round on M3
+
+The nine fixes above were themselves unreviewed, so a second pass ran over them. Eight more findings,
+all fixed. The first is the worst bug M3 had.
+
+| Fix                                                                              | Why it mattered                                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The fragment is KEPT when nothing else carries identity                          | §6.1 says strip the fragment, and taken literally that keyed **every item of a client-routed feed as `site.example`** — `#!/2026/11/one` and `/two` and the home page all alike. With `UNIQUE(url_hash)` as rung 2, only the first item of such a feed is ever stored and the rest is discarded forever. A deliberate narrowing of the rule: the fragment survives only when there is no path and no query |
+| `knownUrls` holds ADDRESSES, not hashes, and is replayed through the new ruleset | A v1 digest cannot be re-derived, so carrying old hashes forward left them dead — after a bump, ingestion looks up v2 hashes and never matches a v1 one, the alternate address resolves to nothing, and the next poll re-inserts it. **Schema consequence for M6:** Appendix D's `article_urls` has no URL column and needs one, or a bump can never replay the alternates it owns                         |
+| Named entities decode CASE-SENSITIVELY                                           | `&Eacute;` is É and `&eacute;` is é. The lookup lower-cased, so `CAF&Eacute;` hashed as `CAFé` — a different word                                                                                                                                                                                                                                                                                          |
+| `CONTENT_HASH_FINGERPRINT` covers key=VALUE pairs                                | It fingerprinted only the entity NAMES, so changing a mapping passed the guard, the pinned fingerprint and the entity-free golden digest while changing every digest the function produces                                                                                                                                                                                                                 |
+| `+` and `%20` in a query are reconciled                                          | In a query string `+` IS a space, so `?q=hello+world` and `?q=hello%20world` are one request. Left unreconciled, it contradicted the module's own goal                                                                                                                                                                                                                                                     |
+| A trailing-dot FQDN is normalised                                                | `x.example.` and `x.example` are the same server to every resolver                                                                                                                                                                                                                                                                                                                                         |
+| `&#X41;` decodes                                                                 | The regex accepted only a lowercase `x`, which also made a branch dead                                                                                                                                                                                                                                                                                                                                     |
+| `UNRESERVED` is derived into the fingerprint                                     | It is rule data like the deny list; editing it changed keys without tripping the guard                                                                                                                                                                                                                                                                                                                     |
+
+**Both fingerprints moved and neither version was bumped.** Not laziness — bumping would be worse.
+A version number that was never used is a false history: someone tracing a duplicate in a year's
+time who finds `norm_version` starting at 2 goes looking for the v1 rows and the v1→v2 merge that
+produced them, and there are none. So version 1 means "the rules the first stored row was hashed
+with", which is the only meaning that helps anybody. The reasoning is in
+`norm-version.test.ts` beside the pinned value, where it will actually be read.
+
+These rules changed three times during M3's own review, with no database in existence. **The moment
+M6 creates the schema this exemption is gone** — every change to either ruleset then needs a version
+bump and a migration, and that is the first thing to check when M6 starts.
 
 ---
 
