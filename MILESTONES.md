@@ -7,7 +7,7 @@ The plan is `docs/project-idea/20-personal-rss-reader/IMPLEMENTATION_PLAN.md`; t
 `ARCHITECTURE.md` beside it. Read Appendix C (the data access boundary) before touching the service
 layer — it is what makes the static-then-data build order safe.
 
-**Last verified:** 2026-11-20 — M0–M3 complete. `pnpm check` runs 362 unit tests; `pnpm test:e2e`
+**Last verified:** 2026-11-20 — M0–M4 complete. `pnpm check` runs 478 unit tests; `pnpm test:e2e`
 runs 1 browser test. No database, no ingestion, nobody signed in, and that is on purpose.
 
 |     | Milestone                                        | Status  |
@@ -16,8 +16,8 @@ runs 1 browser test. No database, no ingestion, nobody signed in, and that is on
 | M1  | Fixtures, async services, and the viewer         | ✅ done |
 | M2  | The format core and the 30-feed corpus           | ✅ done |
 | M3  | The identity primitives                          | ✅ done |
-| M4  | The reader shell                                 | ☐ next  |
-| M5  | Add a feed, saved, and the health screen         | ☐       |
+| M4  | The reader shell                                 | ✅ done |
+| M5  | Add a feed, saved, and the health screen         | ☐ next  |
 | M6  | Schema and the constraints that enforce identity | ☐       |
 | M7  | The ladder                                       | ☐       |
 | M8  | Revisions and learning that a feed lies          | ☐       |
@@ -239,6 +239,75 @@ with", which is the only meaning that helps anybody. The reasoning is in
 These rules changed three times during M3's own review, with no database in existence. **The moment
 M6 creates the schema this exemption is gone** — every change to either ruleset then needs a version
 bump and a migration, and that is the first thing to check when M6 starts.
+
+## M4 — The reader shell ✅
+
+The three panes, rendering from fixtures, and the first consumer of M1's service layer. `/` and
+`/feed/[id]` share one `ReaderView`, because the prototype draws them identically and splitting them
+would mean two places to keep the sidebar, the toggle and the pagination in step. The specimen sheet
+moved to `/design`.
+
+**The cursor lives in the URL** as `?before=<publishedAt>,<id>`, as the plan requires. The fixture is
+a static array and component state would work just as well today — which is exactly why it was worth
+doing now: M9 makes paging real, and if the cursor were React state the shape would change then, and
+every deep link, reload and back-button press would behave differently before and after.
+
+**`no-offset.test.ts` scans `src/lib/server` and `src/lib/db` for the word.** Its first run failed on
+the _comments_ explaining why offsets are banned, so it strips comments before scanning — a guard
+that forbids documenting its own rule gets the documentation deleted. It keeps string literals,
+which is where real SQL lives, and has three tests proving the stripping did not defeat the check.
+
+**The arrivals proof is computed, not written.** `url-redline.ts` derives the struck runs and the
+"Set aside:" copy from the same rules `canonicalUrl` applies, so the design's signature panel cannot
+drift from the function it illustrates. The one screen a reader consults when they doubt the unread
+count is the worst place to be confidently wrong. `canonicalUrl` remains the authority on the key
+itself; if the parts and the key ever disagree, the parts are wrong.
+
+All five list states are designed rather than blank, and the ordering between them is load-bearing:
+a `not_a_feed` feed with no articles says "this address stopped being a feed", not "nothing here
+yet" — the first tells the reader something is broken, the second reads like a quiet week.
+
+### Review round on M4
+
+Seven findings, all fixed. **Three shared one root cause**, and it is the kind of bug a screenshot
+cannot show: a bare `href="?article=12"` replaces the WHOLE query string, so every reader link
+silently reset the view.
+
+| Fix                                                                           | Why it mattered                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `lib/view-params.ts` merges into the current params instead of replacing them | Opening a row from "All articles" landed in "All unread" where that article is not listed, so **the row the reader clicked appeared to vanish**. The Older link was worse: it applied a cursor taken from one result set to a different one, making every read article older than the cursor unreachable. The toggle and the search form navigated out of a folder |
+| `hrefForNewResultSet` drops the cursor and the open article                   | A keyset cursor is only meaningful for the rows it came from; carried across a scope or search change it points at rows that may not exist                                                                                                                                                                                                                         |
+| `not-a-feed` formats its own ISO instants                                     | `/feed/4` rendered "as of 2026-11-09T11:02:00Z". The unit test passed `"9 Nov"`, so it stayed green while the real caller was wrong — the test now passes ISO and asserts the formatting                                                                                                                                                                           |
+| An unsubscribed feed or unknown folder is a 404                               | `/feed/9999` fell through to the global empty state and showed the **account-wide** unread total under a feed heading. Not an empty view, a wrong one — and indistinguishable from an unsubscribe having emptied a real feed                                                                                                                                       |
+| The redline separator is positional                                           | Consecutive struck parameters each got a `?`, rendering `…?utm_source=lowland?utm_medium=rss` on the arrivals panel                                                                                                                                                                                                                                                |
+| Sidebar links carry scope and search, not the page                            | The mirror of the first bug, on the other pane                                                                                                                                                                                                                                                                                                                     |
+| Dropped an unused date helper                                                 | The only lint warning, and the formatter the `not-a-feed` state was missing                                                                                                                                                                                                                                                                                        |
+
+Every link fix is asserted in `view-params.test.ts` and was confirmed against a running server, not
+just in unit tests — the bugs were in the composition of real hrefs, which is where unit tests on a
+component's props do not reach.
+
+### Second review round on M4
+
+Nine more findings, all fixed. **Two were consequences of the first round's own fixes**: the 404
+guard did not cover the empty page a cursor produces, and the separator fix handled only one of the
+two directions.
+
+| Fix                                                                  | Why it mattered                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| An empty page reached through a cursor is `past-end`, not `all-read` | `/?before=<old cursor>` rendered "Nothing unread in any feed" under a heading reading "All unread / **81 unread**" — the same wrong-view failure the route 404s for, reached by a different path                                                                                                                                                                            |
+| The next-check line is drawn from the SCOPED feeds                   | The Essays view announced "The next is Harbour Wire", a feed in News                                                                                                                                                                                                                                                                                                        |
+| `strictId` replaces `Number.parseInt` for every id in a URL          | `parseInt` stops at the first non-digit, so `/feed/12abc`, `/feed/0012` and `/feed/12.9` all returned 200 and rendered feed 12. **One feed with unlimited URLs is one article with unlimited addresses** — the problem this project is organised against. `?article=101abc` also opened 101 while no row was marked current, because the strings differ while the ids match |
+| Folders get `aria-current`, and "All unread" resets the scope        | On `/?folder=2` nothing in the sidebar was marked current at all. And from "All articles" the link labelled "All unread" led to `/?scope=all` — a page headed "All articles" — while still being marked as the current view                                                                                                                                                 |
+| The redline separator is computed per run, in both directions        | A struck run keeps its positional separator so a run of tracking tags reads as the `?a=1&b=2` the publisher sent; a surviving parameter owns `?` only if it is the first survivor. The previous fix got the first case right and left `…?ref=x&id=5` rendering as `x.example/a&id=5`                                                                                        |
+| "Also in N feeds" counts DISTINCT feeds                              | It counted arrivals. Latent today — the fixture's arrivals all use distinct feeds — and wrong the moment M7 generates them                                                                                                                                                                                                                                                  |
+| The arrivals-proof key falls back to the address                     | `canonicalUrl` can return null, and the panel rendered it unguarded beneath "The same key N times"                                                                                                                                                                                                                                                                          |
+
+**The state-selection logic moved out of the route component** into
+`src/app/(reader)/choose-list-state.ts`. Two of these nine bugs lived there and neither was
+reachable from a component test, because the choosing happened inside an async Server Component —
+so every branch rendered a page that looked finished. As a pure function it is a table of cases with
+17 tests, and reverting either fix now fails three of them.
 
 ---
 

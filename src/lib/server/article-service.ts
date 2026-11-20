@@ -5,6 +5,7 @@ import {
   type Cursor,
   type FetchLogEntry,
   type Folder,
+  type ListFilter,
   type Page,
   type Scope,
   type SubscriptionWithUnread,
@@ -75,10 +76,13 @@ function inScope(article: Article, scope: Scope, subscribed: Set<number>, userId
   switch (scope.kind) {
     case "unread":
       return article.readAt === null;
+    case "all":
+      return true;
     case "saved":
       return article.savedAt !== null;
     case "feed":
-      return article.feedId === scope.feedId;
+      if (article.feedId !== scope.feedId) return false;
+      return scope.unreadOnly ? article.readAt === null : true;
     case "folder": {
       // Filed by THIS reader. Without the userId another reader's filing of a
       // shared feed would widen this reader's folder — the shared-row mistake
@@ -86,9 +90,24 @@ function inScope(article: Article, scope: Scope, subscribed: Set<number>, userId
       const inFolder = subscriptions
         .filter((s) => s.userId === userId && s.folderId === scope.folderId)
         .map((s) => s.feedId);
-      return inFolder.includes(article.feedId);
+      if (!inFolder.includes(article.feedId)) return false;
+      return scope.unreadOnly ? article.readAt === null : true;
     }
   }
+}
+
+/**
+ * Title search, applied within a scope.
+ *
+ * Matched on the title only, which is what the prototype's control says it
+ * does — "Search titles". Full-text search over bodies is P2 and wants the
+ * `pg_trgm` index, so promising it here with a substring match would be a
+ * worse answer than not offering it.
+ */
+function matchesFilter(article: Article, filter: ListFilter | undefined): boolean {
+  const query = filter?.query?.trim().toLowerCase();
+  if (!query) return true;
+  return article.title.toLowerCase().includes(query);
 }
 
 /**
@@ -103,12 +122,15 @@ export async function listArticles(
   viewer: Viewer,
   scope: Scope,
   cursor?: Cursor,
+  filter?: ListFilter,
 ): Promise<Page<Article>> {
   assertCan(viewer, "read");
   const user = requireUser(viewer);
   const subscribed = subscribedFeedIds(user.id);
 
-  const all = articles.filter((a) => inScope(a, scope, subscribed, user.id));
+  const all = articles.filter(
+    (a) => inScope(a, scope, subscribed, user.id) && matchesFilter(a, filter),
+  );
 
   const after = cursor
     ? all.filter(

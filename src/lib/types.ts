@@ -150,6 +150,20 @@ export type RevisionSpan = string | { del: string } | { ins: string };
  * purpose: when a URL changes the old hash stays mapped, so a feed still
  * carrying it resolves to the existing row (§6.1).
  */
+/** How many OTHER feeds an article arrived through, excluding its own. */
+export function otherFeedCount(article: {
+  feedId: number;
+  arrivals: { feedId: number }[] | null;
+}): number {
+  if (!article.arrivals) return 0;
+  // Distinct feeds, not arrivals. Two arrivals can share a feed — a feed that
+  // republished an article at a new address — and "Also in 2 feeds" when it is
+  // one feed twice is the kind of wrong count this product cannot afford.
+  const others = new Set(article.arrivals.map((a) => a.feedId));
+  others.delete(article.feedId);
+  return others.size;
+}
+
 export type Arrival = {
   feedId: number;
   url: string;
@@ -297,11 +311,32 @@ export type Capability =
  */
 export type Cursor = { publishedAt: string; id: number };
 
+/**
+ * Which articles a list is drawn from.
+ *
+ * `unread` and `all` are the two halves of the reader's Unread/All toggle over
+ * every subscribed feed; `feed` and `folder` narrow it and carry their own
+ * copy of the toggle, because the toggle is per-view in the prototype.
+ */
 export type Scope =
   | { kind: "unread" }
+  | { kind: "all" }
   | { kind: "saved" }
-  | { kind: "feed"; feedId: number }
-  | { kind: "folder"; folderId: number };
+  | { kind: "feed"; feedId: number; unreadOnly?: boolean }
+  | { kind: "folder"; folderId: number; unreadOnly?: boolean };
+
+/**
+ * Filters applied WITHIN a scope.
+ *
+ * Separate from `Scope` because they compose with every scope rather than
+ * replacing one, and because the keyset cursor is only valid for a fixed
+ * filter — changing the search term starts a new first page, it does not
+ * continue the old one.
+ */
+export type ListFilter = {
+  /** Case-insensitive substring of the title. The reader's "Search titles". */
+  query?: string;
+};
 
 export type Page<T> = { items: T[]; next: Cursor | null };
 
