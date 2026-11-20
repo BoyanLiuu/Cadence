@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { hrefForNewResultSet, hrefWith, pathWith, strictId } from "./view-params";
+import {
+  firstParam,
+  hrefForNewResultSet,
+  hrefWith,
+  pathWith,
+  strictId,
+  trimmedParam,
+} from "./view-params";
 
 /*
  * What this suite is for: links that silently drop the rest of the view.
@@ -141,5 +148,32 @@ describe("strictId refuses an id that is not exactly an integer", () => {
 
   it("rejects a number too large to be safe", () => {
     expect(strictId("9".repeat(25))).toBeNull();
+  });
+});
+
+describe("firstParam and trimmedParam survive a repeated query key", () => {
+  it("takes the first value when the router hands over an array", () => {
+    // `?q=a&q=b` is a URL anyone can send, and Next delivers an ARRAY for it.
+    // Every route that called `.trim()` on the raw value answered 500 —
+    // including /add, whose own input validation had been hardened for exactly
+    // this and was then bypassed by the caller trimming first.
+    expect(firstParam(["a", "b"])).toBe("a");
+    expect(trimmedParam(["  a  ", "b"])).toBe("a");
+  });
+
+  it("passes a plain string through", () => {
+    expect(firstParam("a")).toBe("a");
+    expect(trimmedParam("  a  ")).toBe("a");
+  });
+
+  it("reports an absent parameter as undefined, and an empty one as empty", () => {
+    expect(firstParam(undefined)).toBeUndefined();
+    expect(trimmedParam(undefined)).toBe("");
+    expect(trimmedParam("   ")).toBe("");
+  });
+
+  it("does not throw on an empty array", () => {
+    expect(firstParam([])).toBeUndefined();
+    expect(trimmedParam([])).toBe("");
   });
 });

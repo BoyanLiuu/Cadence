@@ -5,6 +5,7 @@ import { AppBar } from "@/components/app-bar";
 import { ReaderPane } from "@/components/reader-pane";
 
 import { chooseListState } from "./choose-list-state";
+import { normaliseParams, type RawReaderParams } from "./normalise-params";
 import { Sidebar } from "@/components/sidebar";
 import {
   getArticle,
@@ -14,7 +15,7 @@ import {
 } from "@/lib/server/article-service";
 import { getViewer } from "@/lib/server/viewer";
 import type { Scope } from "@/lib/types";
-import { strictId, type ReaderParams } from "@/lib/view-params";
+import { strictId } from "@/lib/view-params";
 
 /*
  * The three-pane shell, shared by `/` and `/feed/[id]`.
@@ -27,8 +28,14 @@ import { strictId, type ReaderParams } from "@/lib/view-params";
  * when M6 puts Postgres behind them. This file is the first consumer of it.
  */
 
-/** The reader's whole view, carried in the URL. See `lib/view-params.ts`. */
-export type ReaderSearchParams = ReaderParams;
+/**
+ * The reader's whole view, carried in the URL. See `lib/view-params.ts`.
+ *
+ * Every value may arrive as an ARRAY, because `?q=a&q=b` is a URL anyone can
+ * send. Normalised with `firstParam` before use — reading `.trim()` off the
+ * raw value answered 500.
+ */
+export type ReaderSearchParams = RawReaderParams;
 
 export async function ReaderView({
   searchParams,
@@ -54,12 +61,16 @@ export async function ReaderView({
    */
   if (feedId !== undefined && !subs.some((s) => s.feedId === feedId)) notFound();
 
-  const unreadOnly = searchParams.scope !== "all";
-  const query = searchParams.q?.trim() ?? "";
-  const cursor = decodeCursor(searchParams.before);
+  // Normalised once, in a pure function that tests can reach. See
+  // `normalise-params.ts` for the two bugs that justify it being separate.
+  const params = normaliseParams(searchParams);
+  const query = params.q ?? "";
+
+  const unreadOnly = params.scope !== "all";
+  const cursor = decodeCursor(params.before);
   // Strict, like the feed id: `?folder=2abc` is a wrong URL, not folder 2.
-  const folderId = searchParams.folder !== undefined ? strictId(searchParams.folder) : undefined;
-  if (searchParams.folder !== undefined && folderId === null) notFound();
+  const folderId = params.folder !== undefined ? strictId(params.folder) : undefined;
+  if (params.folder !== undefined && folderId === null) notFound();
   // An unknown folder is also a 404, for the same reason an unknown feed is.
   if (folderId != null && !folders.some((f) => f.id === folderId)) notFound();
 
@@ -101,7 +112,7 @@ export async function ReaderView({
     feedTitleOf,
   });
 
-  const openId = strictId(searchParams.article);
+  const openId = strictId(params.article);
   const openArticle = openId === null ? null : await getArticle(viewer, openId);
 
   const title = currentSub
@@ -114,7 +125,11 @@ export async function ReaderView({
 
   return (
     <>
-      <AppBar accountName={account?.name ?? ""} initials={account?.initials ?? ""} />
+      <AppBar
+        accountName={account?.name ?? ""}
+        initials={account?.initials ?? ""}
+        current="reader"
+      />
       <div className="grid min-h-[calc(100dvh-var(--bar-height))] items-start md:grid-cols-[var(--side-w)_minmax(0,1fr)] lg:grid-cols-[var(--side-w)_var(--list-w)_minmax(0,1fr)]">
         <Sidebar
           folders={folders}
@@ -122,7 +137,7 @@ export async function ReaderView({
           currentFeedId={feedId}
           currentFolderId={folder?.id}
           scope={unreadOnly ? "unread" : "all"}
-          params={searchParams}
+          params={params}
         />
         <ArticleList
           title={title}
@@ -132,7 +147,7 @@ export async function ReaderView({
           query={query}
           openArticleId={openArticle?.id ?? null}
           feedTitleOf={feedTitleOf}
-          params={searchParams}
+          params={params}
         />
         <ReaderPane article={openArticle} feedTitleOf={feedTitleOf} />
       </div>

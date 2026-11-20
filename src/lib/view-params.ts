@@ -89,3 +89,25 @@ export function strictId(value: string | undefined): number | null {
   const n = Number(value);
   return Number.isSafeInteger(n) ? n : null;
 }
+
+/**
+ * The first value of a query parameter, whatever shape the router handed over.
+ *
+ * Next gives a STRING for `?q=a` and an ARRAY for `?q=a&q=b`, and nothing stops
+ * a visitor sending the second form. Every route that called `.trim()` on the
+ * value answered 500 to `?q=a&q=b` — including `/add`, whose own discovery
+ * validation was hardened for exactly this and then bypassed by the caller
+ * doing the trimming first.
+ *
+ * Taking the first value is the standard reading and the one a reader means:
+ * a repeated parameter is almost always a doubled link, not a request for both.
+ */
+export function firstParam(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+/** `firstParam`, trimmed, with an empty string reported as absent. */
+export function trimmedParam(value: string | string[] | undefined): string {
+  return firstParam(value)?.trim() ?? "";
+}

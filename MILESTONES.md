@@ -7,7 +7,7 @@ The plan is `docs/project-idea/20-personal-rss-reader/IMPLEMENTATION_PLAN.md`; t
 `ARCHITECTURE.md` beside it. Read Appendix C (the data access boundary) before touching the service
 layer — it is what makes the static-then-data build order safe.
 
-**Last verified:** 2026-11-20 — M0–M4 complete. `pnpm check` runs 478 unit tests; `pnpm test:e2e`
+**Last verified:** 2026-11-20 — **Phase 1 complete (M0–M5).** `pnpm check` runs 561 unit tests; `pnpm test:e2e`
 runs 1 browser test. No database, no ingestion, nobody signed in, and that is on purpose.
 
 |     | Milestone                                        | Status  |
@@ -17,7 +17,7 @@ runs 1 browser test. No database, no ingestion, nobody signed in, and that is on
 | M2  | The format core and the 30-feed corpus           | ✅ done |
 | M3  | The identity primitives                          | ✅ done |
 | M4  | The reader shell                                 | ✅ done |
-| M5  | Add a feed, saved, and the health screen         | ☐ next  |
+| M5  | Add a feed, saved, and the health screen         | ✅ done |
 | M6  | Schema and the constraints that enforce identity | ☐       |
 | M7  | The ladder                                       | ☐       |
 | M8  | Revisions and learning that a feed lies          | ☐       |
@@ -308,6 +308,60 @@ two directions.
 reachable from a component test, because the choosing happened inside an async Server Component —
 so every branch rendered a page that looked finished. As a pure function it is a table of cases with
 17 tests, and reverting either fix now fails three of them.
+
+## M5 — Add a feed, saved, and the health screen ✅ — Phase 1 complete
+
+The last three surfaces. Every screen now exists on fixtures, and nothing touches a database.
+
+**`discoverFeeds` became real**, as Appendix C specifies ("M5 pure, M12 networked"). Two deviations
+from its one-line sketch, both forced: it takes the viewer, because §3 requires a session and a rate
+limit; and it returns `DiscoveryResult` rather than `Candidate[]`, because an array cannot say
+"already followed", "did not answer" or "that is not an address" — three of the four failure states
+the screen is built around. A fourth branch, `invalid`, was added for a typo, so a reader who pasted
+a sentence is told that rather than being sent hunting for a feed that was never the problem.
+
+**The add-feed right rail is a requirement, not decoration** (Appendix E). "Trusted slowly" is
+§6.1's `cleanPolls < 3` stated to the reader, and the health table's `New` state is the same fact
+shown back — so a promise made on one screen is verifiable on another.
+
+**Saved is its own surface, not a filter.** No sidebar, no three panes, ordered by when you saved
+rather than when it was published. Building it as `?scope=saved` on the reader would have been less
+code and the wrong product: the reader's whole frame is about what is NEW, and nothing in Saved is.
+
+**The health table's hard part is the empty cells.** A feed never checked has no 304 ratio; a feed
+whose items were all new has no collapse rate. Filling those with `0%` is not a blank but a LIE —
+"0% collapsed" means items arrived and none were duplicates, while the truth is that nothing
+arrived. On the one screen that exists to prove the dedup works, a plausible wrong number is worse
+than an honest "None read".
+
+### Review round on M5
+
+Six findings, all fixed. Three mattered.
+
+| Fix                                                             | Why it mattered                                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `firstParam` / `trimmedParam` normalise every query value       | `?q=a&q=b` is a URL anyone can send and Next delivers an **array** for it, so `.trim()` answered **500** on `/add`, `/`, and `/saved`. `/add` was the sharp case: its own input validation had just been hardened for exactly this, and the caller bypassed it by trimming first                                |
+| The AppBar's "Add feed" button points at `/add`                 | It pointed at `/feeds/new`, which does not exist — **the only entry point to the screen this milestone built was a 404**                                                                                                                                                                                        |
+| Saved pages through every saved article                         | The headline count, all three tab counts and the list came from one 50-row page, with `page.next` discarded and no pagination control. Latent at four fixture saves; a count that silently caps is the same class of lie as a stale unread count                                                                |
+| `listTicks` moved behind the service boundary                   | The health page was the first route to import `lib/fixtures` directly, past Appendix C. M10 has to replace that read with a `fetch_log` query, and a page that imports fixtures cannot be swapped. The contract test now lists both reads added beyond Appendix C, so a third is a decision rather than a drift |
+| The nav marks the screen you are on                             | It hardcoded "Reader" as current, which was wrong on the two new screens                                                                                                                                                                                                                                        |
+| Dropped a stray `sr-only` span from inside each candidate label | It was being read as part of every radio's accessible name                                                                                                                                                                                                                                                      |
+
+### Second review round on M5
+
+Six findings, all fixed, and **the first was caused by the first round's own fix**.
+
+| Fix                                                                           | Why it mattered                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `normaliseParams` carries all six keys, and the query is trimmed in one place | The repeated-param fix rebuilt `ReaderParams` from five of its six keys and omitted `shortcuts`, so **every link on the page silently dropped it** — the exact failure `view-params.ts` was written to prevent, reintroduced by a fix for something else. And trimming the query only into a local meant `/?q=%20%20` rendered no search while emitting `q=++` into all 140 links             |
+| The chosen candidate lives in the URL as `?feed=`                             | The preview was pinned to `candidates[0]` while the radio group was uncontrolled, so on the headline sample — which has two feeds — picking "Tidewater Letters: comments" still previewed the main feed **under a heading naming it**. A preview describing something other than what is selected is worse than none, on a screen whose whole job is showing you what you are about to follow |
+| `AppBar`'s `current` defaults to `"none"`, not `"reader"`                     | Defaulting to reader reproduced the bug the prop was added to fix on any screen that forgot it — `/design` did. Marking nothing is unhelpful; marking the wrong thing is a lie about where you are                                                                                                                                                                                            |
+| `/add` keeps its direct `sampleAddresses` import                              | **Not** taken. The reviewer flagged it as the same past-Appendix-C reach as `listTicks`, and the two differ: `listTicks` returns data M10 replaces with a real query, while the sample list is phase-1 scaffolding M12 **deletes**. Putting it behind the data boundary would imply a successor it does not have                                                                              |
+| Corrected the test count and a finding count in this file                     | Both were wrong — recorded because a tracker nobody can trust is worse than none                                                                                                                                                                                                                                                                                                              |
+
+**The normalisation moved into `normalise-params.ts`** for the same reason the state chooser did: a
+pure function that has now been wrong twice, both times made untestable by living in an async Server
+Component. Reverting either fix fails four tests. `app-bar.test.tsx` covers the nav, which had none.
 
 ---
 

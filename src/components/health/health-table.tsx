@@ -1,0 +1,238 @@
+import { TriangleAlert } from "lucide-react";
+import Link from "next/link";
+
+import type { Folder, SubscriptionWithUnread } from "@/lib/types";
+
+/*
+ * The feed-health table: the evidence screen.
+ *
+ * §6.2 is blunt about why it exists — `fetch_log` is THE ONLY EVIDENCE DEDUP
+ * IS WORKING. Without this table, the ladder either works or does not and
+ * nobody can tell which; the unread count looks the same either way.
+ *
+ * Every column is defined here at M5 and filled with real numbers at M10, so
+ * the shape is settled before the data arrives rather than being designed
+ * around whatever the scheduler happens to record.
+ *
+ * The hard part is the EMPTY CELLS, which is what M5's test is about. A feed
+ * that has never been checked has no 304 ratio, and a feed whose items were
+ * all new has no collapse rate. Rendering those as "0%" is a lie — it reads as
+ * "nothing collapsed", when the truth is "there was nothing to collapse".
+ */
+
+const HHMM = (iso: string) =>
+  new Date(iso).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+
+const DAY_HHMM = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+
+const FORMAT_NAME: Record<string, string> = {
+  rss2: "RSS 2.0",
+  rss1: "RSS 1.0 (RDF)",
+  atom: "Atom",
+  json: "JSON Feed",
+  unknown: "Unknown",
+};
+
+function everyPhrase(seconds: number): string {
+  if (seconds >= 86400) return `${Math.round(seconds / 86400) * 24} h`;
+  if (seconds >= 3600) return `${Math.round(seconds / 3600)} h`;
+  return `${Math.round(seconds / 60)} min`;
+}
+
+type State = { label: string; warn: boolean; detail: string };
+
+/**
+ * The five states a feed can be in, and the one-line reason for each.
+ *
+ * `new` is not a `feeds.status` value — it is `cleanPolls` still under 3,
+ * which is §6.1's "trusted slowly". Showing it matters: a reader who was
+ * promised that on the add screen should be able to see it is true.
+ */
+function stateOf(sub: SubscriptionWithUnread): State {
+  const { feed } = sub;
+  switch (feed.status) {
+    case "not_a_feed":
+      return { label: "Not a feed", warn: true, detail: "A web page" };
+    case "dead":
+      return {
+        label: "Stopped",
+        warn: true,
+        detail:
+          typeof feed.lastError?.code === "number"
+            ? `${feed.lastError.code} not found`
+            : "No answer",
+      };
+    case "backoff":
+      return {
+        label: "Retrying",
+        warn: true,
+        detail: feed.lastError?.code === "timeout" ? "Timed out" : "Failing",
+      };
+    default:
+      if (feed.cleanPolls !== null && feed.cleanPolls < 3) {
+        return { label: "New", warn: false, detail: "Matching by address first" };
+      }
+      return {
+        label: "Active",
+        warn: false,
+        detail: feed.unchangedPolls > 0 ? "304 not modified" : "200 read",
+      };
+  }
+}
+
+/** A percentage, or the honest reason there is not one. */
+function ratio(part: number, whole: number, noneLabel: string): string {
+  if (whole === 0) return noneLabel;
+  return `${Math.round((part / whole) * 100)}%`;
+}
+
+/**
+ * The collapse rate, by rung.
+ *
+ * "None read" rather than "0%" when nothing was read at all, because 0% means
+ * "items arrived and none were duplicates" — a real and different fact.
+ */
+function collapsed(sub: SubscriptionWithUnread): string {
+  const { today } = sub.feed;
+  if (today.seen === 0) return "None read";
+  const merged = today.mergedByGuid + today.mergedByUrl + today.mergedByContent;
+  if (merged === 0) return "0%";
+  const pct = Math.round((merged / today.seen) * 100);
+  // Named by the rung that did the work, which is the whole point: a feed
+  // collapsing by ADDRESS is a feed whose GUIDs cannot be trusted (§6.1).
+  const byUrl = today.mergedByUrl > today.mergedByGuid && today.mergedByUrl > today.mergedByContent;
+  const byContent =
+    today.mergedByContent > today.mergedByGuid && today.mergedByContent > today.mergedByUrl;
+  return `${pct}%${byUrl ? " by address" : byContent ? " by text" : ""}`;
+}
+
+export function HealthTable({
+  subs,
+  folders,
+}: {
+  subs: SubscriptionWithUnread[];
+  folders: Folder[];
+}) {
+  // Feeds needing attention first: this is a screen you open because something
+  // is wrong, so the wrong things go at the top.
+  const order = { not_a_feed: 0, dead: 1, backoff: 2, active: 3 } as const;
+  const sorted = [...subs].sort(
+    (a, b) => (order[a.feed.status] ?? 9) - (order[b.feed.status] ?? 9) || a.feedId - b.feedId,
+  );
+  const folderName = (id: number | null) => folders.find((f) => f.id === id)?.name ?? "Unfiled";
+
+  if (subs.length === 0) {
+    return (
+      <section className="gap-md px-xl py-3xl text-ink-2 grid justify-items-center text-center">
+        <h2 className="font-display text-2xl">No feeds to report on</h2>
+        <p className="max-w-[46ch]">
+          Follow a feed and this table fills with its checks — how often it answered, how much it
+          repeated itself, and when it is due next.
+        </p>
+        <Link
+          href="/add"
+          className="border-ink px-md py-xs hover:bg-paper-2 inline-flex min-h-10 items-center border no-underline"
+        >
+          Add a feed
+        </Link>
+      </section>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[60rem] border-collapse text-sm">
+        <thead>
+          <tr className="border-ink text-ink border-b text-left">
+            {[
+              "Feed",
+              "State",
+              "Last check",
+              "Checks",
+              "Not modified",
+              "New",
+              "Collapsed",
+              "Checked every",
+              "Next check",
+            ].map((head, i) => (
+              <th
+                key={head}
+                scope="col"
+                className={`py-xs pr-md font-medium ${i >= 3 && i <= 5 ? "text-right" : ""}`}
+              >
+                {head}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((sub) => {
+            const { feed } = sub;
+            const state = stateOf(sub);
+            const stopped = feed.status === "dead" || feed.status === "not_a_feed";
+            return (
+              <tr key={sub.feedId} className="border-rule border-b align-top">
+                <td className="py-sm pr-md">
+                  <Link
+                    href={`/settings/feeds/${sub.feedId}`}
+                    className="gap-3xs grid no-underline"
+                  >
+                    <span className="font-display text-ink text-lg">
+                      {sub.customTitle ?? feed.title}
+                    </span>
+                    <span className="text-muted text-xs">
+                      {folderName(sub.folderId)}, {FORMAT_NAME[feed.format] ?? feed.format}
+                    </span>
+                  </Link>
+                </td>
+                <td className="py-sm pr-md">
+                  <span
+                    className={`gap-2xs flex items-center ${state.warn ? "text-ink font-medium" : "text-ink-2"}`}
+                  >
+                    {state.warn && <TriangleAlert aria-hidden="true" className="size-3.5" />}
+                    {state.label}
+                  </span>
+                </td>
+                <td className="py-sm pr-md text-ink-2 num">
+                  <span className="gap-3xs grid">
+                    <span>
+                      {feed.lastError?.at && state.warn
+                        ? DAY_HHMM(feed.lastError.at)
+                        : feed.lastSuccessAt
+                          ? HHMM(feed.lastSuccessAt)
+                          : "Never"}
+                    </span>
+                    <span className="text-muted text-xs">{state.detail}</span>
+                  </span>
+                </td>
+                <td className="py-sm pr-md num text-ink-2 text-right">{feed.today.checks}</td>
+                <td className="py-sm pr-md num text-ink-2 text-right">
+                  {ratio(feed.today.n304, feed.today.checks, "None")}
+                </td>
+                <td className="py-sm pr-md num text-ink-2 text-right">{feed.today.new}</td>
+                <td className="py-sm pr-md text-ink-2 num">{collapsed(sub)}</td>
+                <td className="py-sm pr-md text-ink-2 num">
+                  {stopped ? "Not checked" : everyPhrase(feed.intervalS)}
+                </td>
+                <td className="py-sm text-ink-2 num">
+                  {feed.nextFetchAt === null ? "None" : DAY_HHMM(feed.nextFetchAt)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}

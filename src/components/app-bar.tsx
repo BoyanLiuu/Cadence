@@ -10,7 +10,23 @@ import { Button } from "@/components/ui/button";
  * viewer and M11 owns the session — this component must not grow its own data
  * source on the way there.
  */
-export function AppBar({ accountName, initials }: { accountName: string; initials: string }) {
+export function AppBar({
+  accountName,
+  initials,
+  current = "none",
+}: {
+  accountName: string;
+  initials: string;
+  /**
+   * Which nav item is the current screen.
+   *
+   * Defaults to "none", NOT to "reader". Defaulting to reader reproduces the
+   * bug this prop was added to fix on any screen that forgets to pass it —
+   * `/design` did exactly that and marked Reader as current. Marking nothing
+   * is merely unhelpful; marking the wrong thing is a lie about where you are.
+   */
+  current?: "reader" | "saved" | "feeds" | "none";
+}) {
   return (
     <header className="ground border-ink sticky top-0 z-[var(--z-sticky-nav)] border-b">
       <div className="gap-xl px-lg flex min-h-[var(--bar-height)] items-center">
@@ -25,14 +41,14 @@ export function AppBar({ accountName, initials }: { accountName: string; initial
         <nav aria-label="Main">
           <ul className="gap-lg flex list-none p-0">
             {[
-              { href: "/", label: "Reader", current: true },
-              { href: "/saved", label: "Saved", current: false },
-              { href: "/settings/feeds", label: "Feeds", current: false },
+              { href: "/", label: "Reader", key: "reader" },
+              { href: "/saved", label: "Saved", key: "saved" },
+              { href: "/settings/feeds", label: "Feeds", key: "feeds" },
             ].map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  aria-current={item.current ? "page" : undefined}
+                  aria-current={item.key === current ? "page" : undefined}
                   className="px-2xs text-ink-2 hover:text-ink aria-[current]:text-ink inline-flex min-h-[var(--control)] items-center text-sm font-medium no-underline transition-colors"
                 >
                   {item.label}
@@ -44,7 +60,9 @@ export function AppBar({ accountName, initials }: { accountName: string; initial
 
         <div className="gap-md ml-auto flex items-center">
           <Button asChild size="sm">
-            <Link href="/feeds/new">Add feed</Link>
+            {/* `/add` — this pointed at `/feeds/new`, which does not exist,
+                so the only entry point to the add-feed screen was a 404. */}
+            <Link href="/add">Add feed</Link>
           </Button>
           <span className="gap-xs text-ink-2 inline-flex items-center text-sm font-medium whitespace-nowrap">
             <span

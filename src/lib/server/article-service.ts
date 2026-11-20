@@ -1,4 +1,4 @@
-import { articles, feeds, folders, subscriptions } from "@/lib/fixtures";
+import { articles, BUDGET_MS, feeds, folders, subscriptions, ticks } from "@/lib/fixtures";
 import {
   PAGE_SIZE,
   type Article,
@@ -9,6 +9,7 @@ import {
   type Page,
   type Scope,
   type SubscriptionWithUnread,
+  type Tick,
   type Viewer,
 } from "@/lib/types";
 
@@ -159,6 +160,21 @@ export async function getArticle(viewer: Viewer, id: number): Promise<Article | 
   const article = articles.find((a) => a.id === id);
   if (!article || !subscribed.has(article.feedId)) return null;
   return article;
+}
+
+/**
+ * The recent ticks, and the per-invocation budget they are measured against.
+ *
+ * Behind the service boundary like every other read, rather than imported from
+ * `lib/fixtures` by the page. The health page was the first route to reach past
+ * Appendix C and read fixture data directly — which is the seam
+ * `service-contract.test.ts` exists to hold, and which M10 has to replace with
+ * a `fetch_log` query. A page that imports fixtures cannot be swapped.
+ */
+export async function listTicks(viewer: Viewer): Promise<{ ticks: Tick[]; budgetMs: number }> {
+  assertCan(viewer, "read");
+  requireUser(viewer);
+  return { ticks: [...ticks], budgetMs: BUDGET_MS };
 }
 
 /**

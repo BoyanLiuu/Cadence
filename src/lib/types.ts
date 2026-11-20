@@ -256,11 +256,21 @@ export type Candidate = {
   preview: { title: string; at: string }[];
 };
 
+/**
+ * What a discovery attempt concluded.
+ *
+ * FOUR distinct failures, not one. M5's test requirement is that each renders
+ * its own designed message, because a reader who pasted a site with no feed, a
+ * site that timed out, a feed they already follow and a typo need four
+ * different next actions — and "something went wrong" serves none of them.
+ */
 export type DiscoveryResult =
   | { kind: "found"; candidates: Candidate[] }
   | { kind: "none"; reason: string }
   | { kind: "unreachable"; reason: string }
-  | { kind: "following"; feedId: number };
+  | { kind: "following"; feedId: number }
+  /** Not an address at all. Caught before any lookup. */
+  | { kind: "invalid"; reason: string };
 
 /** The result of one on-open extraction (§6.5). */
 export type Extraction = {

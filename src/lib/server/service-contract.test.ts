@@ -30,13 +30,24 @@ describe("the service layer keeps Appendix C's contract", () => {
     ([, v]) => typeof v === "function" && v !== NotImplementedInStaticPhase,
   );
 
-  it("exports the functions Appendix C names", () => {
+  it("exports the functions Appendix C names, plus the two it did not", () => {
+    // Appendix C names three reads. Two more were added where a screen needed
+    // data and the alternative was reaching past the boundary:
+    //
+    //   listFolders  (M1) — the sidebar needs the folder tree.
+    //   listTicks    (M5) — the health page needs the tick log, and was the
+    //                       first route to import `lib/fixtures` directly.
+    //
+    // Both are deliberate and both are listed here, so adding a third is a
+    // decision rather than a drift. This assertion failing means a read was
+    // added without that decision being made.
     expect(Object.keys(service).sort()).toEqual([
       "getArticle",
       "getFeedHealth",
       "listArticles",
       "listFolders",
       "listSubscriptions",
+      "listTicks",
     ]);
   });
 
@@ -62,16 +73,42 @@ describe("the service layer keeps Appendix C's contract", () => {
   });
 });
 
+/**
+ * `discoverFeeds` is implemented from M5 — Appendix C says "M5 pure, M12
+ * networked" — so it is the one function in this module that resolves.
+ */
+const IMPLEMENTED = new Set(["discoverFeeds"]);
+
 describe("mutations are declared but not implemented", () => {
   it.each(
     Object.entries(mutations).filter(
-      ([, v]) => typeof v === "function" && v !== NotImplementedInStaticPhase,
+      ([name, v]) =>
+        typeof v === "function" && v !== NotImplementedInStaticPhase && !IMPLEMENTED.has(name),
     ),
   )("%s throws NotImplementedInStaticPhase for a real viewer", async (_name, fn) => {
     const viewer = await getViewer();
     await expect(
       (fn as (...a: unknown[]) => Promise<unknown>)(viewer, 1, true),
     ).rejects.toBeInstanceOf(NotImplementedInStaticPhase);
+  });
+
+  it("resolves discoverFeeds, which is pure from M5 rather than throwing", async () => {
+    // The exception to the rule above, and it must be an explicit exception:
+    // if this function silently went back to throwing, the add-feed screen
+    // would show its receipt instead of its candidates.
+    const viewer = await getViewer();
+    const result = await mutations.discoverFeeds(viewer, "tidewaterletters.example");
+    expect(result.kind).toBe("found");
+  });
+
+  it("validates discoverFeeds' input rather than crashing on it", async () => {
+    // The address comes from a request body. A non-string used to throw
+    // `input.trim is not a function` — a 500 where a typed rejection belongs.
+    const viewer = await getViewer();
+    for (const bad of [1, null, undefined, {}, []]) {
+      const result = await mutations.discoverFeeds(viewer, bad as unknown as string);
+      expect(result.kind).toBe("invalid");
+    }
   });
 
   it("names the endpoint, so the receipt screens can say what was not sent", async () => {

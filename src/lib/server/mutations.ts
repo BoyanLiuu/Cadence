@@ -1,4 +1,5 @@
-import type { Candidate, Extraction, FullTextMode, Subscription, Viewer } from "@/lib/types";
+import { resolveSample } from "@/lib/fixtures/discover";
+import type { DiscoveryResult, Extraction, FullTextMode, Subscription, Viewer } from "@/lib/types";
 
 import { assertCan } from "./viewer";
 
@@ -43,18 +44,22 @@ export type UpdateSubscriptionInput = {
 /**
  * Resolves a site or feed address to validated candidates. Writes nothing (§6.3).
  *
- * Takes the viewer, unlike Appendix C's sketch of `discoverFeeds(url)`: §3
- * requires a session and a rate limit on this route, and both need to know who
- * is asking. Keeping the viewer first also keeps one rule for every function in
- * the layer rather than one exception.
+ * PURE at M5, networked at M12 (Appendix C). At M5 the sample map IS the web;
+ * at M12 the same shape comes back from `feedscout` plus a validating fetch of
+ * every candidate — which is what lets this screen state the format, the item
+ * count and the last post before anyone subscribes (§6.3).
+ *
+ * Two deviations from Appendix C's one-line sketch, both forced:
+ *
+ *  - It takes the VIEWER, because §3 requires a session and a rate limit on
+ *    this route, and both need to know who is asking.
+ *  - It returns `DiscoveryResult`, not `Candidate[]`. An array cannot say
+ *    "already followed", "did not answer" or "that is not an address", and
+ *    those are three of the four failure states this screen is built around.
  */
-export async function discoverFeeds(viewer: Viewer, url: string): Promise<Candidate[]> {
+export async function discoverFeeds(viewer: Viewer, url: string): Promise<DiscoveryResult> {
   assertCan(viewer, "discover");
-  void url;
-  throw new NotImplementedInStaticPhase(
-    "POST /api/feeds/discover",
-    "M5 (pure) and M12 (networked)",
-  );
+  return resolveSample(url);
 }
 
 /**
