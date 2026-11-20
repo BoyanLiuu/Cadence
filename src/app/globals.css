@@ -1,0 +1,355 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Cadence design system.
+ *
+ * Ported verbatim from the approved prototype — `hallmark/tokens.css` for the
+ * values and `hallmark/base.css` for the element defaults. Values are kept in
+ * the prototype's own oklch so they diff against it directly; do not convert
+ * them to hex or to Tailwind's default palette.
+ *
+ * Where the prototype and a PNG disagree, the prototype wins (IMPLEMENTATION_PLAN.md).
+ */
+
+/*
+ * `static` so every token is emitted whether or not a utility references it.
+ * Tailwind v4 tree-shakes unused theme variables by default, which silently
+ * breaks a raw `var(--spacing-3xl)` — the value resolves to nothing and the
+ * rule is dropped. The prototype's CSS references tokens by var() throughout,
+ * so this file must behave like a stylesheet of custom properties, not like a
+ * set of utility definitions.
+ */
+@theme static {
+  /* -- spacing: `p-md`, `gap-lg`, … ------------------------------------- */
+  --spacing-3xs: 2px;
+  --spacing-2xs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 144px;
+
+  /* -- type scale: `text-lg`, `text-display`, … ------------------------- */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.2rem;
+  --text-xl: 1.44rem;
+  --text-2xl: 1.728rem;
+  --text-3xl: 2.074rem;
+  --text-display-s: 1.44rem;
+  --text-display: 1.728rem;
+  --text-section: 1.2rem;
+  --text-title: 1rem;
+  --text-lead: 1rem;
+  /* the same 1.2 ratio continued upward, for the reading pane and sign-in */
+  --text-4xl: 2.488rem;
+  --text-5xl: 2.986rem;
+  --text-6xl: 3.583rem;
+  --text-7xl: 4.3rem;
+  /* the reading pane's own size: slightly larger than body, and nothing else uses it */
+  --text-read: 1.0625rem;
+
+  /* -- faces. Self-hosted through next/font; no CDN request ------------- */
+  --font-display: var(--font-hedvig), ui-serif, Georgia, serif;
+  --font-body: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-outlier: var(--font-sofia), "Arial Narrow", ui-sans-serif, sans-serif;
+
+  /* -- paper and ink --------------------------------------------------- */
+  --color-paper: oklch(97.2% 0.006 215);
+  --color-paper-2: oklch(94% 0.009 215);
+  --color-paper-3: oklch(90.5% 0.011 215);
+  --color-paper-hi: oklch(99% 0.004 215);
+  --color-ink: oklch(16% 0.032 250);
+  --color-ink-2: oklch(34% 0.022 245);
+  --color-muted: oklch(49% 0.018 240);
+  --color-rule: oklch(84% 0.01 225);
+  --color-accent: oklch(68% 0.172 50);
+  --color-accent-ink: oklch(16% 0.032 250);
+  --color-focus: oklch(52% 0.15 48);
+  --color-error: oklch(52% 0.19 27);
+  --color-success: oklch(50% 0.12 150);
+  --color-dot: color-mix(in oklab, oklch(16% 0.032 250) 20%, transparent);
+  --color-mark: color-mix(in oklab, oklch(16% 0.032 250) 72%, transparent);
+  --color-accent-2: color-mix(in oklab, oklch(68% 0.172 50) 45%, oklch(97.2% 0.006 215));
+  --color-accent-hover: color-mix(in oklab, oklch(68% 0.172 50) 88%, oklch(16% 0.032 250));
+
+  /* -- easing: `ease-out` is overridden deliberately -------------------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* -- edges. The prototype is a 3px-radius design, not a rounded one -- */
+  --radius-card: 3px;
+  --radius-pill: 3px;
+
+  --shadow-card: none;
+  --shadow-sheet:
+    1px 2px 0 color-mix(in oklab, oklch(16% 0.032 250) 7%, transparent),
+    10px 18px 36px -14px color-mix(in oklab, oklch(16% 0.032 250) 32%, transparent);
+}
+
+/*
+ * Bridge for shadcn/ui, so its components inherit Cadence rather than
+ * neutral-500. Every value here points at a token above — nothing new is
+ * invented, because two sources of truth for a colour is how a design drifts.
+ *
+ * TWO names do not bridge, both for the same reason — shadcn names a SURFACE
+ * where Cadence names a SIGNAL or an INK:
+ *
+ *   - `accent`: shadcn means a subtle interactive surface (ghost hover, a
+ *     skeleton fill). Cadence's `--color-accent` is the orange used for
+ *     selection, the caret and redlines. Bridged, every hover goes orange.
+ *   - `muted`: shadcn means a light surface, with `muted-foreground` as the
+ *     text on it. Cadence's `--color-muted` IS the text colour — a mid-dark
+ *     ink. Bridged, a default TabsList and every table row hover come out
+ *     near-black with unreadable labels.
+ *
+ * Cadence has no accent or muted *surface* — it has `paper-2`. So the shadcn
+ * components that wanted `bg-accent` or `bg-muted` were rewritten to
+ * `bg-paper-2`. Re-adding any of them with the shadcn CLI reintroduces the
+ * original class, so after any `shadcn add`:
+ *
+ *     grep -rn "bg-accent\|bg-muted" src/components/ui/
+ */
+@theme inline {
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-paper-hi);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-paper-hi);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-ink);
+  --color-primary-foreground: var(--color-paper-hi);
+  --color-secondary: var(--color-paper-2);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted-foreground: var(--color-muted);
+  --color-destructive: var(--color-error);
+  --color-destructive-foreground: var(--color-paper-hi);
+  --color-border: var(--color-rule);
+  --color-input: var(--color-rule);
+  --color-ring: var(--color-focus);
+
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+
+  --radius-sm: var(--radius-pill);
+  --radius-md: var(--radius-card);
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-card);
+}
+
+/*
+ * Values with no Tailwind namespace. Referenced as var() rather than through a
+ * utility, which is why they are plain custom properties.
+ */
+:root {
+  color-scheme: light;
+
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --container: 1440px;
+  --gutter: 64px;
+  --gap-columns: 32px;
+  --section-gap-s: 120px;
+  --section-gap: 144px;
+  --section-gap-l: 176px;
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-sticky-nav: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  --tracking-display: -0.022em;
+  --display-weight: 400;
+  --rule-hair: 1px;
+
+  /* chrome metrics: the bar, the control sizes, and the two fixed pane widths */
+  --bar-height: 56px;
+  --control: 40px;
+  --control-sm: 32px;
+  --control-lg: 48px;
+  --side-w: 272px;
+  --list-w: 408px;
+
+  /* The design's signature ground: an ink dot grid under a fine grain. It sits
+     under the bar, sign-in and every blank sheet — chrome, not decoration. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 -4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.05'/%3E%3C/svg%3E");
+  --dots: radial-gradient(circle at 1px 1px, var(--color-dot) 1px, transparent 1.4px);
+}
+
+@media (max-width: 60rem) {
+  :root {
+    --gutter: 24px;
+    --section-gap-s: 80px;
+    --section-gap: 96px;
+    --section-gap-l: 120px;
+  }
+}
+
+@media (max-width: 40rem) {
+  :root {
+    --gutter: 16px;
+    --section-gap-s: 56px;
+    --section-gap: 72px;
+    --section-gap-l: 96px;
+    --gap-columns: 16px;
+  }
+}
+
+/* -- element defaults, from the prototype's base.css ------------------- */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  html {
+    scrollbar-color: var(--color-muted) var(--color-paper);
+    scroll-padding-top: var(--spacing-3xl);
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-md);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    caret-color: var(--color-accent);
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 22%, transparent);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  a {
+    color: inherit;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.16em;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: var(--display-weight, 700);
+    font-synthesis: none;
+    letter-spacing: var(--tracking-display);
+    line-height: 1.05;
+    overflow-wrap: break-word;
+    min-width: 0;
+    text-wrap: balance;
+  }
+
+  h1 {
+    max-width: 20ch;
+    font-size: var(--text-display);
+  }
+
+  h2 {
+    max-width: 30ch;
+    font-size: var(--text-section);
+  }
+
+  h3 {
+    max-width: 40ch;
+    font-size: var(--text-title);
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  p:not([class]) {
+    max-width: 65ch;
+  }
+
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  svg {
+    display: block;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@utility lead {
+  font-size: var(--text-lead);
+  line-height: 1.45;
+  max-width: 52ch;
+}
+
+@utility container-page {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Tabular figures. Every number in the health table and the unread counts
+   uses this, so columns line up as they are read. */
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The dot-and-grain ground. Applied to the bar and to blank sheets. */
+@utility ground {
+  background-color: var(--color-paper);
+  background-image: var(--grain), var(--dots);
+  background-size:
+    160px 160px,
+    24px 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *:not(.keep-motion),
+  *:not(.keep-motion)::before,
+  *:not(.keep-motion)::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
