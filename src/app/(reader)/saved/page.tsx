@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AppBar } from "@/components/app-bar";
 import { listArticles, listSubscriptions } from "@/lib/server/article-service";
 import { getViewer } from "@/lib/server/viewer";
+import { displayFeedId } from "@/lib/article-feed";
 import { firstParam } from "@/lib/view-params";
 import type { Article, Cursor } from "@/lib/types";
 
@@ -76,6 +77,14 @@ export default async function SavedPage({
     const sub = subs.find((s) => s.feedId === id);
     return sub ? (sub.customTitle ?? sub.feed.title) : "Unknown feed";
   };
+  /*
+   * An ARTICLE's label, not its owning feed's name. Rung 2 is global, so a
+   * saved article can have reached this reader through a feed they follow
+   * while `articles.feed_id` names one they do not — and labelling from
+   * `feed_id` rendered "Unknown feed". See `lib/article-feed.ts`.
+   */
+  const articleFeedTitle = (a: Article) =>
+    feedTitleOf(displayFeedId(a, (id) => subs.some((s) => s.feedId === id)));
 
   const tabs: { key: Filter; label: string; count: number }[] = [
     { key: "all", label: "All", count: saved.length },
@@ -136,7 +145,7 @@ export default async function SavedPage({
                         {article.title}
                       </span>
                       <span className="text-ink-2 text-sm">
-                        {feedTitleOf(article.feedId)}
+                        {articleFeedTitle(article)}
                         {article.author ? `, ${article.author}` : ""}
                       </span>
                       <span className="text-ink-2 num text-sm">Saved {DATE(article.savedAt!)}</span>

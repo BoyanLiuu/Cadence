@@ -30,7 +30,7 @@ function renderList(state: ListState, overrides: Partial<Parameters<typeof Artic
       scope={SCOPE}
       query=""
       openArticleId={null}
-      feedTitleOf={noop}
+      articleFeedTitle={(a) => noop(a.feedId)}
       params={{}}
       {...overrides}
     />,

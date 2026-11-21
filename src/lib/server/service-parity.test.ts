@@ -62,6 +62,46 @@ describeDb("the two implementations answer identically", () => {
   });
 
   it.each(SCOPES.map((s) => [JSON.stringify(s), s] as const))(
+    "countUnread for %s agrees",
+    async (_label, scope) => {
+      /*
+       * Two genuinely different derivations of the number §6.1 says the
+       * product's credibility rests on: an array filter and a `count` over an
+       * `EXISTS` on arrivals.
+       *
+       * Added because changing the database's semantics WITHOUT changing the
+       * fixtures' is exactly what this suite caught once already — the
+       * sidebar's badge said 9 from fixtures and 12 from Postgres for the same
+       * feed, because only one of them had moved to per-arrival counting.
+       */
+      const viewer = await getViewer();
+      expect(await db.countUnread(viewer, scope)).toBe(await fixtures.countUnread(viewer, scope));
+    },
+  );
+
+  it("countUnread is NOT the sum of the per-feed badges", async () => {
+    /*
+     * The distinction the function exists for, asserted on real data.
+     *
+     * A story carried by two subscribed feeds counts in BOTH badges —
+     * correctly, since both feeds carry it — so the sum exceeds the number of
+     * distinct unread articles. The header used to be that sum, and printed
+     * "2 unread" above a list holding one row.
+     *
+     * The fixture corpus has two syndicated articles, so the gap is real
+     * rather than hypothetical. If it ever becomes zero this assertion is
+     * telling you the corpus lost its only cross-feed case, and the bug it
+     * guards became untested.
+     */
+    const viewer = await getViewer();
+    const subs = await db.listSubscriptions(viewer);
+    const summed = subs.reduce((n, s) => n + s.unread, 0);
+    const distinct = await db.countUnread(viewer, { kind: "unread" });
+
+    expect(distinct).toBeLessThan(summed);
+  });
+
+  it.each(SCOPES.map((s) => [JSON.stringify(s), s] as const))(
     "listArticles for %s returns the same rows in the same order",
     async (_label, scope) => {
       const viewer = await getViewer();

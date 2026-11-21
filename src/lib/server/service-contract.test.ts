@@ -39,18 +39,27 @@ describe("the service layer keeps Appendix C's contract", () => {
     expect(["db", "fixtures"]).toContain(service.dataSource);
   });
 
-  it("exports the functions Appendix C names, plus the two it did not", () => {
-    // Appendix C names three reads. Two more were added where a screen needed
+  it("exports the functions Appendix C names, plus the three it did not", () => {
+    // Appendix C names three reads. Three more were added where a screen needed
     // data and the alternative was reaching past the boundary:
     //
     //   listFolders  (M1) — the sidebar needs the folder tree.
     //   listTicks    (M5) — the health page needs the tick log, and was the
     //                       first route to import `lib/fixtures` directly.
+    //   countUnread  (M7) — the header's total. It was a SUM over the
+    //                       sidebar's per-feed badges, which was correct only
+    //                       while an article belonged to one feed. Rung 2 is
+    //                       global, so a story carried by two subscribed feeds
+    //                       is one article counted in both badges — and the sum
+    //                       counted it twice, printing "2 unread" above a
+    //                       one-row list. Distinct articles cannot be derived
+    //                       from per-feed counts, so it has to be its own read.
     //
-    // Both are deliberate and both are listed here, so adding a third is a
-    // decision rather than a drift. This assertion failing means a read was
-    // added without that decision being made.
+    // All three are deliberate and all three are listed here, so adding a
+    // fourth is a decision rather than a drift. This assertion failing means a
+    // read was added without that decision being made.
     expect(Object.keys(service).sort()).toEqual([
+      "countUnread",
       "dataSource",
       "getArticle",
       "getFeedHealth",

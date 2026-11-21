@@ -8,13 +8,15 @@ import { chooseListState } from "./choose-list-state";
 import { normaliseParams, type RawReaderParams } from "./normalise-params";
 import { Sidebar } from "@/components/sidebar";
 import {
+  countUnread,
   getArticle,
   listArticles,
   listFolders,
   listSubscriptions,
 } from "@/lib/server/article-service";
 import { getViewer } from "@/lib/server/viewer";
-import type { Scope } from "@/lib/types";
+import { displayFeedId } from "@/lib/article-feed";
+import type { Article, Scope } from "@/lib/types";
 import { strictId } from "@/lib/view-params";
 
 /*
@@ -90,6 +92,17 @@ export async function ReaderView({
     const sub = subOf(id);
     return sub ? (sub.customTitle ?? sub.feed.title) : "Unknown feed";
   };
+  /*
+   * An ARTICLE's label, which is not the same as its owning feed's.
+   *
+   * Rung 2 is global, so a row can be in this reader's list because a feed
+   * they follow delivered it while `articles.feed_id` names a feed they do
+   * not. Labelling from `feed_id` rendered "Unknown feed" on a row they were
+   * looking at. See `lib/article-feed.ts`.
+   */
+  const isSubscribed = (id: number) => subOf(id) !== undefined;
+  const articleFeedTitle = (a: Pick<Article, "feedId" | "arrivals">) =>
+    feedTitleOf(displayFeedId(a, isSubscribed));
 
   const currentSub = feedId !== undefined ? subOf(feedId) : undefined;
   const folder = folderId != null ? folders.find((f) => f.id === folderId) : undefined;
@@ -99,7 +112,16 @@ export async function ReaderView({
     : folder
       ? subs.filter((s) => s.folderId === folder.id)
       : subs;
-  const unreadCount = scopedSubs.reduce((n, s) => n + s.unread, 0);
+  /*
+   * ASKED, not summed.
+   *
+   * Summing the sidebar's per-feed badges was correct only while an article
+   * belonged to exactly one feed. Rung 2 is global, so a story carried by two
+   * subscribed feeds is ONE article with TWO arrivals: each badge counts it
+   * correctly and the sum counts it twice, so the header read "2 unread" above
+   * a list holding one row.
+   */
+  const unreadCount = await countUnread(viewer, scope);
 
   const state = chooseListState({
     page,
@@ -146,10 +168,14 @@ export async function ReaderView({
           scope={scope}
           query={query}
           openArticleId={openArticle?.id ?? null}
-          feedTitleOf={feedTitleOf}
+          articleFeedTitle={articleFeedTitle}
           params={params}
         />
-        <ReaderPane article={openArticle} feedTitleOf={feedTitleOf} />
+        <ReaderPane
+          article={openArticle}
+          feedTitleOf={feedTitleOf}
+          articleFeedTitle={articleFeedTitle}
+        />
       </div>
     </>
   );

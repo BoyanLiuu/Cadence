@@ -543,6 +543,198 @@ block re-appended before it is applied.
 
 ---
 
+## M7 — The identity ladder ✅
+
+The corpus ingests twice and the second pass inserts **zero**. Then every guid is replaced, every link
+gains `?utm_source=test`, the scheme is downgraded to `http:`, and it still inserts zero — while a
+genuinely new article still inserts one, so the suite is not vacuously green.
+
+`src/lib/ingest/dedupe.ts` is §6.1 as code: rungs 1–3 in order, first match wins, with the writes in
+`src/lib/db/queries.ts` arbitrated by constraints rather than by a prior `SELECT`.
+
+### Four bugs the ladder only gives up under a real database
+
+Each of these passed `typecheck`, `lint`, and a suite that was already green. None is reachable
+without a Postgres holding real rows.
+
+**Rung 3 never fired.** It lived in the `catch` of `upsertByUrl` — but when both the guid and the
+address are new, the insert **succeeds**, so there is no exception to catch. That is the one case
+§6.1 says rung 3 exists for. It is a lookup before the write now, batched per poll, because
+`content_hash` is deliberately non-unique and so has no constraint to trip.
+
+**Rung 1 did no lookup at all** on the single-item path, leaving the guid match to the upsert's
+`ON CONFLICT` — which runs **last**, after rung 3. So a moved article whose body had not changed was
+resolved by _content_, and `fetch_log` recorded a guid match as a content match. Two consequences,
+neither cosmetic: `shouldFlagGuidUnstable` reads those counters, so a feed with perfectly stable guids
+looked like one that had never matched on them; and because two articles may legitimately share a
+title and opening text, rung 3 could merge into the **wrong row** ahead of the publisher's own
+explicit claim. Both orderings are pinned now by `ORDER:` tests.
+
+**Rung 2 could not see its own aliases.** When rung 1 merges two items sharing a guid, the second
+item's address becomes an alias in `article_urls` — it is not any row's current `articles.url_hash`.
+The global `articles_url` constraint therefore cannot catch a later item at that address, and it
+inserted a duplicate. Two corpus fixtures did exactly that once their guids churned. Rung 2 always
+consults `article_urls` now, which is also what makes a **moved** article keep answering to the
+address a feed is still publishing.
+
+**`revised` was silently near-always false**, and the shape that caused it looks right:
+
+```sql
+RETURNING (revised_at IS NOT DISTINCT FROM now()) AS revised
+```
+
+`revised_at` is `TIMESTAMP(3)`, so what is stored is rounded to the millisecond; `now()` carries
+microseconds. The two match about once in a thousand polls. `revision_count` was being incremented by
+SQL nobody could observe — and M8's revised badge reads this flag. It is read from the content hash
+captured in a `before` CTE now, which is the thing that actually defines a revision.
+
+### The cap said one thing and did another
+
+N7's cap stops the flood from a bad CMS deploy, and the comment above it said merges still run,
+"because they update articles that already exist". The code `continue`d past the whole item. So a
+genuine revision arriving in the same poll as a flood was silently discarded. Only the **insert** is
+refused now, reported back as `"capped"` and counted in a new `itemsCapped` — because "the cap was
+hit" does not distinguish a feed that overshot by one from a CMS that republished four thousand
+articles, and those want different responses.
+
+### The table rung 2 needed and the schema did not have
+
+Rung 2 is global, so one story through six feeds is **one row** — and `articles.feed_id` can then
+only name the feed that got there first. Nothing recorded the other five arrivals, which broke two
+things:
+
+- §8's **"also in 2 feeds" panel**, one of the three copy rules §8 says carry the product's
+  credibility: a collapsed article must say _what it collapsed against_, so the reader can verify the
+  deduplication rather than trust it. A single `feed_id` cannot say that.
+- **every feed-scoped list and every unread badge.** Filtering on `feed_id` hid an article from the
+  second feed's own list, and counted the whole row against the first feed so the second's badge read
+  0 beside a list that had unread articles in it. Dedup reading as an article going missing is
+  exactly the cost Appendix G question 2 warns about.
+
+`cadence.article_feeds (article_id, feed_id, first_seen_at)` records one row per arrival, written on
+**every** resolution rather than only on inserts — the second feed to carry a story merges, so an
+insert-only write would never record it. `scopeWhere` and the unread count both match on it now.
+`articles.feed_id` still names the owning feed, so a merge never steals an article for the feed that
+arrived second.
+
+The migration is additive and backfills every existing article against its owning feed, because a
+list that starts reading arrivals would otherwise make every pre-existing row invisible — a migration
+meant to stop articles going missing being the thing that makes them go missing.
+
+**Migration filenames are an ordering, not a label.** The first attempt was timestamped
+`20261120234900`, which sorts _before_ the init migration's `20261121013320`, so from a clean schema
+Prisma applied it **first** and it failed on a table that did not exist yet — leaving the schema with
+two tables and a failed-migration record that blocks every later deploy. Recovered by dropping the
+schema and renaming.
+
+### A plan that carried hashes could not be applied
+
+`applyMergePlan` is implemented, and writing it exposed a gap in the pure planner it consumes:
+`MergePlanGroup` carried `urlHashes: string[]`. But a replayed alternate is a hash **no row holds
+yet** — the executor has to `INSERT` it, and `article_urls.url` is `NOT NULL` precisely so the next
+bump can replay it in turn. A plan carrying bare hashes cannot write those rows at all, which would
+have made the column M3's review added unfillable by its only caller. It is
+`addresses: { urlHash, url }[]` now.
+
+The executor is **one transaction per group**, not one for the plan: a bump over a large table is
+thousands of groups, and a single transaction would hold locks on most of `articles` and time out
+against a pooled connection. Per-group is still atomic where it matters — a half-applied _group_ is
+what leaves rows pointing at a deleted article — and stopping halfway is resumable by re-planning.
+The read-state union uses `LEAST`, which ignores NULLs, so the merge can only ever **add** read state.
+
+### What the ladder's tests actually prove
+
+| Suite                   | The bug it catches                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `parse-twice.test.ts`   | A regression in `canonical-url.ts`, which writes a **permanent** duplicate no later fix removes on its own                      |
+| `ladder-rungs.test.ts`  | A rung that silently never fires, and a rung firing **out of order** — plus `revised`, and that an edit never clears read state |
+| `url-history.test.ts`   | The duplicate a moved article creates, and an address being silently stolen between articles                                    |
+| `global-rung-2.test.ts` | Per-feed scoping creeping back into rung 2, and a collapse that records only one arrival                                        |
+| `insert-cap.test.ts`    | The flood — and the merge that must still happen past the cap                                                                   |
+
+`parse-twice` deliberately excludes `14-five-hundred-items.xml`. Its 500 items are six times the rest
+of the corpus combined, which made the suite take eleven minutes **and** made the insert cap fire
+inside the headline test — so "the second pass inserted nothing" would have been partly the _cap_
+talking rather than the ladder. Volume is `insert-cap`'s subject; this suite's subject is variety.
+
+Every database test here needs `CADENCE_DB_WRITE_TESTS=1` (`pnpm test:db`), because the Supabase
+project is shared and `pnpm check` stays read-only. Timeouts are 180s and 600s, not 5s: each pass is
+real round trips against a remote Postgres, and §6.4's own budget is 240s for twenty-five feeds.
+
+### Review round on M7 — twelve findings, and eleven share one cause
+
+**I applied the arrivals change to the list queries and not to anything that consumes their output.**
+That is the whole shape of this round. Switching `scopeWhere` from `articles.feed_id` to
+`article_feeds` was correct and left every surface downstream reading `feed_id` as though nothing had
+moved — so the half-applied change was worse than not making it:
+
+| Surface                      | What the reader saw                                                                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getArticle`                 | Still authorized on the OWNING feed, so a row the list showed **returned null when opened**. Two queries each defensible alone; only the pair wrong              |
+| The header's unread count    | Summed the sidebar's per-feed badges, so a story carried by two subscribed feeds counted **twice** — "2 unread" above a one-row list                             |
+| Every row's label            | `feedTitleOf(a.feedId)` rendered **"Unknown feed"** on a row the reader was looking at, in one of their own lists                                                |
+| The sidebar badge            | Counted the whole row against the first feed, so the second said **0 unread** beside a list with unread articles in it                                           |
+| §8's "also in 2 feeds" panel | `toArticle` hard-coded `arrivals: null`, so the panel — **the stated reason the table exists** — rendered nothing in the database path while working in fixtures |
+
+The count is now its own query (`countUnread`) rather than an addition at the call site, because
+`EXISTS` over arrivals is distinct by construction. The label is `displayFeedId` in
+`lib/article-feed.ts` — the owning feed when the reader follows it, else the earliest arrival they
+do, falling back to the owner so a genuinely inconsistent article still surfaces as "Unknown feed"
+rather than being papered over. And arrivals needed a `url` column: §8 asks the panel to strike
+through the discarded URL parts, which is exactly what canonicalisation throws away, so without the
+raw per-feed address the panel would show one address twice and prove nothing.
+
+**One finding was a poll-aborting crash on every new feed.** The `upsertByUrl` fallback had no
+error-type check at all. It was written as rung 3's fallback, but rung 3 became a pre-check before
+the write — which left the fallback dead for its own case and live for a different one:
+`upsertByUrl` conflicts on `url_hash`, so a URL collision is handled rather than thrown, and what
+actually throws is `articles_guid`. That fires whenever a feed's guids are **not trusted** (rung 1
+does not route, but the partial unique index does not know about trust) and an item repeats a guid
+at a new address. The content lookup found nothing and rethrew, so one repeated guid cost the whole
+poll for every feed with fewer than three clean polls. It resolves as rung "guid" now — the index is
+the arbiter and the error is how it reports — and records the new address, which was the only
+resolution path that did not.
+
+**`applyMergePlan` had ~130 lines of hand-written SQL and zero tests.** The one test it had asserted
+it threw `NotImplementedInStaticPhase`, and implementing it deleted that. Which is the worst
+coverage shape for this particular function: it runs once per `NORM_VERSION` bump against rows people
+have already read, and a mistake is not re-runnable. Three real bugs were sitting in it:
+
+- **`progress` lost the furthest read position.** `UPDATE … FROM user_articles AS loser` with two
+  losers joins twice and takes one unpredictably. Every test now uses a group with **two** losers,
+  because one loser hides this entirely.
+- **`was_read_at` was never carried**, so M8's resurface state went with the deleted losers. Root
+  cause: the union was built from `MergePlanGroup.userState`, a type with no such field. It is
+  aggregated from the ROWS now, which also fixes a worse latent problem — a plan applied long after
+  it was made would have replayed a stale snapshot and discarded every read since.
+- **A chained rehash could not be ordered.** `rehashOnly` means "no two rows want the same new
+  hash"; it does **not** mean a row's new hash is free. `412: H1→H2` beside `907: H2→H3` is refused
+  mid-migration, and a straight swap `H1↔H2` has no correct order at all. Vacating every row to a
+  random hash first removes the question instead of answering it — safe as an intermediate because
+  nothing resolves on `articles.url_hash`; rung 2 reads `article_urls`, which neither pass touches.
+
+Also: the per-group transaction took Prisma's **5-second default**, and a group's write is one round
+trip per replayed address plus five fixed statements against a remote Postgres. A dozen alternates
+already exceeds it, and the timeout aborts mid-migration.
+
+**And a comment cited a test that did not exist.** `article-service.db.ts` claimed
+`scopes-authorization.test.ts` catches a subscription filter going missing. There was no such file.
+It exists now, and it is not optional cover: all twelve fixture feeds belong to the one fixture user,
+so **no fixture case distinguishes "subscribed" from "exists"** — and with RLS bypassed by the owning
+role, the `where` clause is the only thing between two readers' data.
+
+Two smaller ones: `arrivalsFor`/`arrivalCounts` were unscoped reads of a reader-facing fact with no
+production caller, so they are **deleted** rather than kept for later — an unscoped read path in a
+codebase whose authorization is the query filter is a bypass waiting for its first caller. And
+`@@index([feedId])` in the schema had no counterpart in the migration, which creates
+`(feed_id, article_id DESC)`; `db:new-migration` would have emitted a `DROP` for the real index and a
+`CREATE` for a narrower one nothing wants.
+
+Each fix was verified by reverting it and watching a named test fail — including the two rehash cases,
+which fail with `duplicate key value violates unique constraint "articles_url"`.
+
+---
+
 ## Settled, so it is not re-litigated
 
 | Question                                                | Settled as                                                                         |
@@ -552,8 +744,17 @@ block re-appended before it is applied.
 | Does a read need the viewer?                            | Yes. §2: there is no public reading surface, because every list is someone's list. |
 | Is the unread count stored?                             | No, derived, until P2 — and the P2 counter ships with its reconciliation job.      |
 
-## Open, and blocking M6
+## Open, and blocking M8
 
-Appendix G questions 1 and 7 must be settled **before** the schema lands, because neither is
-migratable afterwards: the global-articles shape, and whether a Google Reader-compatible sync API is
-ever offered (it permanently constrains the article id format).
+Appendix G **question 3 — does an edited article return to unread?** The architecture assumes **no**:
+a revision badge and a preserved `read_at`, following NewsBlur. For changelogs, status pages and
+"live" posts the opposite is clearly right, so the hedge is a per-feed `resurface_on_revision`
+defaulting to off. The column and `was_read_at` both exist in the schema already; what is open is the
+resurface toggle's behaviour, and the plan says settle it before writing it.
+
+M7 made the question live rather than theoretical: `revised` reports correctly now, and
+`revision_count` moves, so there is finally a real signal for a resurface rule to act on.
+
+Questions 1 and 7 are settled above. Question 2 — cross-feed URL dedup — is settled as
+yes-collapse, and M7 paid the cost it names: `article_feeds` exists so a collapse can be shown and
+verified rather than reading as an article going missing.

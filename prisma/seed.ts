@@ -215,6 +215,29 @@ async function main() {
         revisionCount: article.revisionCount,
         // Every address this article has ever been reachable at (§6.1).
         urls: { create: { urlHash, url: article.url } },
+        /*
+         * The arrival, which every list now matches on.
+         *
+         * `articles.feed_id` names only the feed that saw an article FIRST,
+         * because rung 2 is global — so the lists read `article_feeds` instead,
+         * and a seeded article with no arrival row is invisible in all of them.
+         * The fixtures have no syndicated article yet, so this is exactly one
+         * row per article; it still has to exist.
+         */
+        arrivals: {
+          create: (
+            article.arrivals ?? [
+              { feedId: article.feedId, url: article.url, at: article.fetchedAt },
+            ]
+          ).map((arrival) => ({
+            feedId: BigInt(arrival.feedId),
+            // The RAW address that feed delivered, which is what §8's panel
+            // strikes through. The two syndicated fixtures carry different
+            // tracking tags per feed, and that difference IS the demo.
+            url: arrival.url,
+            firstSeenAt: new Date(arrival.at),
+          })),
+        },
       },
     });
 
@@ -283,6 +306,10 @@ async function main() {
     subscriptions: await prisma.subscription.count(),
     articles: await prisma.article.count(),
     articleUrls: await prisma.articleUrl.count(),
+    // Reported because every list matches on this table. A zero here means a
+    // seeded database that renders as empty, which is worth seeing at once
+    // rather than debugging through the UI.
+    articleFeeds: await prisma.articleFeed.count(),
     userArticles: await prisma.userArticle.count(),
     fetchLog: await prisma.fetchLog.count(),
   };

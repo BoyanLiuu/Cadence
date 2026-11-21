@@ -181,9 +181,19 @@ function ExtractNote({ article }: { article: Article }) {
 export function ReaderPane({
   article,
   feedTitleOf,
+  articleFeedTitle,
 }: {
   article: Article | null;
+  /** A FEED's name, for the arrivals panel, which already has real feed ids. */
   feedTitleOf: (feedId: number) => string;
+  /**
+   * An ARTICLE's label, which is not its owning feed's name.
+   *
+   * Rung 2 is global, so an article can be open because a feed the reader
+   * follows delivered it while `articles.feed_id` names one they do not. See
+   * `lib/article-feed.ts`.
+   */
+  articleFeedTitle: (article: Article) => string;
 }) {
   if (!article) {
     return (
@@ -199,7 +209,7 @@ export function ReaderPane({
   return (
     <article className="px-2xl pt-xl pb-3xl sticky top-[var(--bar-height)] hidden h-[calc(100dvh-var(--bar-height))] min-w-0 overflow-y-auto lg:block">
       <div className="gap-md grid max-w-[44rem]">
-        <p className="text-sm font-medium">{feedTitleOf(article.feedId)}</p>
+        <p className="text-sm font-medium">{articleFeedTitle(article)}</p>
         <h1 className="text-5xl leading-[1.02]">{article.title}</h1>
 
         <p className="gap-2xs gap-x-md text-ink-2 num flex flex-wrap text-sm">

@@ -42,5 +42,6 @@ export const listFolders: Implementation["listFolders"] = (...args) => impl.list
 export const listTicks: Implementation["listTicks"] = (...args) => impl.listTicks(...args);
 export const listArticles: Implementation["listArticles"] = (...args) => impl.listArticles(...args);
 export const getArticle: Implementation["getArticle"] = (...args) => impl.getArticle(...args);
+export const countUnread: Implementation["countUnread"] = (...args) => impl.countUnread(...args);
 export const getFeedHealth: Implementation["getFeedHealth"] = (...args) =>
   impl.getFeedHealth(...args);

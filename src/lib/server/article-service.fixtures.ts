@@ -46,12 +46,41 @@ function subscribedFeedIds(userId: string): Set<number> {
 }
 
 /**
+ * Does this feed DELIVER this article?
+ *
+ * Not `a.feedId === feedId`. Rung 2 is global (§6.1), so one story carried by
+ * two feeds is ONE article and `feedId` names only the feed that got there
+ * first — every other feed carrying it is recorded in `arrivals`
+ * (`article_feeds` in the database).
+ *
+ * Every scope and every count goes through here, because the database
+ * implementation matches on arrivals and the seam test's whole premise is that
+ * the UI cannot tell the two apart (Appendix C). Answering this question two
+ * ways is how the parity test started failing: the sidebar's badge said 9 from
+ * fixtures and 12 from Postgres for the same feed.
+ */
+function delivers(article: Article, feedId: number): boolean {
+  if (article.feedId === feedId) return true;
+  // `null` means "not loaded" rather than "none"; the fixtures always have it.
+  return article.arrivals?.some((arrival) => arrival.feedId === feedId) ?? false;
+}
+
+/** Every feed that delivered this article, owner included. */
+function deliveredBy(article: Article): number[] {
+  return [...new Set([article.feedId, ...(article.arrivals ?? []).map((a) => a.feedId)])];
+}
+
+/**
  * The sidebar: folders, feeds, and a DERIVED unread count.
  *
  * The count is `count(*) WHERE read_at IS NULL` in phase 2 and a filter here —
  * never a stored column before P2, because a counter that drifts is worse than
  * a 15 ms count and this is the number the product's credibility rests on
  * (§6.2).
+ *
+ * PER-ARRIVAL, like the database's. A story carried by two subscribed feeds
+ * counts in BOTH badges — correctly, since both feeds do carry it — which is
+ * exactly why the header's total cannot be their sum. See `countUnread`.
  */
 export async function listSubscriptions(viewer: Viewer): Promise<SubscriptionWithUnread[]> {
   assertCan(viewer, "read");
@@ -62,7 +91,7 @@ export async function listSubscriptions(viewer: Viewer): Promise<SubscriptionWit
     .map((s) => {
       const feed = feeds.find((f) => f.id === s.feedId);
       if (!feed) throw new Error(`Fixture is inconsistent: no feed ${s.feedId}`);
-      const unread = articles.filter((a) => a.feedId === s.feedId && a.readAt === null).length;
+      const unread = articles.filter((a) => a.readAt === null && delivers(a, s.feedId)).length;
       return { ...s, feed, unread };
     });
 }
@@ -80,7 +109,14 @@ export async function listFolders(viewer: Viewer): Promise<Folder[]> {
 }
 
 function inScope(article: Article, scope: Scope, subscribed: Set<number>, userId: string): boolean {
-  if (!subscribed.has(article.feedId)) return false;
+  /*
+   * Reachable through ANY subscribed feed, not just the owning one.
+   *
+   * `subscribed.has(article.feedId)` hid an article a reader's own feed
+   * carries because another feed owned the row — dedup reading as an article
+   * going missing, which is the cost Appendix G question 2 warns about.
+   */
+  if (!deliveredBy(article).some((id) => subscribed.has(id))) return false;
   switch (scope.kind) {
     case "unread":
       return article.readAt === null;
@@ -89,7 +125,7 @@ function inScope(article: Article, scope: Scope, subscribed: Set<number>, userId
     case "saved":
       return article.savedAt !== null;
     case "feed":
-      if (article.feedId !== scope.feedId) return false;
+      if (!delivers(article, scope.feedId)) return false;
       return scope.unreadOnly ? article.readAt === null : true;
     case "folder": {
       // Filed by THIS reader. Without the userId another reader's filing of a
@@ -98,7 +134,7 @@ function inScope(article: Article, scope: Scope, subscribed: Set<number>, userId
       const inFolder = subscriptions
         .filter((s) => s.userId === userId && s.folderId === scope.folderId)
         .map((s) => s.feedId);
-      if (!inFolder.includes(article.feedId)) return false;
+      if (!inFolder.some((id) => delivers(article, id))) return false;
       return scope.unreadOnly ? article.readAt === null : true;
     }
   }
@@ -158,6 +194,46 @@ export async function listArticles(
   return { items, next };
 }
 
+/**
+ * DISTINCT unread articles in a scope.
+ *
+ * A service call rather than a sum over the sidebar's per-feed badges, and the
+ * difference is not cosmetic. Rung 2 is global (§6.1), so one story carried by
+ * two subscribed feeds is ONE article with TWO arrivals: each feed's badge
+ * counts it, correctly, and adding those badges up counts it twice. The header
+ * then says "2 unread" over a list holding one row, which is the unread count
+ * lying — the one number §6.1 says the product's credibility rests on.
+ *
+ * The fixtures have no syndicated article yet, so here this equals the sum.
+ * It is still asked the same way, because the seam test's premise is that the
+ * UI cannot tell the implementations apart (Appendix C).
+ */
+export async function countUnread(viewer: Viewer, scope: Scope): Promise<number> {
+  assertCan(viewer, "read");
+  const user = requireUser(viewer);
+  const subscribed = subscribedFeedIds(user.id);
+
+  // Always the UNREAD count, whatever the scope's own `unreadOnly` says: the
+  // header reads "N unread" beside a toggle that switches the LIST between
+  // unread and all, and that number must not move when the list does.
+  return articles.filter(
+    (a) => a.readAt === null && inScope(a, unreadScope(scope), subscribed, user.id),
+  ).length;
+}
+
+/** The same scope, narrowed to its unread rows so the count is comparable. */
+function unreadScope(scope: Scope): Scope {
+  switch (scope.kind) {
+    case "feed":
+    case "folder":
+      return { ...scope, unreadOnly: true };
+    default:
+      // `all`, `unread` and `saved` all reduce to "everything subscribed",
+      // because the `readAt === null` filter above is what makes it unread.
+      return { kind: "unread" };
+  }
+}
+
 /** One article, or null. Null when it does not exist *or* is not subscribed. */
 export async function getArticle(viewer: Viewer, id: number): Promise<Article | null> {
   assertCan(viewer, "read");
@@ -165,7 +241,9 @@ export async function getArticle(viewer: Viewer, id: number): Promise<Article | 
   const subscribed = subscribedFeedIds(user.id);
 
   const article = articles.find((a) => a.id === id);
-  if (!article || !subscribed.has(article.feedId)) return null;
+  // Reachable through any subscribed feed, matching `inScope` — the two must
+  // agree or a listed row opens to nothing.
+  if (!article || !deliveredBy(article).some((feedId) => subscribed.has(feedId))) return null;
   return article;
 }
 

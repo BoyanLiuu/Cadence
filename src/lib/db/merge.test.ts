@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { canonicalUrl } from "@/lib/ingest/canonical-url";
-import { NotImplementedInStaticPhase } from "@/lib/server/mutations";
 
-import { applyMergePlan, planMerges, type MergeCandidate } from "./merge";
+import { planMerges, type MergeCandidate, type MergePlanGroup } from "./merge";
 
 /*
  * What this suite is for: the migration that makes duplicates while removing
@@ -27,6 +26,9 @@ const row = (
   candidate: { id, url, knownUrls, userState },
   currentUrlHash,
 });
+
+/** Just the hashes, for the grouping assertions. */
+const hashesOf = (group: MergePlanGroup) => group.addresses.map((a) => a.urlHash);
 
 /** The real v2 rule, for the realistic cases: a new tracking tag is added. */
 const v2 = (url: string) => {
@@ -262,7 +264,7 @@ describe("address carry-over", () => {
       ],
       v2,
     );
-    expect(plan.groups[0].urlHashes).toEqual([
+    expect(hashesOf(plan.groups[0])).toEqual([
       // both members' current hashes...
       "h1",
       "h2",
@@ -289,8 +291,8 @@ describe("address carry-over", () => {
       v2,
     );
     // Replayed under v2, the alternate's key loses its `si` tag.
-    expect(plan.groups[0].urlHashes).toContain("site.example/older-slug");
-    expect(plan.groups[0].urlHashes).not.toContain("https://site.example/older-slug?si=1");
+    expect(hashesOf(plan.groups[0])).toContain("site.example/older-slug");
+    expect(hashesOf(plan.groups[0])).not.toContain("https://site.example/older-slug?si=1");
   });
 
   it("skips an alternate the new ruleset cannot key, without failing", () => {
@@ -302,7 +304,7 @@ describe("address carry-over", () => {
       v2,
     );
     expect(plan.groups).toHaveLength(1);
-    expect(plan.groups[0].urlHashes).not.toContain(null);
+    expect(hashesOf(plan.groups[0])).not.toContain(null);
   });
 
   it("carries each loser's CURRENT hash onto the winner", () => {
@@ -317,8 +319,8 @@ describe("address carry-over", () => {
       ],
       v2,
     );
-    expect(plan.groups[0].urlHashes).toContain("old-hash-of-1");
-    expect(plan.groups[0].urlHashes).toContain("old-hash-of-2");
+    expect(hashesOf(plan.groups[0])).toContain("old-hash-of-1");
+    expect(hashesOf(plan.groups[0])).toContain("old-hash-of-2");
   });
 
   it("includes the new key itself", () => {
@@ -326,7 +328,7 @@ describe("address carry-over", () => {
       [row(1, "https://site.example/a", "h1"), row(2, "https://site.example/a?si=x", "h2")],
       v2,
     );
-    expect(plan.groups[0].urlHashes).toContain("site.example/a");
+    expect(hashesOf(plan.groups[0])).toContain("site.example/a");
   });
 
   it("deduplicates addresses shared between rows", () => {
@@ -337,14 +339,56 @@ describe("address carry-over", () => {
       ],
       v2,
     );
-    expect(plan.groups[0].urlHashes.filter((h) => h === "site.example/shared")).toHaveLength(1);
+    expect(hashesOf(plan.groups[0]).filter((h) => h === "site.example/shared")).toHaveLength(1);
   });
 });
 
-describe("the executor", () => {
-  it("is declared but not implemented until there are tables", async () => {
-    await expect(
-      applyMergePlan({ groups: [], rehashOnly: [], unchanged: 0 }),
-    ).rejects.toBeInstanceOf(NotImplementedInStaticPhase);
+describe("addresses carry the URL that produced each hash", () => {
+  it("pairs every hash with a replayable address", () => {
+    /*
+     * The property `applyMergePlan` depends on, and the reason this is a pair
+     * rather than a bare hash.
+     *
+     * A replayed alternate is a hash NO ROW HOLDS YET — the executor has to
+     * INSERT it into `article_urls`, where `url` is NOT NULL. And it is NOT
+     * NULL for a reason M3's review established: a digest cannot be
+     * re-derived, so without the URL the NEXT bump could not replay this
+     * alternate either. A plan carrying bare hashes cannot write those rows
+     * at all.
+     */
+    const plan = planMerges(
+      [
+        row(1, "https://site.example/a", "h1", [], ["https://site.example/older-slug?si=1"]),
+        row(2, "https://site.example/a?si=x", "h2"),
+      ],
+      v2,
+    );
+
+    const replayed = plan.groups[0].addresses.find((a) => a.urlHash === "site.example/older-slug");
+    // The ORIGINAL address, not the rehashed key: that is what gets stored and
+    // what a later bump replays in turn.
+    expect(replayed?.url).toBe("https://site.example/older-slug?si=1");
+
+    // Every entry, not just that one — a null URL would fail the insert.
+    for (const address of plan.groups[0].addresses) {
+      expect(typeof address.url).toBe("string");
+      expect(address.url.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps the FIRST url for a hash two addresses collapse to", () => {
+    // After a bump two addresses sharing one hash is the normal case — it is
+    // what a bump DOES — and `article_urls` is keyed on the hash, so only one
+    // can be stored. First wins, so two runs of the planner agree.
+    const plan = planMerges(
+      [
+        row(1, "https://site.example/a", "h1", [], ["https://site.example/a?si=1"]),
+        row(2, "https://site.example/a?si=x", "h2"),
+      ],
+      v2,
+    );
+    const shared = plan.groups[0].addresses.filter((a) => a.urlHash === "site.example/a");
+    expect(shared).toHaveLength(1);
+    expect(shared[0].url).toBe("https://site.example/a");
   });
 });

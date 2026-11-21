@@ -197,6 +197,17 @@ type ArticleRow = {
 export function toArticle(
   row: ArticleRow,
   userState: { readAt: Date | null; savedAt: Date | null; wasReadAt: Date | null } | null,
+  /**
+   * Every feed that delivered this article, from `article_feeds`.
+   *
+   * Omitted rather than defaulted, because `null` and `[]` mean different
+   * things to `alsoInFeedCount`: null is "not loaded", an array is the answer.
+   * This was hard-coded `null`, which left §8's "also in 2 feeds" panel — the
+   * stated reason `article_feeds` exists — rendering nothing in the database
+   * path while working in fixtures. A seam the fixtures pass and Postgres
+   * fails is the exact thing Appendix C's parity rule is for.
+   */
+  arrivals?: { feedId: bigint; url: string | null; firstSeenAt: Date }[],
 ): Article {
   return {
     id: num(row.id),
@@ -218,7 +229,24 @@ export function toArticle(
     revisedAt: iso(row.revisedAt),
     revisionCount: row.revisionCount,
     revision: null,
-    arrivals: null,
+    /*
+     * `how` is derived, not stored: the EARLIEST arrival is the one
+     * `articles.feed_id` names and the one the row's metadata came from, so it
+     * is "first"; every later one resolved at a rung, which for a cross-feed
+     * collapse is always rung 2 (rungs 1 and 3 are scoped to the feed).
+     */
+    arrivals:
+      arrivals === undefined
+        ? null
+        : arrivals.map((a, i) => ({
+            feedId: num(a.feedId),
+            // Null only for an arrival written before the column existed, or
+            // an item a feed published with no link at all (§6.3). The
+            // article's own address is the closest true answer for both.
+            url: a.url ?? row.url,
+            at: isoRequired(a.firstSeenAt),
+            how: i === 0 ? ("first" as const) : ("url" as const),
+          })),
     readAt: iso(userState?.readAt ?? null),
     savedAt: iso(userState?.savedAt ?? null),
     ...(userState?.wasReadAt ? { wasReadAt: isoRequired(userState.wasReadAt) } : {}),

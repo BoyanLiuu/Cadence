@@ -227,7 +227,7 @@ export function ArticleList({
   scope,
   query,
   openArticleId,
-  feedTitleOf,
+  articleFeedTitle,
   params,
 }: {
   title: string;
@@ -236,7 +236,14 @@ export function ArticleList({
   scope: Scope;
   query: string;
   openArticleId: number | null;
-  feedTitleOf: (feedId: number) => string;
+  /**
+   * An ARTICLE's label, which is not its owning feed's name.
+   *
+   * Rung 2 is global, so a row can be here because a feed the reader follows
+   * delivered it while `articles.feed_id` names one they do not. See
+   * `lib/article-feed.ts`.
+   */
+  articleFeedTitle: (article: Article) => string;
   params: ReaderParams;
 }) {
   const unreadOnly =
@@ -321,7 +328,7 @@ export function ArticleList({
                 <Row
                   key={a.id}
                   article={a}
-                  feedTitle={feedTitleOf(a.feedId)}
+                  feedTitle={articleFeedTitle(a)}
                   open={a.id === openArticleId}
                   params={params}
                 />

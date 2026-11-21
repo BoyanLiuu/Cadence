@@ -135,6 +135,7 @@ model Feed {
   createdAt DateTime @default(now()) @map("created_at")
 
   articles      Article[]
+  arrivals      ArticleFeed[]
   subscriptions Subscription[]
   fetchLog      FetchLog[]
 
@@ -257,6 +258,7 @@ model Article {
 
   feed         Feed          @relation(fields: [feedId], references: [id], onDelete: Cascade)
   urls         ArticleUrl[]
+  arrivals     ArticleFeed[]
   userArticles UserArticle[]
   summaries    Summary[]
 
@@ -287,6 +289,61 @@ model ArticleUrl {
 
   @@index([articleId])
   @@map("article_urls")
+
+  @@schema("cadence")
+}
+
+/// Which feeds have DELIVERED an article. One row per arrival.
+///
+/// Rung 2 is global, so one story arriving through six feeds collapses into one
+/// `articles` row — and `articles.feed_id` can then only name the feed that got
+/// there FIRST. Without this table the other five arrivals are not recorded
+/// anywhere, and two things break:
+///
+///  - §8's "also in 2 feeds" panel, which §8 lists among the three copy rules
+///    that carry the product's credibility: a collapsed article must say what
+///    it collapsed against, so the reader can VERIFY the deduplication rather
+///    than trust it. It cannot say that from a single `feed_id`.
+///  - a feed-scoped list, which would otherwise hide an article that feed
+///    carries because another feed owns the row — dedup reading as an article
+///    going missing, which is exactly the failure Appendix G question 2 warns
+///    about.
+///
+/// Separate from `article_urls` rather than a column on it. That table is
+/// keyed on `url_hash` ALONE because rung 2 resolves hash -> article and a
+/// second row per hash would make the lookup ambiguous; two feeds carrying the
+/// same canonical address share one hash and would collapse to one row here
+/// too. An arrival is `(article, feed)`, which is a different key.
+model ArticleFeed {
+  articleId BigInt @map("article_id")
+  feedId    BigInt @map("feed_id")
+  /// The RAW address this feed delivered, before canonicalisation.
+  ///
+  /// §8's panel strikes through the discarded URL parts so the reader can
+  /// verify the deduplication rather than trust it — which needs what each feed
+  /// actually sent. Canonicalisation is what throws that away: two outlets'
+  /// different tracking tags collapse to one `url_hash`, so `article_urls` can
+  /// keep only one of them and `articles.url` keeps whichever arrived last.
+  ///
+  /// Nullable only because the arrivals backfilled for pre-existing articles
+  /// predate the column; every arrival written since carries it.
+  url         String?
+  firstSeenAt DateTime @default(now()) @map("first_seen_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  feed    Feed    @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, feedId])
+  /// Named and ordered to MATCH the migration, which is the authority.
+  ///
+  /// This was `@@index([feedId])` while the migration created
+  /// `(feed_id, article_id DESC)` as `article_feeds_list` — so `db:new-migration`
+  /// would have emitted a `DROP INDEX` for the real one and a `CREATE` for a
+  /// narrower one nothing wants. The list pages on `(published_at, id)` and
+  /// joins arrivals to articles, so the id has to come out of this index in a
+  /// usable order rather than being fetched and sorted.
+  @@index([feedId, articleId(sort: Desc)], map: "article_feeds_list")
+  @@map("article_feeds")
 
   @@schema("cadence")
 }

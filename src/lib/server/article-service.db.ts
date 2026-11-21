@@ -174,14 +174,24 @@ export async function listSubscriptions(viewer: Viewer): Promise<SubscriptionWit
    * Unqualified, this query looks for `public.articles` and fails. Verified by
    * connecting, which is the only way this was ever going to surface.
    */
+  /*
+   * Grouped by the ARRIVING feed, not by `articles.feed_id`.
+   *
+   * Rung 2 is global, so a story through two feeds is one row owned by the
+   * first. Counting on `a.feed_id` credited that whole row to the first feed
+   * and gave the second a zero — so a sidebar badge said 0 unread next to a
+   * feed whose list had unread articles in it. `article_feeds` is what makes
+   * the badge agree with the list it labels.
+   */
   const unreadRows = await prisma.$queryRaw<{ feed_id: bigint; unread: bigint }[]>`
-    SELECT a.feed_id, count(*) AS unread
-    FROM cadence.articles a
+    SELECT af.feed_id, count(*) AS unread
+    FROM cadence.article_feeds af
+    JOIN cadence.articles a ON a.id = af.article_id
     LEFT JOIN cadence.user_articles ua
       ON ua.article_id = a.id AND ua.user_id = ${user.id}
-    WHERE a.feed_id = ANY(${feedIds}::bigint[])
+    WHERE af.feed_id = ANY(${feedIds}::bigint[])
       AND ua.read_at IS NULL
-    GROUP BY a.feed_id
+    GROUP BY af.feed_id
   `;
   const unreadByFeed = new Map(unreadRows.map((r) => [String(r.feed_id), Number(r.unread)]));
 
@@ -260,9 +270,34 @@ export async function listTicks(viewer: Viewer): Promise<{ ticks: Tick[]; budget
   return { ticks: [...byMinute.values()].slice(0, 6), budgetMs: 240_000 };
 }
 
-/** The where-clause for a scope, scoped to this reader's subscriptions. */
+/**
+ * The where-clause for a scope, scoped to this reader's subscriptions.
+ *
+ * EVERY case matches on ARRIVALS (`article_feeds`), not on `articles.feed_id`.
+ *
+ * Rung 2 is global (§6.1), so one story through two feeds is ONE row, owned by
+ * whichever feed got there first. `articles.feed_id` names that first feed and
+ * nothing else — so a filter on it hides the article from every OTHER feed
+ * carrying it. For a reader subscribed to the second feed but not the first,
+ * that means the article is missing from their list entirely.
+ *
+ * Which is precisely the cost Appendix G question 2 names: collapsing is
+ * correct, but it "can read as an article going missing". §8 answers the
+ * cosmetic half with the "also in 2 feeds" panel; this answers the half that
+ * is not cosmetic.
+ *
+ * Authorization rides on the SAME relation: the subscription is checked on the
+ * arriving feed, so a reader only ever sees arrivals through feeds they follow.
+ * RLS is bypassed by the owning role, which makes this filter the
+ * authorization model rather than a convenience (§3).
+ */
 function scopeWhere(scope: Scope, feedIds: bigint[], userId: string) {
-  const base = { feedId: { in: feedIds } };
+  /*
+   * Subscribed arrivals. `feedIds` is already this reader's subscribed feeds,
+   * so matching the arrival against that set is both the scope AND the
+   * permission check.
+   */
+  const base = { arrivals: { some: { feedId: { in: feedIds } } } };
   const unread = { userArticles: { none: { userId, readAt: { not: null } } } };
 
   switch (scope.kind) {
@@ -274,30 +309,39 @@ function scopeWhere(scope: Scope, feedIds: bigint[], userId: string) {
       return { ...base, userArticles: { some: { userId, savedAt: { not: null } } } };
     case "feed":
       /*
-       * Scoped by the SUBSCRIPTION RELATION, not by spreading `base`.
+       * ONE relation filter carrying both conditions, not two.
        *
-       * The previous attempt spread `base` and then set `feedId` — and `base`
-       * contains nothing but `feedId`, so the spread was overwritten on the
-       * next line and the subscription filter the comment claimed did not
-       * exist. A reader could list articles from a feed they do not follow.
+       * The arriving feed must be the scoped feed AND one the reader follows.
+       * Splitting those — an arrival filter plus a separate
+       * `feed: { subscriptions: ... }` — checks the subscription against the
+       * OWNING feed instead, which gets it wrong in both directions: it hides
+       * an article the reader's own feed carries but another feed owns, and it
+       * reveals that an unsubscribed feed carries one they can already see.
        *
-       * It was invisible to the tests because all twelve fixture feeds belong
-       * to the one fixture user, so no case distinguished "subscribed" from
-       * "exists". `scopes-authorization.test.ts` now constructs that case.
-       *
-       * RLS is bypassed by the owning role, which makes this filter the
-       * authorization model rather than a convenience (§3).
+       * An earlier version of this case had a related bug: it spread a `base`
+       * containing nothing but `feedId` and then set `feedId` on the next
+       * line, so the spread was overwritten and the subscription filter its
+       * comment claimed did not exist. `scopes-authorization.test.ts`
+       * constructs the case that catches it — all twelve fixture feeds belong
+       * to the one fixture user, so nothing else distinguishes "subscribed"
+       * from "exists".
        */
       return {
-        feedId: BigInt(scope.feedId),
-        feed: { subscriptions: { some: { userId } } },
+        arrivals: {
+          some: {
+            feedId: BigInt(scope.feedId),
+            feed: { subscriptions: { some: { userId } } },
+          },
+        },
         ...(scope.unreadOnly ? unread : {}),
       };
     case "folder":
       // The subscription relation carries BOTH the folder and the owner, so
       // this needs no separate `base` — and cannot be overwritten by it.
       return {
-        feed: { subscriptions: { some: { userId, folderId: BigInt(scope.folderId) } } },
+        arrivals: {
+          some: { feed: { subscriptions: { some: { userId, folderId: BigInt(scope.folderId) } } } },
+        },
         ...(scope.unreadOnly ? unread : {}),
       };
   }
@@ -339,7 +383,19 @@ export async function listArticles(
           }
         : {}),
     },
-    include: { userArticles: { where: { userId: user.id } } },
+    include: {
+      userArticles: { where: { userId: user.id } },
+      /*
+       * Loaded with the page, not per row.
+       *
+       * Two things need it. §8's "also in 2 feeds" panel is the stated reason
+       * `article_feeds` exists. And the row's own label: the list now matches
+       * on arrivals, so an article can appear under a feed the reader follows
+       * while `articles.feed_id` names one they do not — and labelling it from
+       * `feed_id` rendered "Unknown feed".
+       */
+      arrivals: { orderBy: [{ firstSeenAt: "asc" }, { feedId: "asc" }] },
+    },
     orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
     // One extra row, to learn whether a further page exists without a second
     // COUNT — and without returning a cursor on a full final page, which costs
@@ -347,7 +403,9 @@ export async function listArticles(
     take: PAGE_SIZE + 1,
   });
 
-  const items = rows.slice(0, PAGE_SIZE).map((r) => toArticle(r, r.userArticles[0] ?? null));
+  const items = rows
+    .slice(0, PAGE_SIZE)
+    .map((r) => toArticle(r, r.userArticles[0] ?? null, r.arrivals));
   const last = items.at(-1);
   const next =
     last && rows.length > PAGE_SIZE ? { publishedAt: last.publishedAt, id: last.id } : null;
@@ -355,20 +413,89 @@ export async function listArticles(
   return { items, next };
 }
 
+/**
+ * DISTINCT unread articles in a scope.
+ *
+ * A query rather than a sum over the sidebar's per-feed badges, and the
+ * difference is not cosmetic. Rung 2 is global (§6.1), so one story carried by
+ * two subscribed feeds is ONE article with TWO arrivals: each feed's badge
+ * counts it, correctly, and adding those badges up counts it twice. The header
+ * then reads "2 unread" above a list holding one row — the unread count lying,
+ * which is the one number §6.1 says the product's credibility rests on.
+ *
+ * This counts ARTICLE rows and the arrival filter is an `EXISTS`, so it is
+ * distinct by construction — two arrivals cannot make one article count twice.
+ * That is the whole reason it is a query over articles rather than a sum over
+ * feeds.
+ */
+export async function countUnread(viewer: Viewer, scope: Scope): Promise<number> {
+  assertCan(viewer, "read");
+  const user = requireUser(viewer);
+  const feedIds = await subscribedFeedIds(user.id);
+  if (feedIds.length === 0) return 0;
+
+  return prisma.article.count({
+    /*
+     * `AND`, not a spread.
+     *
+     * Spreading `scopeWhere`'s result and then adding a key is how the `feed`
+     * scope silently lost its subscription filter once already: the spread was
+     * overwritten by the next line. `AND` composes two independent conditions
+     * and cannot drop either.
+     *
+     * The unread condition is applied whatever the scope's own `unreadOnly`
+     * says, because the header reads "N unread" beside a toggle that switches
+     * the LIST between unread and all — the number must not move when the list
+     * does.
+     */
+    where: {
+      AND: [
+        scopeWhere(unreadScope(scope), feedIds, user.id),
+        { userArticles: { none: { userId: user.id, readAt: { not: null } } } },
+      ],
+    },
+  });
+}
+
+/** The same scope, narrowed to its unread rows so the count is comparable. */
+function unreadScope(scope: Scope): Scope {
+  switch (scope.kind) {
+    case "feed":
+    case "folder":
+      return { ...scope, unreadOnly: true };
+    default:
+      // `all`, `unread` and `saved` all reduce to "everything subscribed" —
+      // the unread filter above is what makes the count unread.
+      return { kind: "unread" };
+  }
+}
+
 /** One article, or null — null when it does not exist OR is not subscribed. */
 export async function getArticle(viewer: Viewer, id: number): Promise<Article | null> {
   assertCan(viewer, "read");
   const user = requireUser(viewer);
 
+  /*
+   * Authorized on ARRIVALS, exactly as `scopeWhere` is.
+   *
+   * These two must agree or the reader gets a list row that opens to nothing.
+   * They disagreed: the lists moved to `article_feeds` and this kept matching
+   * the OWNING feed, so an article carried by a feed the reader follows but
+   * owned by one they do not appeared in the list and returned null when
+   * clicked.
+   */
   const row = await prisma.article.findFirst({
     where: {
       id: BigInt(id),
-      feed: { subscriptions: { some: { userId: user.id } } },
+      arrivals: { some: { feed: { subscriptions: { some: { userId: user.id } } } } },
     },
-    include: { userArticles: { where: { userId: user.id } } },
+    include: {
+      userArticles: { where: { userId: user.id } },
+      arrivals: { orderBy: [{ firstSeenAt: "asc" }, { feedId: "asc" }] },
+    },
   });
 
-  return row === null ? null : toArticle(row, row.userArticles[0] ?? null);
+  return row === null ? null : toArticle(row, row.userArticles[0] ?? null, row.arrivals);
 }
 
 /** One feed's `fetch_log` tail. `[]` for a feed this reader does not follow. */
