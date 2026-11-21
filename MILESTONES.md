@@ -7,8 +7,16 @@ The plan is `docs/project-idea/20-personal-rss-reader/IMPLEMENTATION_PLAN.md`; t
 `ARCHITECTURE.md` beside it. Read Appendix C (the data access boundary) before touching the service
 layer — it is what makes the static-then-data build order safe.
 
-**Last verified:** 2026-11-20 — **Phase 1 complete (M0–M5).** `pnpm check` runs 561 unit tests; `pnpm test:e2e`
-runs 1 browser test. No database, no ingestion, nobody signed in, and that is on purpose.
+**Last verified:** 2026-11-20 — Phase 1 complete (M0–M5); **M6 written but unrun**. `pnpm check` runs
+573 unit tests with 31 skipped — every skip needs a Postgres connection. `pnpm test:e2e` runs 1
+browser test. No ingestion and nobody signed in, and that is still on purpose.
+
+> **M6 IS BLOCKED ON A SUPABASE PROJECT.** The schema, the migration, the seed, the Postgres service
+> implementation and all three test suites are written and typecheck. None has touched a database:
+> there is no local Postgres or Docker on this machine. Create a dev project, put `DATABASE_URL` and
+> `DIRECT_URL` in `.env` (see `.env.example`), then `pnpm db:migrate && pnpm db:seed && pnpm test`.
+> Until then the 31 skipped tests are the unverified half of this milestone — the half that proves
+> the constraints actually refuse the inserts they are supposed to.
 
 |     | Milestone                                        | Status  |
 | --- | ------------------------------------------------ | ------- |
@@ -18,7 +26,7 @@ runs 1 browser test. No database, no ingestion, nobody signed in, and that is on
 | M3  | The identity primitives                          | ✅ done |
 | M4  | The reader shell                                 | ✅ done |
 | M5  | Add a feed, saved, and the health screen         | ✅ done |
-| M6  | Schema and the constraints that enforce identity | ☐       |
+| M6  | Schema and the constraints that enforce identity | ◐ part  |
 | M7  | The ladder                                       | ☐       |
 | M8  | Revisions and learning that a feed lies          | ☐       |
 | M9  | The resumable sweep                              | ☐       |
@@ -28,6 +36,27 @@ runs 1 browser test. No database, no ingestion, nobody signed in, and that is on
 | M13 | Full-text extraction and the image proxy         | ☐       |
 | M14 | Budgets, etiquette, and accessibility            | ☐       |
 | M15 | Deploy                                           | ☐       |
+
+---
+
+## Gate decisions, settled before M6
+
+The plan requires Appendix G questions 1 and 7 answered before the schema lands, because neither is
+migratable afterwards.
+
+**Q1 — global articles with per-user state, or per-user copies?** **Global.** Recorded rather than
+reopened: §2 calls it "the single most important decision", and M1's fixtures, the service layer and
+M3's global rung 2 are all built on it. Reversing it means rewriting ingestion and the reader
+together. The accepted cost is that per-user customisation cannot alter a shared row, so filter
+rules and scraper overrides apply at read time.
+
+**Q7 — should other clients ever sync against this?** **No compatibility layer, and integer article
+ids.** The architecture's own assumption, taken for a reason worth writing down: the constraint it
+warns about — that third-party clients memorise ids and break when the format changes — only binds
+once a client has actually synced, and none can before the API exists. So this stays free to change
+right up until the day such an API ships, at which point the format in use is frozen. Choosing
+opaque ids now would cost a column and care on every query to insure against something that may
+never be built. If a Google Reader-compatible API is ever wanted, the id format is decided then.
 
 ---
 
@@ -362,6 +391,52 @@ Six findings, all fixed, and **the first was caused by the first round's own fix
 **The normalisation moved into `normalise-params.ts`** for the same reason the state chooser did: a
 pure function that has now been wrong twice, both times made untestable by living in an async Server
 Component. Reverting either fix fails four tests. `app-bar.test.tsx` covers the nav, which had none.
+
+## M6 — Schema and the constraints that enforce identity ◐ part
+
+Written, typechecked, and **unrun against a real database.** See the note at the top.
+
+**The indexes are hand-written SQL, and that is the point of the milestone.** Prisma's schema DSL
+cannot express a `WHERE` predicate on an index, and `prisma migrate diff` generated **none** of the
+six indexes this design depends on — confirming the split is necessary rather than a preference.
+They live below a banner in `migrations/0000_init/migration.sql`, which also records that
+`prisma db push` is never safe on this schema because it would drop them.
+
+The sharp one is `articles_guid`. Without `WHERE guid_hash IS NOT NULL` it is wrong twice: SQL treats
+NULLs as distinct, so every feed publishing no `<guid>` gets unlimited duplicate rows; and the
+upsert's `ON CONFLICT ... WHERE guid_hash IS NOT NULL` cannot infer the index, so it fails at
+RUNTIME rather than at migration time. `constraints.test.ts` attempts both forbidden inserts and
+requires the database to refuse them, and asserts the index DEFINITIONS carry their predicates —
+because an index created without one passes every query test.
+
+**Both service implementations now exist**, and that is Appendix C's design rather than a hedge: its
+phase-2 check is "swap the service implementation back to fixtures and the UI must be identical",
+which is only checkable while both answer the same questions. `article-service.ts` became a chooser;
+nothing else in the codebase knows which it got. The default is Postgres when `DATABASE_URL` is set
+and fixtures when it is not, so a clone with no Supabase project still runs every screen and the 561
+tests that predate the schema.
+
+**Three things the schema does that Appendix D did not say:**
+
+- **`article_urls` stores the URL, not only its hash.** From M3's review: a digest cannot be
+  re-derived, so a `norm_version` bump could never replay the alternates this table owns. They would
+  go dead, the address would resolve to nothing, and the next poll would re-insert it — a migration
+  meant to remove duplicates manufacturing them.
+- **`feeds.last_error_text` was added.** Appendix D kept a code but no message, and the health screen
+  shows "answered 200 with a web page (text/html), not a feed" — which is a sentence, not a code.
+- **RLS is on with no policies on all nine tables.** The role Prisma connects as owns them and
+  bypasses it, so app queries are unaffected while a leaked anon key reads nothing. Ownership is
+  still an explicit service-layer filter; RLS is the backstop.
+
+**Two bugs found while wiring it, both in code I had just written:**
+
+| Bug                                                 | Why it mattered                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The Prisma client was constructed at MODULE SCOPE   | Merely importing `db/client.ts` threw when `DATABASE_URL` was unset, which broke fixtures mode and three suites that have no database and are not supposed to need one. It is a Proxy now, resolved on first property access — a module that is imported must not demand configuration it may never use |
+| `no-offset.test.ts` pointed at `article-service.ts` | That file is now only a chooser, so the keyset assertion passed **vacuously**. It checks both implementations by name                                                                                                                                                                                   |
+
+The contract test caught two new exports as it is meant to — `listTicks` and `dataSource` — and both
+are now listed deliberately rather than having drifted in.
 
 ---
 

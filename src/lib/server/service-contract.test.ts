@@ -25,10 +25,19 @@ import { assertCan, getViewer, NotAllowedError } from "./viewer";
 const anon = { kind: "anon" } as const;
 
 describe("the service layer keeps Appendix C's contract", () => {
-  const reads = Object.entries(service);
+  // Only the FUNCTIONS are subject to the async/viewer-first rules. The module
+  // also exports `dataSource`, a string naming which implementation is live.
+  const reads = Object.entries(service).filter(([, v]) => typeof v === "function");
   const writes = Object.entries(mutations).filter(
     ([, v]) => typeof v === "function" && v !== NotImplementedInStaticPhase,
   );
+
+  it("reports which implementation is live rather than leaving it inferred", () => {
+    // M6 made this module a chooser between fixtures and Postgres. Which one
+    // is running is a fact worth being able to state — the health screen says
+    // it, rather than a reader guessing from whether the numbers look real.
+    expect(["db", "fixtures"]).toContain(service.dataSource);
+  });
 
   it("exports the functions Appendix C names, plus the two it did not", () => {
     // Appendix C names three reads. Two more were added where a screen needed
@@ -42,6 +51,7 @@ describe("the service layer keeps Appendix C's contract", () => {
     // decision rather than a drift. This assertion failing means a read was
     // added without that decision being made.
     expect(Object.keys(service).sort()).toEqual([
+      "dataSource",
       "getArticle",
       "getFeedHealth",
       "listArticles",

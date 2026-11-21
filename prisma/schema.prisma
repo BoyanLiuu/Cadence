@@ -1,0 +1,342 @@
+// ARCHITECTURE Appendix D, as Prisma sees it.
+//
+// READ THIS FIRST: the indexes that matter are NOT in this file. Four of the
+// six carry a `WHERE` predicate, which the schema DSL cannot express, so they
+// live in `migrations/*/migration.sql` as hand-written SQL. Declaring them here
+// instead produces PLAIN indexes that are wrong in the one way that silently
+// writes duplicates — see the partial-unique note on `articles` below.
+//
+// `prisma db push` is therefore never safe on this schema: it would drop the
+// hand-written indexes. Migrations only.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // No `url` here. Prisma 7 rejects it as a hard validation error; the runtime
+  // URL goes to the PrismaPg adapter and the migrate URL to prisma.config.ts.
+}
+
+/// The reader. `id` IS the Clerk user id — there is no second identifier, so
+/// nothing has to be kept in sync (Appendix B).
+model User {
+  id        String   @id
+  email     String   @unique
+  name      String
+  tz        String   @default("UTC")
+  aiEnabled Boolean  @default(false) @map("ai_enabled")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  folders       Folder[]
+  subscriptions Subscription[]
+  userArticles  UserArticle[]
+
+  @@map("users")
+}
+
+enum FeedFormat {
+  rss2
+  rss1
+  atom
+  json
+  unknown
+
+  @@map("feed_format")
+}
+
+enum FeedStatus {
+  active
+  backoff
+  dead
+  not_a_feed
+
+  @@map("feed_status")
+}
+
+enum GuidTrust {
+  auto
+  guid
+  url
+
+  @@map("guid_trust")
+}
+
+/// One feed URL, and everything learned about its behaviour.
+///
+/// SHARED by every subscriber: ten readers cost one fetch and one dedup run
+/// (§2). Nothing per-reader belongs here — that is what `Subscription` is for.
+model Feed {
+  id         BigInt     @id @default(autoincrement())
+  feedUrl    String     @map("feed_url")
+  /// The canonical key for the feed's own address, so two readers pasting
+  /// different spellings of one feed share a row.
+  urlHash    Bytes      @unique @map("url_hash")
+  siteUrl    String?    @map("site_url")
+  title      String
+  faviconKey String?    @map("favicon_key")
+  format     FeedFormat @default(unknown)
+  lang       String?
+
+  // -- conditional-request state (§6.4). A 304 writes nothing at all.
+  etag         String?
+  lastModified String? @map("last_modified")
+  /// Hash of the last body: identical bytes are a SOFT 304 even when the
+  /// server did not say so.
+  bodyHash     Bytes?  @map("body_hash")
+
+  // -- scheduling state
+  fetchIntervalS      Int       @default(3600) @map("fetch_interval_s")
+  nextFetchAt         DateTime? @map("next_fetch_at")
+  /// Survives the process dying, which a lock does not: a killed function
+  /// drops its connection and releases a lock, and the next tick would
+  /// re-claim a feed still in flight (§6.4).
+  leaseUntil          DateTime? @map("lease_until")
+  medianPostGapS      Int?      @map("median_post_gap_s")
+  /// `<ttl>` in seconds. A FLOOR for the scheduler, never a ceiling (§6.4).
+  declaredTtlS        Int?      @map("declared_ttl_s")
+  consecutiveFailures Int       @default(0) @db.SmallInt @map("consecutive_failures")
+  unchangedPolls      Int       @default(0) @db.SmallInt @map("unchanged_polls")
+  lastErrorCode       String?   @map("last_error_code")
+  lastErrorText       String?   @map("last_error_text")
+  lastErrorAt         DateTime? @map("last_error_at")
+  lastSuccessAt       DateTime? @map("last_success_at")
+  firstFailureAt      DateTime? @map("first_failure_at")
+  deadAt              DateTime? @map("dead_at")
+  notFeedAt           DateTime? @map("not_feed_at")
+  status              FeedStatus @default(active)
+
+  // -- learned quirks, NOT configuration (§6.1)
+  /// Set when a feed regenerates its GUIDs on every build. Once true, rung 1
+  /// of the ladder is skipped for this feed forever.
+  guidUnstable      Boolean   @default(false) @map("guid_unstable")
+  guidUnstableSince DateTime? @map("guid_unstable_since")
+  guidTrustOverride GuidTrust @default(auto) @map("guid_trust_override")
+  /// Clean polls of history. Under 3 means rung 2 runs as a PRE-CHECK before
+  /// rung 1 can insert: a new feed is suspect until it proves otherwise.
+  cleanPolls        Int       @default(0) @db.SmallInt @map("clean_polls")
+
+  hubUrl    String?  @map("hub_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  articles      Article[]
+  subscriptions Subscription[]
+  fetchLog      FetchLog[]
+
+  @@map("feeds")
+}
+
+/// One reader's folder. Per-user, like a subscription and unlike a feed.
+model Folder {
+  id       BigInt @id @default(autoincrement())
+  userId   String @map("user_id")
+  name     String
+  position Int    @default(0)
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@unique([userId, name])
+  @@index([userId, position])
+  @@map("folders")
+}
+
+enum FullTextMode {
+  off
+  on_demand
+  always
+
+  @@map("full_text_mode")
+}
+
+/// One reader following one feed, with their own overrides.
+///
+/// The composite primary key is what makes a feed shared and a following
+/// private (§2).
+model Subscription {
+  userId   String  @map("user_id")
+  feedId   BigInt  @map("feed_id")
+  folderId BigInt? @map("folder_id")
+  /// What this reader calls it. Per-reader, so it cannot live on the feed.
+  customTitle String? @map("custom_title")
+  fullTextMode FullTextMode @default(on_demand) @map("full_text_mode")
+  /// Off by default. A publisher fixing a typo must not re-notify everyone;
+  /// changelogs and status pages are the exception (§6.2).
+  resurfaceOnRevision Boolean @default(false) @map("resurface_on_revision")
+  filterRules Json? @map("filter_rules")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feed   Feed    @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  folder Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@id([userId, feedId])
+  @@index([userId, folderId])
+  @@map("subscriptions")
+}
+
+enum ExtractStatus {
+  none
+  ok
+  thin
+  blocked
+  failed
+
+  @@map("extract_status")
+}
+
+/// One real-world article, owned by a feed and SHARED by every subscriber.
+///
+/// It has no owner and no read state — those live in `UserArticle`, which is
+/// what makes one fetch serve ten readers (§2).
+///
+/// THE THREE DEDUP INDEXES ARE NOT DECLARED HERE. `(feed_id, guid_hash)` must
+/// be unique only `WHERE guid_hash IS NOT NULL`, and the DSL cannot say that.
+/// A plain unique index would also be wrong in a way that passes every test
+/// until production: SQL treats NULLs as distinct, so it would permit
+/// duplicates AND the upsert's `ON CONFLICT` could not infer it. See the
+/// migration SQL.
+model Article {
+  id      BigInt @id @default(autoincrement())
+  feedId  BigInt @map("feed_id")
+  /// Rung 1: the publisher's own claim. Null when a feed publishes no guid,
+  /// which several of the most-subscribed feeds on the web do not.
+  guidHash Bytes? @map("guid_hash")
+  url      String
+  /// Rung 2, and GLOBAL rather than per-feed: this is what collapses one story
+  /// arriving through six feeds into one row (§6.1).
+  urlHash  Bytes  @map("url_hash")
+  /// Rung 3: sha256(normTitle + '\0' + first 500 chars of text).
+  contentHash Bytes @map("content_hash")
+  /// Which canonicalisation ruleset produced the hashes above. A bump creates
+  /// duplicates RETROACTIVELY and must run with the replay in db/merge.ts.
+  normVersion Int @default(1) @db.SmallInt @map("norm_version")
+
+  title       String
+  author      String?
+  publishedAt DateTime  @map("published_at")
+  fetchedAt   DateTime  @default(now()) @map("fetched_at")
+  summaryHtml String?   @map("summary_html")
+  contentHtml String?   @map("content_html")
+  textLen     Int?      @map("text_len")
+
+  /// Set when a rung matched and the body had changed. Does NOT clear read
+  /// state: an edit is not a re-publication (§6.2).
+  revisedAt     DateTime? @map("revised_at")
+  revisionCount Int       @default(0) @db.SmallInt @map("revision_count")
+
+  lang          String?
+  imageUrl      String?       @map("image_url")
+  enclosure     Json?
+  extractStatus ExtractStatus @default(none) @map("extract_status")
+
+  feed         Feed          @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  urls         ArticleUrl[]
+  userArticles UserArticle[]
+  summaries    Summary[]
+
+  @@map("articles")
+}
+
+/// Every address an article has ever been reachable at.
+///
+/// ONE-TO-MANY ON PURPOSE: when a URL changes, the old hash stays mapped to the
+/// same article, so a feed still carrying it resolves to the existing row
+/// rather than inserting a second one (§6.1).
+model ArticleUrl {
+  urlHash   Bytes    @id @map("url_hash")
+  articleId BigInt   @map("article_id")
+  /// The address itself, not only its hash.
+  ///
+  /// Appendix D originally stored the hash alone, which M3's review showed is
+  /// unreplayable: a digest cannot be re-derived, so a `norm_version` bump
+  /// could never recompute the alternates this table owns. They would go dead,
+  /// the address would resolve to nothing, and the next poll would re-insert
+  /// it — a migration meant to remove duplicates manufacturing them.
+  url         String
+  firstSeenAt DateTime @default(now()) @map("first_seen_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@map("article_urls")
+}
+
+/// One reader's state for one article.
+///
+/// A MISSING ROW MEANS UNREAD. Rows are written lazily on first interaction,
+/// so subscribing to a 500-article feed writes none (§6.2).
+model UserArticle {
+  userId    String    @map("user_id")
+  articleId BigInt    @map("article_id")
+  readAt    DateTime? @map("read_at")
+  savedAt   DateTime? @map("saved_at")
+  progress  Int?      @db.SmallInt
+  /// What the read state had been, where a feed opts into resurfacing.
+  wasReadAt DateTime? @map("was_read_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, articleId])
+  @@index([articleId])
+  @@map("user_articles")
+}
+
+/// An AI summary of one article revision.
+///
+/// Keyed on `content_hash` as well as the article, so a revision invalidates it
+/// automatically — no TTL, no manual invalidation (§2).
+model Summary {
+  id          BigInt   @id @default(autoincrement())
+  articleId   BigInt   @map("article_id")
+  contentHash Bytes    @map("content_hash")
+  model       String
+  bullets     Json
+  inputTokens Int      @map("input_tokens")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, contentHash])
+  @@map("summaries")
+}
+
+enum MergeRung {
+  guid
+  url
+  content
+
+  @@map("merge_rung")
+}
+
+/// One row per poll attempt.
+///
+/// THE ONLY EVIDENCE DEDUP IS WORKING (§6.2). Without it the ladder either
+/// works or does not and nobody can tell which — the unread count looks the
+/// same either way. The health screen is built entirely from this table.
+model FetchLog {
+  id         BigInt   @id @default(autoincrement())
+  feedId     BigInt   @map("feed_id")
+  at         DateTime @default(now())
+  statusCode Int?     @db.SmallInt @map("status_code")
+  durationMs Int      @map("duration_ms")
+  bytes      Int?
+  itemsSeen  Int      @default(0) @map("items_seen")
+  itemsNew   Int      @default(0) @map("items_new")
+  /// Split by rung, because WHICH rung collapsed an item is the useful fact: a
+  /// feed collapsing by address is a feed whose GUIDs cannot be trusted.
+  mergedByGuid    Int @default(0) @map("merged_by_guid")
+  mergedByUrl     Int @default(0) @map("merged_by_url")
+  mergedByContent Int @default(0) @map("merged_by_content")
+  revised         Int @default(0)
+  errorCode       String? @map("error_code")
+  note            String?
+
+  feed Feed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  @@index([feedId, at(sort: Desc)])
+  @@map("fetch_log")
+}

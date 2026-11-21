@@ -83,11 +83,16 @@ describe("no OFFSET anywhere in the data layer", () => {
     expect(withoutComments(sample).match(/\boffset\b(?!\w)/gi)).toBeNull();
   });
 
-  it("still uses a keyset cursor in the article service", () => {
-    // The mirror of the rule: proving OFFSET is absent is only half of it, and
-    // a service that paginated by nothing at all would pass the check above.
-    const source = readFileSync(join(SERVER_DIR, "article-service.ts"), "utf8");
-    expect(source).toContain("cursor.publishedAt");
-    expect(source).toContain("cursor.id");
-  });
+  it.each(["article-service.fixtures.ts", "article-service.db.ts"])(
+    "%s still paginates by keyset",
+    (file) => {
+      // The mirror of the rule: proving OFFSET is absent is only half of it,
+      // and a service that paginated by nothing at all would pass the check
+      // above. Asserted on BOTH implementations — `article-service.ts` is now
+      // only a chooser, so pointing this at it passed vacuously.
+      const source = readFileSync(join(SERVER_DIR, file), "utf8");
+      expect(source).toContain("cursor.publishedAt");
+      expect(source).toContain("cursor.id");
+    },
+  );
 });

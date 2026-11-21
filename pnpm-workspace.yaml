@@ -2,6 +2,12 @@
 # allowed nor denied (ERR_PNPM_IGNORED_BUILDS). Locally that is a warning;
 # on Vercel it fails the build outright. So decide every one explicitly.
 allowBuilds:
+  # Prisma fetches its engine binaries in a postinstall. `prisma generate`
+  # works without them, but the CLI needs them for `migrate`, and a deploy that
+  # cannot migrate is worse than a slower cold install.
+  prisma: true
+  "@prisma/client": true
+  "@prisma/engines": true
   # Downloads its platform binary; a transitive dependency of the test runner.
   esbuild: true
   # Next uses its own image pipeline here and nothing imports sharp directly.
