@@ -162,26 +162,39 @@ describe("reads are scoped and paged", () => {
     expect(page.items.every((a) => a.readAt === null)).toBe(true);
   });
 
-  it("derives the sidebar unread count rather than reading a column", async () => {
-    const viewer = await getViewer();
-    const subs = await service.listSubscriptions(viewer);
-    expect(subs.length).toBeGreaterThan(0);
+  // 30s, not the default 5s. This pages through EVERY feed to compare counts,
+  // which was instant against an in-memory array and is now a dozen feeds'
+  // worth of round trips to a remote Postgres. The assertion is worth keeping
+  // whole rather than sampling: it is the unread count, which §6.2 calls the
+  // number the product's credibility rests on.
+  it(
+    "derives the sidebar unread count rather than reading a column",
+    { timeout: 30_000 },
+    async () => {
+      const viewer = await getViewer();
+      const subs = await service.listSubscriptions(viewer);
+      expect(subs.length).toBeGreaterThan(0);
 
-    for (const s of subs) {
-      // Page all the way through rather than checking the first page, so the
-      // assertion can be EQUALITY. A `>=` here would pass on any over-count,
-      // which is precisely the drift the sidebar count must not have.
-      let counted = 0;
-      let cursor = undefined as Cursor | undefined;
-      do {
-        const page = await service.listArticles(viewer, { kind: "feed", feedId: s.feedId }, cursor);
-        counted += page.items.filter((a) => a.readAt === null).length;
-        cursor = page.next ?? undefined;
-      } while (cursor);
+      for (const s of subs) {
+        // Page all the way through rather than checking the first page, so the
+        // assertion can be EQUALITY. A `>=` here would pass on any over-count,
+        // which is precisely the drift the sidebar count must not have.
+        let counted = 0;
+        let cursor = undefined as Cursor | undefined;
+        do {
+          const page = await service.listArticles(
+            viewer,
+            { kind: "feed", feedId: s.feedId },
+            cursor,
+          );
+          counted += page.items.filter((a) => a.readAt === null).length;
+          cursor = page.next ?? undefined;
+        } while (cursor);
 
-      expect(s.unread).toBe(counted);
-    }
-  });
+        expect(s.unread).toBe(counted);
+      }
+    },
+  );
 
   it("scopes folders to the reader who filed them", async () => {
     // Catches the read that is correct only while there is one fixture user:

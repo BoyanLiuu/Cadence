@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { prisma } from "./client";
+import { CAN_READ_DB } from "./guards";
 
 /*
  * What this suite is for: the missing extension.
@@ -18,15 +19,53 @@ import { prisma } from "./client";
  * would quietly drop.
  */
 
-const MIGRATION = join(__dirname, "../../../prisma/migrations/0000_init/migration.sql");
+const MIGRATION = join(
+  __dirname,
+  "../../../prisma/migrations/20261121013320_init_cadence_schema/migration.sql",
+);
 const sql = readFileSync(MIGRATION, "utf8");
 
-const HAS_DB = Boolean(process.env.DATABASE_URL);
+/**
+ * The migration with its `--` comments removed.
+ *
+ * Needed for any assertion about ORDER: the header comment explains the
+ * `SET search_path` line, so a naive `indexOf` finds the explanation before the
+ * statement and the ordering check fails on prose. Same trap as
+ * `no-offset.test.ts`, which failed on the comments describing its own rule.
+ */
+const statements = sql.replace(/^\s*--.*$/gm, "");
+
+// Read-only, so a configured database is enough.
+const HAS_DB = CAN_READ_DB;
 const describeDb = HAS_DB ? describe : describe.skip;
 
 describe("the migration SQL says what it must", () => {
-  it("creates pg_trgm", () => {
-    expect(sql).toMatch(/CREATE EXTENSION IF NOT EXISTS pg_trgm/i);
+  it("creates pg_trgm without pinning a schema", () => {
+    expect(sql).toMatch(/CREATE EXTENSION IF NOT EXISTS pg_trgm;/i);
+    // `WITH SCHEMA extensions` assumed a schema this migration does not create
+    // and was a silent no-op when pg_trgm already lived elsewhere — after
+    // which the qualified operator class could not resolve at all.
+    expect(sql).not.toMatch(/pg_trgm WITH SCHEMA/i);
+  });
+
+  it("pins the search_path, so unqualified DDL lands in cadence", () => {
+    // Prisma emits unqualified DDL when `?schema=` makes cadence the default,
+    // so the generated half says `CREATE TABLE "users"`. Without this line the
+    // tables would land wherever the connection happened to point — which in
+    // a SHARED project means another app's schema or `public`.
+    expect(sql).toContain('CREATE SCHEMA IF NOT EXISTS "cadence"');
+    expect(sql).toMatch(/SET search_path TO "cadence"/);
+    // And the order matters: the schema must exist before the path names it.
+    expect(statements.indexOf("CREATE SCHEMA")).toBeLessThan(statements.indexOf("SET search_path"));
+  });
+
+  it("resolves the trigram operator class through search_path, not a prefix", () => {
+    // Unqualified, with `extensions` named in the search_path at the top. That
+    // resolves wherever pg_trgm lives — Supabase keeps it in `extensions`, a
+    // plain Postgres has no such schema — and a missing schema in a
+    // search_path is ignored rather than an error.
+    expect(sql).toMatch(/USING gin \("title" gin_trgm_ops\)/);
+    expect(sql).toMatch(/SET search_path TO "cadence", extensions, public/);
   });
 
   it("creates every index Appendix D names", () => {
@@ -78,7 +117,7 @@ describe("the migration SQL says what it must", () => {
 });
 
 describeDb("against a real database", () => {
-  it("has pg_trgm installed", async () => {
+  it("has pg_trgm installed, wherever the shared project keeps it", async () => {
     const rows = await prisma.$queryRaw<{ extname: string }[]>`
       SELECT extname FROM pg_extension WHERE extname = 'pg_trgm'
     `;
@@ -87,9 +126,9 @@ describeDb("against a real database", () => {
   });
 
   it("can actually use gin_trgm_ops, which is what the extension is for", async () => {
-    // Asserting the extension row exists is not quite enough: the index is
-    // created with `gin_trgm_ops`, and that operator class is what would be
-    // missing if the extension landed in another schema.
+    // Asserting the extension row exists is not quite enough: the index needs
+    // the `gin_trgm_ops` OPERATOR CLASS to be reachable, which is a different
+    // question from whether the extension is installed somewhere.
     const rows = await prisma.$queryRaw<{ opcname: string }[]>`
       SELECT opcname FROM pg_opclass WHERE opcname = 'gin_trgm_ops'
     `;
@@ -99,7 +138,7 @@ describeDb("against a real database", () => {
 
   it("has every table the schema declares", async () => {
     const rows = await prisma.$queryRaw<{ tablename: string }[]>`
-      SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+      SELECT tablename FROM pg_tables WHERE schemaname = 'cadence'
     `;
     const names = new Set(rows.map((r) => r.tablename));
     for (const table of [

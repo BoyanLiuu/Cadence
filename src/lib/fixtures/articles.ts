@@ -843,7 +843,11 @@ function ballast(count: number): Article[] {
     // Walk backwards from 2026-10-20 in 83-minute steps: strictly descending,
     // no two equal, and every one older than the designed rows above.
     const at = new Date(Date.UTC(2026, 9, 20, 0, 0, 0) - i * 83 * 60_000);
-    const iso = `${at.toISOString().slice(0, 19)}Z`;
+    // The FULL ISO form, milliseconds included. Slicing them off produced a
+    // third spelling of a timestamp in this corpus, and `service-parity`
+    // compares timestamps as strings — so the seam test would have failed on a
+    // difference no reader could see.
+    const iso = at.toISOString();
     out.push({
       id: 200 + i,
       feedId,

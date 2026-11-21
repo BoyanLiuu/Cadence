@@ -15,10 +15,13 @@
     "test:e2e": "playwright test",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "postinstall": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate deploy",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force"
+    "db:status": "prisma migrate status",
+    "db:new-migration": "prisma migrate dev --create-only",
+    "db:reset-cadence-schema": "tsx prisma/reset-schema.ts",
+    "test:db": "CADENCE_DB_WRITE_TESTS=1 vitest run"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",

@@ -1,24 +1,39 @@
--- Cadence initial schema — ARCHITECTURE Appendix D.
+-- Project 20 · Cadence · initial schema. ARCHITECTURE Appendix D.
 --
--- Two halves, and the split is the whole point of this file.
+-- EVERYTHING LIVES IN THE `cadence` SCHEMA. The Supabase project is shared with
+-- the workspace's other apps and the schema is the isolation boundary, which is
+-- why `users` here can share a name with another app's `users` and neither
+-- knows. Matches `paste`.
 --
--- EVERYTHING ABOVE the "indexes that matter" banner is generated from
--- schema.prisma by `prisma migrate diff`. Everything below is HAND-WRITTEN,
--- because Prisma's schema DSL cannot express a `WHERE` predicate on an index
--- and four of the six indexes this design depends on have one.
+-- `SET search_path` rather than qualifying every object: Prisma emits
+-- unqualified DDL when `?schema=` makes `cadence` the connection's default, so
+-- the generated half below says `CREATE TABLE "users"`. Pinning the path once
+-- makes every unqualified CREATE land in `cadence` deterministically, whatever
+-- the connection happens to be configured with — and it is one line to audit
+-- instead of twenty-four prefixes to get right.
 --
--- Declaring those four in the schema instead produces PLAIN indexes that pass
--- every test and are wrong in production. The partial unique on
--- `(feed_id, guid_hash)` is the sharp case: SQL treats NULLs as distinct, so a
--- plain unique index permits unlimited duplicates for every feed that
--- publishes no guid — and the upsert's `ON CONFLICT` cannot infer it either,
--- so it fails at runtime rather than at migration time.
+-- THE SECOND HALF IS HAND-WRITTEN, and that is the point of this migration.
+-- Prisma's schema DSL cannot express a `WHERE` predicate on an index, and
+-- `prisma migrate diff` generated NONE of the six indexes this design depends
+-- on. Declaring them in the schema instead produces PLAIN indexes that pass
+-- every test and are wrong in production — see the note on `articles_guid`.
 --
--- `prisma db push` is therefore NEVER safe on this schema: it would drop
--- everything below the banner. Migrations only.
+-- `prisma db push` and `prisma migrate dev` are therefore both unsafe here:
+-- each diffs the schema against the database and would DROP everything below
+-- the banner. Use `pnpm db:migrate` (deploy) to apply and
+-- `pnpm db:new-migration` (--create-only) to author.
 
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
+CREATE SCHEMA IF NOT EXISTS "cadence";
+
+-- `extensions` is in the path, not hard-coded into the index below.
+--
+-- Supabase keeps extensions in `extensions`; a plain Postgres has no such
+-- schema. Naming it in `search_path` instead of qualifying `gin_trgm_ops`
+-- means the operator class resolves WHEREVER pg_trgm happens to live — and a
+-- missing schema in a search_path is ignored rather than an error, so this is
+-- portable in both directions. `public` is last so nothing resolves there by
+-- accident.
+SET search_path TO "cadence", extensions, public;
 
 -- CreateEnum
 CREATE TYPE "feed_format" AS ENUM ('rss2', 'rss1', 'atom', 'json', 'unknown');
@@ -250,20 +265,25 @@ ALTER TABLE "summaries" ADD CONSTRAINT "summaries_article_id_fkey" FOREIGN KEY (
 -- AddForeignKey
 ALTER TABLE "fetch_log" ADD CONSTRAINT "fetch_log_feed_id_fkey" FOREIGN KEY ("feed_id") REFERENCES "feeds"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-
 -- ============================================================================
 -- THE INDEXES THAT MATTER (hand-written; see the header)
 -- ============================================================================
 
--- `pg_trgm` MUST be created in this first migration.
+-- `pg_trgm`, wherever this database already keeps it.
 --
--- Adding it later is fine, but FORGETTING it means the title-similarity index
--- silently cannot be created when P2's near-duplicate clustering needs it —
--- and nothing fails until then. `migrate-from-scratch` asserts it is present.
+-- NO `WITH SCHEMA`: that assumed an `extensions` schema this migration does not
+-- create, and it is a silent no-op when pg_trgm is already installed somewhere
+-- else — after which a hard-coded `extensions.gin_trgm_ops` cannot resolve and
+-- the migration fails on a plain Postgres. Unqualified, it installs into the
+-- first schema of the path above when absent and is a no-op when present.
+--
+-- It MUST be created in this first migration. Adding it later works, but
+-- FORGETTING it means the title-similarity index silently cannot be created
+-- when P2's near-duplicate clustering needs it, and nothing fails until then.
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- The scheduler's only index. PARTIAL, so dead and not-a-feed rows never bloat
--- it: with 300 feeds and a tick every minute, the due query runs 1,440 times a
+-- it: with 300 feeds and a tick every minute the due query runs 1,440 times a
 -- day and must not scan rows that can never be due (§6.4).
 CREATE INDEX "feeds_due" ON "feeds" ("next_fetch_at")
   WHERE "status" IN ('active', 'backoff');
@@ -288,37 +308,38 @@ CREATE UNIQUE INDEX "articles_url" ON "articles" ("url_hash");
 
 -- RUNG 3: content equality, never similarity.
 --
--- Not unique: two different articles legitimately share a content hash only if
--- their title AND first 500 characters match, and the ladder resolves that as
--- a match rather than rejecting the insert. Similarity is a P2 clustering
--- problem, grouped and never merged (§6.1).
+-- Not unique: the ladder RESOLVES a content match rather than rejecting the
+-- insert. Similarity is a P2 clustering problem, grouped and never merged.
 CREATE INDEX "articles_content" ON "articles" ("content_hash");
 
 -- The unread set is the SMALL set, so index only that.
 --
--- PARTIAL on `read_at IS NULL`. The sidebar's count is
--- `count(*) WHERE read_at IS NULL` per feed, run on every render, and a full
--- index over every row a reader has ever read would grow without bound while
--- answering a question only about the rows they have not (§6.2).
+-- PARTIAL on `read_at IS NULL`, which is the shape §6.2's count asks for:
+-- `LEFT JOIN user_articles ... WHERE ua.read_at IS NULL`. A full index over
+-- every row a reader has ever read would grow without bound while answering a
+-- question only about the rows they have not.
 CREATE INDEX "ua_unread" ON "user_articles" ("user_id", "article_id")
   WHERE "read_at" IS NULL;
 
 -- The per-feed reading list, keyset-ordered.
 --
--- Matches the ORDER BY the list query uses, `(published_at DESC, id DESC)`, so
--- paging is an index scan rather than a sort. Never OFFSET (N6).
+-- Matches the ORDER BY the list query uses, so paging is an index scan rather
+-- than a sort. Never OFFSET (N6).
 CREATE INDEX "articles_feed_time" ON "articles" ("feed_id", "published_at" DESC, "id" DESC);
 
 -- Near-duplicate titles and search. P2 USES this; M6 CREATES it, because the
 -- extension above has to exist first and this is the only migration guaranteed
 -- to run before any data does.
+--
+-- The operator class is UNQUALIFIED, resolved through the `search_path` set at
+-- the top. Hard-coding `extensions.` tied this migration to Supabase.
 CREATE INDEX "articles_title_trgm" ON "articles" USING gin ("title" gin_trgm_ops);
 
--- Every address an article has ever been reachable at, replayable.
+-- Every address an article has ever been reachable at, REPLAYABLE.
 --
--- `article_urls.url_hash` is already the primary key. This index is on the URL
--- itself, which exists so a `norm_version` bump can RE-HASH the alternates
--- this table owns — a digest cannot be re-derived from itself (M3's review).
+-- `url_hash` is already the primary key; this is on the URL itself, which
+-- exists so a `norm_version` bump can re-hash the alternates this table owns —
+-- a digest cannot be re-derived from itself (M3's review).
 CREATE INDEX "article_urls_norm" ON "article_urls" ("url");
 
 -- ============================================================================

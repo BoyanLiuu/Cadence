@@ -15,10 +15,18 @@ import type { Feed, FetchLogEntry, Folder } from "@/lib/types";
  * drift or flake.
  */
 
-/** 'MM-DDTHH:MM' -> ISO, UTC. The sample year is 2026. */
-export const D = (s: string) => `2026-${s}:00Z`;
+/**
+ * 'MM-DDTHH:MM' -> ISO, UTC. The sample year is 2026.
+ *
+ * Emits the MILLISECOND form, `...:00.000Z`, so a fixture timestamp is
+ * byte-identical to what `Date.prototype.toISOString()` returns for the same
+ * instant. Without that, `service-parity.test.ts` compares `:00Z` against
+ * `:00.000Z` with `toBe` and the seam test — M6's stated deliverable — can
+ * never pass, over a difference no reader could see.
+ */
+export const D = (s: string) => new Date(`2026-${s}:00Z`).toISOString();
 
-export const NOW = "2026-11-12T09:40:00Z";
+export const NOW = new Date("2026-11-12T09:40:00Z").toISOString();
 
 /** One `fetch_log` row, with the zeroes spelled out so a partial is obvious. */
 const L = (

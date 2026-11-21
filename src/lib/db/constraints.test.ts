@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { prisma } from "./client";
+import { CAN_READ_DB, CAN_WRITE_DB } from "./guards";
 
 /*
  * What this suite is for: the index mistake that only shows up at runtime.
@@ -24,10 +25,15 @@ import { prisma } from "./client";
  *
  * SKIPPED, not failed, with no database configured: M0–M5 predate the schema
  * and a clone with no Supabase project must still be able to run `pnpm check`.
+ *
+ * The insert probes also need `CADENCE_DB_WRITE_TESTS=1` (`pnpm test:db`),
+ * because they CREATE rows in a project shared with the workspace's other apps
+ * and `pnpm check` must not mutate it. The index-definition assertions below
+ * are reads and run whenever a database is configured.
  */
 
-const HAS_DB = Boolean(process.env.DATABASE_URL);
-const describeDb = HAS_DB ? describe : describe.skip;
+const describeWrites = CAN_WRITE_DB ? describe : describe.skip;
+const describeReads = CAN_READ_DB ? describe : describe.skip;
 
 const sha = (v: string) => new Uint8Array(createHash("sha256").update(v).digest());
 
@@ -56,7 +62,7 @@ function article(feedId: bigint, o: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-describeDb("the constraints that enforce identity", () => {
+describeWrites("the constraints that enforce identity", () => {
   const madeFeeds: bigint[] = [];
 
   afterAll(async () => {
@@ -94,15 +100,22 @@ describeDb("the constraints that enforce identity", () => {
   });
 
   it("permits the same guid in DIFFERENT feeds", async () => {
-    // Rung 1 is scoped to the feed, because a guid is only unique within the
-    // feed that issued it. Two publishers can and do pick the same string.
+    // Rung 1 is scoped to the FEED, because a guid is only unique within the
+    // feed that issued it — two publishers can and do pick the same string.
+    //
+    // This test asserted `rejects` while its own comment said the opposite,
+    // copied from the `articles_url` case below. It would have failed on the
+    // first run against a database, which is the only reason it survived
+    // review: nothing had run.
     const a = await makeFeed(`guid-scope-a-${Date.now()}`);
     const b = await makeFeed(`guid-scope-b-${Date.now()}`);
     madeFeeds.push(a.id, b.id);
 
     const guidHash = sha(`cross-feed-guid-${Date.now()}`);
     await prisma.article.create({ data: article(a.id, { guidHash }) });
-    await expect(prisma.article.create({ data: article(b.id, { guidHash }) })).rejects.toThrow();
+    await expect(
+      prisma.article.create({ data: article(b.id, { guidHash }) }),
+    ).resolves.toBeTruthy();
   });
 
   it("refuses the same url_hash in DIFFERENT feeds, because rung 2 is GLOBAL", async () => {
@@ -192,12 +205,12 @@ describeDb("the constraints that enforce identity", () => {
   });
 });
 
-describeDb("the indexes exist with the shapes the design needs", () => {
+describeReads("the indexes exist with the shapes the design needs", () => {
   afterAll(() => prisma.$disconnect());
 
   it("has every index Appendix D names", async () => {
     const rows = await prisma.$queryRaw<{ indexname: string }[]>`
-      SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
+      SELECT indexname FROM pg_indexes WHERE schemaname = 'cadence'
     `;
     const names = new Set(rows.map((r) => r.indexname));
     for (const index of [
@@ -222,7 +235,7 @@ describeDb("the indexes exist with the shapes the design needs", () => {
     // without it would pass every query test and be wrong exactly where it
     // matters, so the index DEFINITION is asserted rather than its effect.
     const rows = await prisma.$queryRaw<{ indexdef: string }[]>`
-      SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname = ${index}
+      SELECT indexdef FROM pg_indexes WHERE schemaname = 'cadence' AND indexname = ${index}
     `;
     expect(rows).toHaveLength(1);
     expect(rows[0].indexdef).toContain("WHERE");
@@ -231,7 +244,7 @@ describeDb("the indexes exist with the shapes the design needs", () => {
 
   it("has articles_url unique and NOT scoped to a feed", async () => {
     const rows = await prisma.$queryRaw<{ indexdef: string }[]>`
-      SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'articles_url'
+      SELECT indexdef FROM pg_indexes WHERE schemaname = 'cadence' AND indexname = 'articles_url'
     `;
     expect(rows[0].indexdef).toContain("UNIQUE");
     // The whole of rung 2 in one assertion.

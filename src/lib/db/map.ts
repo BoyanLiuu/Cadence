@@ -20,11 +20,21 @@ import type { Article, Feed, FetchLogEntry, Folder, Subscription } from "@/lib/t
 /** Postgres bigint to a plain number. */
 export const num = (v: bigint | number): number => (typeof v === "bigint" ? Number(v) : v);
 
-/** Postgres timestamptz to ISO, preserving null. */
-export const iso = (v: Date | null): string | null => (v === null ? null : v.toISOString());
-
-/** Same, where the column is NOT NULL. */
+/*
+ * Timestamps come back as `2026-11-12T09:12:00.000Z` from `toISOString()`, and
+ * the fixtures were written as `2026-11-12T09:12:00Z`. Both are valid ISO 8601
+ * and both parse to the same instant — but `service-parity.test.ts` compares
+ * them as STRINGS, because that is what a component receives and renders.
+ *
+ * So one canonical form, and it is the one with milliseconds: it is what
+ * `Date.prototype.toISOString` produces, so the database path needs no
+ * conversion and only the fixtures are normalised to meet it. Normalising the
+ * other way would mean stripping precision from real data to match test data.
+ */
 export const isoRequired = (v: Date): string => v.toISOString();
+
+/** Postgres timestamptz to ISO, preserving null. */
+export const iso = (v: Date | null): string | null => (v === null ? null : isoRequired(v));
 
 type FeedRow = {
   id: bigint;

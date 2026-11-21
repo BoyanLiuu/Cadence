@@ -31,6 +31,18 @@ import { PrismaClient } from "@/generated/prisma/client";
 
 const connectionString = process.env.DATABASE_URL;
 
+/**
+ * The pool size, or 3 for anything that is not a usable positive number.
+ *
+ * Exported so `client-config.test.ts` can test THIS function rather than a
+ * copy of it. The copy was linked to the original by an exact source-substring
+ * match, which prettier rewrapping or a rename would have broken silently.
+ */
+export function poolMax(): number {
+  const parsed = Number(process.env.DATABASE_POOL_MAX);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 3;
+}
+
 function createClient() {
   if (!connectionString) {
     // A clear failure at the first query beats `undefined` reaching the driver
@@ -46,7 +58,11 @@ function createClient() {
     connectionString,
     // Default 3. Measured against Supabase's session pooler, 6 per process
     // still exhausted it and 2 did not.
-    max: Number(process.env.DATABASE_POOL_MAX ?? 3),
+    //
+    // `??` alone is not enough: an empty or unparseable value is a STRING, so
+    // it survives the nullish check and then coerces to 0 — a pool that can
+    // never hand out a connection.
+    max: poolMax(),
   });
 
   return new PrismaClient({ adapter });

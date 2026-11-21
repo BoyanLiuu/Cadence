@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/client";
 import {
   EMPTY_TODAY,
   toArticle,
+  toFeed,
   toFetchLogEntry,
   toFolder,
   toSubscription,
@@ -87,9 +88,16 @@ async function todayByFeed(feedIds: bigint[]): Promise<Map<string, TodayCounters
     where: { feedId: { in: feedIds }, at: { gte: startOfUtcDay() }, statusCode: 304 },
     _count: { _all: true },
   });
+  // A failure is EITHER a transport outcome with no status (timeout, parse) OR
+  // an HTTP status of 400 and up. Counting only `errorCode` treated every 404,
+  // 429 and 503 as a success, so feed 12's five failures came out as four.
   const failed = await prisma.fetchLog.groupBy({
     by: ["feedId"],
-    where: { feedId: { in: feedIds }, at: { gte: startOfUtcDay() }, errorCode: { not: null } },
+    where: {
+      feedId: { in: feedIds },
+      at: { gte: startOfUtcDay() },
+      OR: [{ errorCode: { not: null } }, { statusCode: { gte: 400 } }],
+    },
     _count: { _all: true },
   });
 
@@ -140,41 +148,49 @@ export async function listSubscriptions(viewer: Viewer): Promise<SubscriptionWit
   const feedIds = subs.map((s) => s.feedId);
   const today = await todayByFeed(feedIds);
 
-  const [totals, read] = await Promise.all([
-    prisma.article.groupBy({
-      by: ["feedId"],
-      where: { feedId: { in: feedIds } },
-      _count: { _all: true },
-    }),
-    prisma.userArticle.groupBy({
-      by: ["articleId"],
-      where: { userId: user.id, readAt: { not: null } },
-      _count: { _all: true },
-    }),
-  ]);
+  /*
+   * The unread count, as §6.2's query rather than as arithmetic.
+   *
+   * Written raw and deliberately. Two things were wrong with computing it as
+   * "articles in the feed minus articles this reader has read":
+   *
+   *  - It materialised EVERY article id the reader had ever read and sent them
+   *    back as an `IN (...)` list. That grows without bound and breaks outright
+   *    past Postgres' 65,535 bind-parameter limit — on the sidebar query, which
+   *    runs on every render.
+   *  - It asked the COMPLEMENT of what `ua_unread` indexes. That index is
+   *    partial on `read_at IS NULL`, so a query about rows where `read_at` is
+   *    NOT null can never use it, and the one index Appendix D added for this
+   *    count was dead weight.
+   *
+   * The LEFT JOIN below is §6.2 verbatim: a MISSING `user_articles` row means
+   * unread, which is why it cannot be an inner join and why rows are written
+   * lazily (§6.2).
+   *
+   * TABLES ARE SCHEMA-QUALIFIED. Prisma's generated queries know about
+   * `schemas = ["cadence"]`, but `$queryRaw` is passed through verbatim — and
+   * `?schema=` is a Prisma concept the `pg` driver ignores, so the runtime
+   * connection's `search_path` is Supabase's default `public, extensions`.
+   * Unqualified, this query looks for `public.articles` and fails. Verified by
+   * connecting, which is the only way this was ever going to surface.
+   */
+  const unreadRows = await prisma.$queryRaw<{ feed_id: bigint; unread: bigint }[]>`
+    SELECT a.feed_id, count(*) AS unread
+    FROM cadence.articles a
+    LEFT JOIN cadence.user_articles ua
+      ON ua.article_id = a.id AND ua.user_id = ${user.id}
+    WHERE a.feed_id = ANY(${feedIds}::bigint[])
+      AND ua.read_at IS NULL
+    GROUP BY a.feed_id
+  `;
+  const unreadByFeed = new Map(unreadRows.map((r) => [String(r.feed_id), Number(r.unread)]));
 
-  // Which of this reader's read articles belong to which feed. One extra query
-  // rather than a correlated subquery per feed.
-  const readIds = read.map((r) => r.articleId);
-  const readByFeed = new Map<string, number>();
-  if (readIds.length > 0) {
-    const rows = await prisma.article.groupBy({
-      by: ["feedId"],
-      where: { id: { in: readIds } },
-      _count: { _all: true },
-    });
-    for (const r of rows) readByFeed.set(String(r.feedId), r._count._all);
-  }
-  const totalByFeed = new Map(totals.map((r) => [String(r.feedId), r._count._all]));
-
-  const { toFeed } = await import("@/lib/db/map");
   return subs.map((s) => {
     const key = String(s.feedId);
-    const unread = (totalByFeed.get(key) ?? 0) - (readByFeed.get(key) ?? 0);
     return {
       ...toSubscription(s),
       feed: toFeed(s.feed, today.get(key) ?? EMPTY_TODAY, s.feed.fetchLog.map(toFetchLogEntry)),
-      unread: Math.max(0, unread),
+      unread: unreadByFeed.get(key) ?? 0,
     };
   });
 }
@@ -194,11 +210,19 @@ export async function listFolders(viewer: Viewer): Promise<Folder[]> {
 /** The recent ticks and the per-invocation budget (§6.4). */
 export async function listTicks(viewer: Viewer): Promise<{ ticks: Tick[]; budgetMs: number }> {
   assertCan(viewer, "read");
-  requireUser(viewer);
+  const user = requireUser(viewer);
 
-  // Grouped by the minute they ran in: one tick is one `POST /api/cron/poll`
-  // invocation, and it may touch several feeds.
+  /*
+   * Grouped by the minute they ran in: one tick is one `POST /api/cron/poll`
+   * invocation, and it may touch several feeds.
+   *
+   * Scoped to THIS reader's subscriptions, like every other read. Without the
+   * join it reported ticks for feeds the reader does not follow, leaking other
+   * readers' feed ids the moment M11 adds a second account — and `getFeedHealth`
+   * directly below already did it correctly, which made the omission worse.
+   */
   const rows = await prisma.fetchLog.findMany({
+    where: { feed: { subscriptions: { some: { userId: user.id } } } },
     orderBy: { at: "desc" },
     take: 40,
     select: {
@@ -249,14 +273,31 @@ function scopeWhere(scope: Scope, feedIds: bigint[], userId: string) {
     case "saved":
       return { ...base, userArticles: { some: { userId, savedAt: { not: null } } } };
     case "feed":
+      /*
+       * Scoped by the SUBSCRIPTION RELATION, not by spreading `base`.
+       *
+       * The previous attempt spread `base` and then set `feedId` — and `base`
+       * contains nothing but `feedId`, so the spread was overwritten on the
+       * next line and the subscription filter the comment claimed did not
+       * exist. A reader could list articles from a feed they do not follow.
+       *
+       * It was invisible to the tests because all twelve fixture feeds belong
+       * to the one fixture user, so no case distinguished "subscribed" from
+       * "exists". `scopes-authorization.test.ts` now constructs that case.
+       *
+       * RLS is bypassed by the owning role, which makes this filter the
+       * authorization model rather than a convenience (§3).
+       */
       return {
         feedId: BigInt(scope.feedId),
+        feed: { subscriptions: { some: { userId } } },
         ...(scope.unreadOnly ? unread : {}),
       };
     case "folder":
+      // The subscription relation carries BOTH the folder and the owner, so
+      // this needs no separate `base` — and cannot be overwritten by it.
       return {
         feed: { subscriptions: { some: { userId, folderId: BigInt(scope.folderId) } } },
-        ...base,
         ...(scope.unreadOnly ? unread : {}),
       };
   }

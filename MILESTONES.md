@@ -7,16 +7,14 @@ The plan is `docs/project-idea/20-personal-rss-reader/IMPLEMENTATION_PLAN.md`; t
 `ARCHITECTURE.md` beside it. Read Appendix C (the data access boundary) before touching the service
 layer — it is what makes the static-then-data build order safe.
 
-**Last verified:** 2026-11-20 — Phase 1 complete (M0–M5); **M6 written but unrun**. `pnpm check` runs
-573 unit tests with 31 skipped — every skip needs a Postgres connection. `pnpm test:e2e` runs 1
-browser test. No ingestion and nobody signed in, and that is still on purpose.
+**Last verified:** 2026-11-21 — **M0–M6 complete, verified against real Postgres.** `pnpm check` runs
+614 tests read-only; `pnpm test:db` runs all 622 including the 8 that WRITE. `pnpm test:e2e` runs 1
+browser test. The app serves from the database, and `pnpm db:reset-cadence-schema && pnpm db:migrate
+&& pnpm db:seed` rebuilds it from nothing. No ingestion and nobody signed in — that is still M7 and M11.
 
-> **M6 IS BLOCKED ON A SUPABASE PROJECT.** The schema, the migration, the seed, the Postgres service
-> implementation and all three test suites are written and typecheck. None has touched a database:
-> there is no local Postgres or Docker on this machine. Create a dev project, put `DATABASE_URL` and
-> `DIRECT_URL` in `.env` (see `.env.example`), then `pnpm db:migrate && pnpm db:seed && pnpm test`.
-> Until then the 31 skipped tests are the unverified half of this milestone — the half that proves
-> the constraints actually refuse the inserts they are supposed to.
+**Database:** the workspace's shared Supabase project, one schema per app. Cadence owns `cadence`
+and touches nothing in `paste`, `hacker_news_clone` or `public`. `.env` is not committed; copy
+`.env.example` and take both URLs from another app in the workspace, changing only `?schema=`.
 
 |     | Milestone                                        | Status  |
 | --- | ------------------------------------------------ | ------- |
@@ -26,7 +24,7 @@ browser test. No ingestion and nobody signed in, and that is still on purpose.
 | M3  | The identity primitives                          | ✅ done |
 | M4  | The reader shell                                 | ✅ done |
 | M5  | Add a feed, saved, and the health screen         | ✅ done |
-| M6  | Schema and the constraints that enforce identity | ◐ part  |
+| M6  | Schema and the constraints that enforce identity | ✅ done |
 | M7  | The ladder                                       | ☐       |
 | M8  | Revisions and learning that a feed lies          | ☐       |
 | M9  | The resumable sweep                              | ☐       |
@@ -392,9 +390,46 @@ Six findings, all fixed, and **the first was caused by the first round's own fix
 pure function that has now been wrong twice, both times made untestable by living in an async Server
 Component. Reverting either fix fails four tests. `app-bar.test.tsx` covers the nav, which had none.
 
-## M6 — Schema and the constraints that enforce identity ◐ part
+## M6 — Schema and the constraints that enforce identity ✅
 
-Written, typechecked, and **unrun against a real database.** See the note at the top.
+Applied, seeded and **verified against real Postgres**: 621 tests, zero skips. The app serves from
+the database.
+
+### What only showed up by connecting
+
+Five problems, every one invisible to `typecheck`, `lint` and 588 passing tests. They share a cause
+worth stating once: **`?schema=` is a Prisma concept the `pg` driver ignores**, so what a connection
+can actually see and what Prisma thinks it can see are two different things.
+
+| Problem                                                     | What it taught                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `?schema=cadence` on **DATABASE_URL** made every query fail | With it, Prisma treats cadence as the connection's default and emits **unqualified** SQL, which then resolves against the driver's real `search_path` — `public, extensions` — and dies on `relation "feeds" does not exist`. Removed from the runtime URL, kept on `DIRECT_URL` for the migrate CLI. Exactly `paste`'s shape, which is why `paste` works |
+| Every raw query needed `cadence.`                           | Prisma's **generated** queries know about `schemas = ["cadence"]`; `$queryRaw` and `$executeRawUnsafe` are passed through verbatim. The unread `LEFT JOIN`, the seed's `setval` block and the catalogue queries in two test suites all had to be qualified                                                                                                |
+| `prisma migrate deploy` hung indefinitely over the pooler   | It created the tables, then stalled holding an advisory lock with `finished_at` still null — so the generated half applied and **the entire hand-written index block did not**. Applied through `pg` in one transaction instead, which is also the only way the whole file is atomic                                                                      |
+| `prisma migrate diff` emitted unqualified DDL               | So the migration pins `SET search_path TO "cadence"` after `CREATE SCHEMA`. One line to audit rather than twenty-four prefixes to get right — and in a **shared** project, unqualified DDL without it lands in another app's schema or `public`                                                                                                           |
+| `gin_trgm_ops` could not resolve                            | `pg_trgm` was not installed in the project at all. It goes into `extensions` (Supabase's convention, already on the default path) and the index qualifies the operator class, because `search_path` is pinned to `cadence` where a bare name finds nothing                                                                                                |
+
+**And one that made the whole thing look fine when it was not:** vitest does not load `.env`, so all
+31 database tests reported as **skipped** while a working database sat beside them. A skip reads as a
+deliberate choice; it took noticing the count had not moved. `vitest.setup.ts` now imports
+`dotenv/config`.
+
+### What the tests now actually prove
+
+Not "the schema compiles" but the claims themselves, against Postgres:
+
+- Two articles with a **NULL guid** in one feed both insert — the case a plain unique index silently
+  forbids, which would make feeds like Hacker News appear to stop publishing after one item.
+- The same **non-null** guid in one feed is refused; the same guid in **different** feeds is not.
+- The same `url_hash` in different feeds **is** refused, because rung 2 is global. That one
+  assertion is the whole reason one wire story through six feeds becomes one row.
+- `articles_guid`, `ua_unread` and `feeds_due` each carry their `WHERE` clause in `pg_indexes`, and
+  `articles_url` is unique and contains no `feed_id`.
+- **The parity seam passes**: both implementations return the same rows, in the same order, with the
+  same derived unread counts, across eight scopes, three pages of keyset pagination and four search
+  terms. That is Appendix C's phase-2 check, and it is the sentence M1 was written to make true.
+
+RLS is on across all nine tables, confirmed in `pg_class`.
 
 **The indexes are hand-written SQL, and that is the point of the milestone.** Prisma's schema DSL
 cannot express a `WHERE` predicate on an index, and `prisma migrate diff` generated **none** of the
@@ -437,6 +472,74 @@ tests that predate the schema.
 
 The contract test caught two new exports as it is meant to — `listTicks` and `dataSource` — and both
 are now listed deliberately rather than having drifted in.
+
+### Review round on M6 — twelve findings, and the lesson is the count
+
+Every one is fixed. The number is the point: **M6 is the first milestone whose central claim could
+not be executed**, and twelve defects got through a clean `typecheck`, a clean `lint` and 573 passing
+tests. Four would have failed on the first run against a real database, which is the only reason
+they survived review at all.
+
+**The three that were more than mistakes:**
+
+| Fix                                                        | Why it mattered                                                                                                                                                                                                                                                                                                                                                                                            |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scopeWhere`'s `feed` case now spreads `base`              | A `{kind:"feed"}` scope was **not restricted to the viewer's subscriptions** — it returned articles from any feed by id. RLS is bypassed by the owning role, so this filter is the authorization model, not a convenience. The fixture implementation returned `[]` for the same input, so the two silently disagreed                                                                                      |
+| The unread count is §6.2's `LEFT JOIN`, written raw        | It had been "articles in the feed minus articles read", which materialised **every article id the reader had ever read** into an `IN (...)` list — unbounded, and broken outright past Postgres' 65,535 bind-parameter limit, on the query that runs on every sidebar render. It also asked the _complement_ of what `ua_unread` indexes, so the one index Appendix D added for this count was dead weight |
+| `db:migrate` is `prisma migrate deploy`, not `migrate dev` | `migrate dev` diffs the schema against the migrations and its diff contains `DROP INDEX` for **all seven hand-written indexes**. The migration header warns about `db push` and the package shipped the equally destructive script beside it. Authoring a new migration is now `db:new-migration`, which is `--create-only`                                                                                |
+
+**One canonical timestamp form.** `toISOString()` emits `...:00.000Z`; the fixtures emitted `...:00Z`
+in two places and a hand-sliced third form in the ballast generator. `service-parity.test.ts`
+compares timestamps as strings, because a string is what a component renders — so the seam test that
+is **M6's entire stated deliverable** could never have passed, over a difference no reader could see.
+`map.test.ts` now asserts the property over the whole corpus, and it is checkable with no database.
+
+**The rest:** the seed left BIGSERIAL sequences at 1, so the first insert without an explicit id
+would collide on the primary key — which is every constraint test and every future ingestion;
+`today.failed` counted only transport errors, so every 404 and 503 was a success; `listTicks` read
+`fetch_log` with no subscription join while `getFeedHealth` directly below it did it correctly;
+`DATABASE_POOL_MAX=""` coerced to `max: 0`; and one of my own constraint tests asserted a rejection
+its own comment said would not happen.
+
+**Still unverified, and the most likely thing to need adjustment on first run:** the raw unread query
+passes feed ids as `ANY(${feedIds}::bigint[])`. That is the standard `pg` pattern and PrismaPg sits
+on `pg`, but BigInt array serialisation is exactly the kind of thing that works or does not, and
+nothing here has proved which.
+
+### Review round on M6's completion — eight findings
+
+**The first was a fix I had already claimed to make.** The `feed` scope spread `base` and then set
+`feedId` on the next line — and `base` contains nothing _but_ `feedId`, so the spread was overwritten
+and the subscription filter the comment described did not exist. A reader could list articles from a
+feed they do not follow. It survived because all twelve fixture feeds belong to the one fixture user,
+so no test distinguished "subscribed" from "exists". It is scoped by the subscription relation now,
+which cannot be overwritten by a later key.
+
+**Two were safety problems with the shared project**, and both are the kind worth being strict about:
+
+| Fix                                                                    | Why                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database tests split by what they DO, not by whether a database exists | Loading `.env` in vitest had quietly made `pnpm check` **create and delete rows in a project shared with `paste` and `hacker_news_clone`**. Reads — the parity seam, the catalogue and index-definition checks — still run in `pnpm check`. The 8 insert probes need `CADENCE_DB_WRITE_TESTS=1`, which `pnpm test:db` sets. A test that silently writes to something shared is how a neighbouring app's afternoon gets ruined |
+| `db:reset` is gone, replaced by `db:reset-cadence-schema`              | `prisma migrate reset --force` drops every table it can see. In a shared project that has no safe use. The replacement is scoped to the one schema Cadence owns, and names every table it is about to drop before doing it                                                                                                                                                                                                    |
+
+**And the portability fix turned out to be the hang fix.** `CREATE EXTENSION ... WITH SCHEMA
+extensions` assumed a schema the migration does not create, and was a silent no-op when `pg_trgm`
+already lived elsewhere — after which a hard-coded `extensions.gin_trgm_ops` could not resolve at
+all. Naming `extensions` in the `search_path` instead and leaving both unqualified made the migration
+portable to a plain Postgres **and made `prisma migrate deploy` stop hanging**, which had forced the
+earlier hand-application through `pg`. The whole rebuild now runs through the committed scripts.
+
+The rest: `.env.example` documented `DIRECT_URL` _without_ `?schema=cadence`, so a clone following it
+would have put `_prisma_migrations` in `public` of the shared project; the seed's schema-stripping
+regex ate the leading `?`, turning `?schema=cadence&sslmode=require` into a database named
+`postgres&sslmode=require`; and `client-config.test.ts` tested a _copy_ of `poolMax` linked to the
+real one by a source-substring match that prettier would have broken — `poolMax` is exported and the
+test calls it.
+
+**Still true and still worth knowing:** `db:new-migration` (`migrate dev --create-only`) diffs the
+schema and will emit `DROP INDEX` for all six hand-written indexes. It creates without applying, so
+nothing is lost — but any generated migration must have those lines removed and the hand-written
+block re-appended before it is applied.
 
 ---
 

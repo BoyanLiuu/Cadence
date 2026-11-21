@@ -22,9 +22,37 @@ import { contentHash } from "../src/lib/ingest/content-hash";
  * the constraint tests would be proving something about fiction.
  */
 
-const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+/*
+ * DATABASE_URL, not DIRECT_URL, and the order matters.
+ *
+ * DIRECT_URL carries `?schema=cadence` for the migrate CLI. Prisma reads that
+ * as the connection's DEFAULT schema and so emits UNQUALIFIED SQL — which then
+ * resolves against the pg driver's real `search_path` (`public, extensions`,
+ * because `?schema=` is a Prisma concept libpq ignores) and fails with
+ * `relation "feeds" does not exist`.
+ *
+ * DATABASE_URL has no `?schema=`, so the generated client qualifies every
+ * table as `cadence.feeds`. The schema param is stripped from any fallback for
+ * the same reason.
+ */
+/** The URL with any `schema` query parameter removed, structurally. */
+function withoutSchemaParam(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.delete("schema");
+    return parsed.toString();
+  } catch {
+    // Not parseable as a URL. Returned untouched rather than mangled — a
+    // regex here ate the leading `?`, so `?schema=cadence&sslmode=require`
+    // became a database named `postgres&sslmode=require`.
+    return url;
+  }
+}
+
+const connectionString = withoutSchemaParam(process.env.DATABASE_URL ?? process.env.DIRECT_URL);
 if (!connectionString) {
-  throw new Error("DIRECT_URL or DATABASE_URL must be set to seed. See .env.example.");
+  throw new Error("DATABASE_URL or DIRECT_URL must be set to seed. See .env.example.");
 }
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
@@ -226,6 +254,26 @@ async function main() {
         },
       });
     }
+  }
+
+  /*
+   * Advance the sequences past the explicit ids above.
+   *
+   * Seeding with explicit ids does NOT move a BIGSERIAL's sequence, so it stays
+   * at 1 — and the next insert that lets the database pick an id collides on
+   * the primary key. That is every constraint test (which creates feeds without
+   * ids) and every article ingestion will ever write.
+   *
+   * `setval` with the max, or 1 when the table is empty.
+   */
+  for (const table of ["feeds", "folders", "articles", "summaries", "fetch_log"]) {
+    // SCHEMA-QUALIFIED. `$executeRawUnsafe` is passed through verbatim, and the
+    // connection's search_path is `public, extensions` — only Prisma's
+    // GENERATED queries know about `schemas = ["cadence"]`.
+    await prisma.$executeRawUnsafe(
+      `SELECT setval(pg_get_serial_sequence('cadence.${table}', 'id'),
+                     COALESCE((SELECT max(id) FROM cadence.${table}), 1))`,
+    );
   }
 
   const counts = {

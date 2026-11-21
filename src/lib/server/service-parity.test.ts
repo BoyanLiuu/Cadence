@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { Scope } from "@/lib/types";
 
+import { CAN_READ_DB } from "@/lib/db/guards";
+
 import * as db from "./article-service.db";
 import * as fixtures from "./article-service.fixtures";
 import { getViewer } from "./viewer";
@@ -26,7 +28,8 @@ import { getViewer } from "./viewer";
  * project.
  */
 
-const HAS_DB = Boolean(process.env.DATABASE_URL);
+// Read-only, so a configured database is enough.
+const HAS_DB = CAN_READ_DB;
 const describeDb = HAS_DB ? describe : describe.skip;
 
 const SCOPES: Scope[] = [
@@ -151,7 +154,17 @@ describe("the chooser", () => {
     // Appendix C rule 5: the fixture corpus is the test corpus. A clone with
     // no Supabase project must still render every screen and pass every test
     // that predates the schema.
+    //
+    // An explicit `CADENCE_DATA_SOURCE` wins, which is the documented way to
+    // force the comparison — so it is honoured here rather than ignored, which
+    // is what made the first version of this assertion fail under the very
+    // workflow the chooser documents.
+    const forced = process.env.CADENCE_DATA_SOURCE;
     const { dataSource } = await import("./article-service");
-    expect(dataSource).toBe(HAS_DB ? "db" : "fixtures");
+    if (forced === "fixtures" || forced === "db") {
+      expect(dataSource).toBe(forced);
+    } else {
+      expect(dataSource).toBe(HAS_DB ? "db" : "fixtures");
+    }
   });
 });
