@@ -282,7 +282,7 @@ export async function listTicks(viewer: Viewer): Promise<{ ticks: Tick[]; budget
  * that means the article is missing from their list entirely.
  *
  * Which is precisely the cost Appendix G question 2 names: collapsing is
- * correct, but it "can read as an article going missing". §8 answers the
+ * correct, but it "can read as an article going missing". Appendix E answers the
  * cosmetic half with the "also in 2 feeds" panel; this answers the half that
  * is not cosmetic.
  *
@@ -388,7 +388,7 @@ export async function listArticles(
       /*
        * Loaded with the page, not per row.
        *
-       * Two things need it. §8's "also in 2 feeds" panel is the stated reason
+       * Two things need it. Appendix E's "also in 2 feeds" panel is the stated reason
        * `article_feeds` exists. And the row's own label: the list now matches
        * on arrivals, so an article can appear under a feed the reader follows
        * while `articles.feed_id` names one they do not — and labelling it from

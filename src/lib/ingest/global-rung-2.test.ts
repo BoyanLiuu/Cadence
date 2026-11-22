@@ -18,9 +18,9 @@ import { resolveAndWrite, type FeedTrust } from "./dedupe";
  * Appendix G question 2 settles it as yes-collapse, and the cost it names is
  * the reason this suite also asserts arrivals: someone following both Reuters
  * and a syndicator sees ONE row, which is correct but can read as an article
- * going missing. §8 answers that with the "also in 2 feeds" panel — so a
+ * going missing. Appendix E answers that with the "also in 2 feeds" panel — so a
  * collapse that records only one arrival is a collapse the reader cannot
- * verify, which §8 lists among the three copy rules carrying the product's
+ * verify, which Appendix E lists among the three copy rules carrying the product's
  * credibility.
  */
 
@@ -162,7 +162,7 @@ describeDb("rung 2 is global, not per-feed", { timeout: 120_000 }, () => {
     /*
      * Each arrival keeps the address ITS feed published, tags and all.
      *
-     * §8's panel strikes through the discarded URL parts so the reader can
+     * Appendix E's panel strikes through the discarded URL parts so the reader can
      * verify the deduplication rather than trust it — and canonicalisation is
      * exactly what throws those parts away. Both addresses collapse to one
      * `url_hash`, so `article_urls` can keep only one of them and

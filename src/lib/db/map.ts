@@ -202,7 +202,7 @@ export function toArticle(
    *
    * Omitted rather than defaulted, because `null` and `[]` mean different
    * things to `alsoInFeedCount`: null is "not loaded", an array is the answer.
-   * This was hard-coded `null`, which left §8's "also in 2 feeds" panel — the
+   * This was hard-coded `null`, which left Appendix E's "also in 2 feeds" panel — the
    * stated reason `article_feeds` exists — rendering nothing in the database
    * path while working in fixtures. A seam the fixtures pass and Postgres
    * fails is the exact thing Appendix C's parity rule is for.

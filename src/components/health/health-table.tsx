@@ -94,7 +94,7 @@ function stateOf(sub: SubscriptionWithUnread): State {
        * of "matched by address" made the row say it twice.
        *
        * Not a warning. The feed works; it just cannot be believed about its
-       * own ids, which is a fact rather than a fault, and §8 asks this screen
+       * own ids, which is a fact rather than a fault, and Appendix E asks this screen
        * to let a reader verify the deduplication rather than trust it.
        */
       if (feed.guidUnstable) {

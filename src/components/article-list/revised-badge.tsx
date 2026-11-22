@@ -5,7 +5,7 @@ import { otherFeedCount } from "@/lib/types";
  * The row badges: "Revised", and "Also in N feeds".
  *
  * Extracted from the row because both now render from REAL data and both say
- * something the row cannot otherwise say. §8 lists the collapse explanation
+ * something the row cannot otherwise say. Appendix E lists the collapse explanation
  * among the three copy rules that carry the product's credibility, and the
  * revision badge is the other half of the same promise: §6.2 keeps `read_at`
  * through an edit, so without a marker an article silently changes under a

@@ -231,7 +231,7 @@ async function main() {
             ]
           ).map((arrival) => ({
             feedId: BigInt(arrival.feedId),
-            // The RAW address that feed delivered, which is what §8's panel
+            // The RAW address that feed delivered, which is what Appendix E's panel
             // strikes through. The two syndicated fixtures carry different
             // tracking tags per feed, and that difference IS the demo.
             url: arrival.url,

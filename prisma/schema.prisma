@@ -293,6 +293,14 @@ model ArticleUrl {
   @@schema("cadence")
 }
 
+// NOTE ON SECTION CITATIONS. The copy rules about the "also in 2 feeds" panel
+// live in ARCHITECTURE **Appendix E — Design doctrine**. Several comments in the
+// three `article_feeds` / `fetch_log` migrations cite them as "§8", which does
+// not exist — Part I stops at §6. Those files are APPLIED, and Prisma
+// checksums an applied migration, so correcting them would fail
+// `migrate deploy` against any database that already ran them. The citation is
+// wrong only in that frozen history; everywhere live says Appendix E.
+
 /// Which feeds have DELIVERED an article. One row per arrival.
 ///
 /// Rung 2 is global, so one story arriving through six feeds collapses into one
@@ -300,7 +308,7 @@ model ArticleUrl {
 /// there FIRST. Without this table the other five arrivals are not recorded
 /// anywhere, and two things break:
 ///
-///  - §8's "also in 2 feeds" panel, which §8 lists among the three copy rules
+///  - the "also in 2 feeds" panel, which Appendix E lists among the three copy rules
 ///    that carry the product's credibility: a collapsed article must say what
 ///    it collapsed against, so the reader can VERIFY the deduplication rather
 ///    than trust it. It cannot say that from a single `feed_id`.
@@ -319,7 +327,7 @@ model ArticleFeed {
   feedId    BigInt @map("feed_id")
   /// The RAW address this feed delivered, before canonicalisation.
   ///
-  /// §8's panel strikes through the discarded URL parts so the reader can
+  /// Appendix E's panel strikes through the discarded URL parts so the reader can
   /// verify the deduplication rather than trust it — which needs what each feed
   /// actually sent. Canonicalisation is what throws that away: two outlets'
   /// different tracking tags collapse to one `url_hash`, so `article_urls` can

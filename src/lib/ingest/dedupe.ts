@@ -298,7 +298,7 @@ export async function resolveAndWrite(
    * That is the whole point of the table. Rung 2 is global, so the second feed
    * to carry a story MERGES rather than inserting, and `articles.feed_id` keeps
    * naming the first feed. If arrivals were only written on insert, the second
-   * feed would never be recorded anywhere: §8's "also in 2 feeds" panel would
+   * feed would never be recorded anywhere: Appendix E's "also in 2 feeds" panel would
    * always say one, and a feed-scoped list would hide an article that feed
    * genuinely carries.
    */

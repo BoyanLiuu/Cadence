@@ -18,7 +18,7 @@ import { prisma } from "@/lib/db/client";
  *
  * The companion half is arrivals. Rung 2 is global, so one story through six
  * feeds is one row, and `articles.feed_id` can only name the feed that got
- * there first. `article_feeds` records the rest — which is what §8's
+ * there first. `article_feeds` records the rest — which is what Appendix E's
  * "also in 2 feeds" panel reads, and what keeps a feed-scoped list from hiding
  * an article that feed carries.
  */
@@ -92,7 +92,7 @@ export async function recordArrival(
   /**
    * The RAW address this feed delivered, before canonicalisation.
    *
-   * §8's panel strikes through the discarded parts, so it needs what the feed
+   * Appendix E's panel strikes through the discarded parts, so it needs what the feed
    * actually sent — which is exactly what canonicalisation throws away. Two
    * outlets' different tracking tags collapse to one `url_hash`, so
    * `article_urls` keeps only one of them.

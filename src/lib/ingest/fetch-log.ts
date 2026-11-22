@@ -14,7 +14,7 @@ import type { LadderCounters } from "./dedupe";
  *
  * The counters are also the whole of the health screen: a 304 ratio, a collapse
  * rate by rung, a failure history. A feed that is failing says why and when it
- * will retry (§8), and this is where that comes from.
+ * will retry (Appendix E), and this is where that comes from.
  */
 
 /** What the HTTP half of a poll did. M9 fills these in; M8 passes nulls. */
