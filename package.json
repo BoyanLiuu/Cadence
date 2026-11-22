@@ -24,6 +24,7 @@
     "test:db": "CADENCE_DB_WRITE_TESTS=1 vitest run"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.10.7",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "7.10.1",
     "class-variance-authority": "^0.7.1",

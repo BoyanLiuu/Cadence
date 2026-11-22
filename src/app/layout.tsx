@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Geist, Hedvig_Letters_Serif, Sofia_Sans_Extra_Condensed } from "next/font/google";
 
@@ -47,8 +48,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geist.variable} ${hedvig.variable} ${sofia.variable}`}>
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster position="bottom-center" closeButton />
+        <ClerkProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster position="bottom-center" closeButton />
+        </ClerkProvider>
       </body>
     </html>
   );

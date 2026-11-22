@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Scope } from "@/lib/types";
+import type { FetchLogEntry, Scope } from "@/lib/types";
 
 import { CAN_READ_DB } from "@/lib/db/guards";
 
@@ -148,7 +148,7 @@ describeDb("the two implementations answer identically", () => {
       (await fixtures.listSubscriptions(viewer)).map((row) => [row.feedId, row]),
     );
 
-    let compared = 0;
+    let entriesCompared = 0;
     for (const row of fromDb) {
       const expected = byId.get(row.feedId)!.feed.log;
       const got = row.feed.log;
@@ -158,11 +158,25 @@ describeDb("the two implementations answer identically", () => {
       );
 
       for (let i = 0; i < shared; i += 1) {
-        const where = `feed ${row.feedId} (${row.feed.title}) · log[${i}]`;
-        const { at: _dbAt, ...gotRest } = got[i];
-        const { at: _fxAt, ...expectedRest } = expected[i];
-        expect(gotRest, where).toEqual(expectedRest);
-        compared += 1;
+        /*
+         * Field by field, skipping `at`, so a failure names the field that
+         * diverged rather than printing two whole entries to be diffed by eye.
+         *
+         * The keys come from BOTH sides. `note` is optional and conditionally
+         * spread, so iterating the fixture's keys alone would never look at a
+         * `note` only the database carries — which is the shape of divergence
+         * this suite exists to catch, silently passing.
+         */
+        const keys = new Set<keyof FetchLogEntry>([
+          ...(Object.keys(expected[i]) as (keyof FetchLogEntry)[]),
+          ...(Object.keys(got[i]) as (keyof FetchLogEntry)[]),
+        ]);
+        for (const key of keys) {
+          if (key === "at") continue;
+          const where = `feed ${row.feedId} (${row.feed.title}) · log[${i}].${key}`;
+          expect(got[i][key], where).toBe(expected[i][key]);
+        }
+        entriesCompared += 1;
       }
 
       // Newest first, which `take 8` depends on meaning anything.
@@ -175,8 +189,9 @@ describeDb("the two implementations answer identically", () => {
     }
 
     // A guard on the guard: `shared` going to zero everywhere would make the
-    // loop above vacuous while still passing.
-    expect(compared, "no log entries were compared").toBeGreaterThan(fromDb.length);
+    // loop above vacuous while still passing. Counted in ENTRIES, so the floor
+    // is one per feed and the number means what the message says.
+    expect(entriesCompared, "fewer log entries compared than feeds").toBeGreaterThan(fromDb.length);
   });
 
   it.each(SCOPES.map((s) => [JSON.stringify(s), s] as const))(
