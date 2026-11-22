@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { prisma } from "@/lib/db/client";
 import type { FeedTrust } from "@/lib/ingest/dedupe";
 import { canonicalUrl } from "@/lib/ingest/canonical-url";
+import type { FeedStatus } from "@/lib/types";
 
 /*
  * Claiming feeds to poll, in a way a dying process cannot corrupt.
@@ -52,6 +53,31 @@ export const CLAIM_BATCH = 25;
  */
 export const LEASE_SECONDS = 120;
 
+/**
+ * The feed's recent `published_at` values, for the median-gap interval.
+ *
+ * Read per feed rather than joined into the claim: §6.4 takes the median over
+ * 20 posts, and a 25-feed claim carrying 500 timestamps would make the one
+ * round trip the claim is proud of considerably larger.
+ *
+ * Called on a 304 as well as a change, which is the commonest outcome there is
+ * — because §6.4's widening is driven by `unchanged_polls`, so the interval
+ * genuinely changes on exactly that path. One indexed query per due feed per
+ * poll is the price of the widening ever taking effect.
+ *
+ * Ordered newest-first and limited, so it is an index scan on
+ * `articles_feed_time` rather than a sort of the feed's whole history.
+ */
+export async function recentPublishedAts(feedId: bigint, limit = 20): Promise<Date[]> {
+  const rows = await prisma.$queryRaw<{ published_at: Date }[]>`
+    SELECT published_at FROM cadence.articles
+    WHERE feed_id = ${feedId}
+    ORDER BY published_at DESC, id DESC
+    LIMIT ${limit}
+  `;
+  return rows.map((r) => r.published_at);
+}
+
 /** A claimed feed: its trust state, plus everything the fetch needs. */
 export type ClaimedFeed = FeedTrust & {
   feedUrl: string;
@@ -63,6 +89,9 @@ export type ClaimedFeed = FeedTrust & {
   declaredTtlS: number | null;
   consecutiveFailures: number;
   unchangedPolls: number;
+  /** The two timestamps the `dead` verdict reads (§6.4's 14-day silence). */
+  lastSuccessAt: Date | null;
+  firstFailureAt: Date | null;
 };
 
 type Row = {
@@ -75,6 +104,8 @@ type Row = {
   declared_ttl_s: number | null;
   consecutive_failures: number;
   unchanged_polls: number;
+  last_success_at: Date | null;
+  first_failure_at: Date | null;
   guid_unstable: boolean;
   clean_polls: number;
   guid_trust_override: "auto" | "guid" | "url";
@@ -136,6 +167,7 @@ export async function claimDueFeeds(
     )
     RETURNING id, feed_url, etag, last_modified, body_hash,
               fetch_interval_s, declared_ttl_s, consecutive_failures, unchanged_polls,
+              last_success_at, first_failure_at,
               guid_unstable, clean_polls, guid_trust_override
   `;
 
@@ -149,6 +181,8 @@ export async function claimDueFeeds(
     declaredTtlS: r.declared_ttl_s,
     consecutiveFailures: r.consecutive_failures,
     unchangedPolls: r.unchanged_polls,
+    lastSuccessAt: r.last_success_at,
+    firstFailureAt: r.first_failure_at,
     guidUnstable: r.guid_unstable,
     cleanPolls: r.clean_polls,
     guidTrustOverride: r.guid_trust_override,
@@ -161,17 +195,68 @@ export async function claimDueFeeds(
  * Called in a `finally`, so a poll that threw still releases — otherwise one
  * unexpected error costs that feed 120 seconds for no reason.
  *
- * The interval itself is M10's subject (§6.4 derives it from the feed's own
- * median posting gap, with `<ttl>` as a floor and stable jitter). M9 reschedules
- * on the feed's STORED `fetch_interval_s` so the sweep is complete and honest
- * about its cadence; making that interval adaptive changes this call's argument,
- * not its shape.
+ * `status` is optional. The sweep passes `"active"` on a success and the
+ * backoff verdict on a failure; omitting it leaves the column alone, which is
+ * what the budget-skip path wants.
+ *
+ * Writing `"active"` on success is safe only because the claim predicate is
+ * `status IN ('active','backoff')`: a `not_a_feed` feed is never claimed, so
+ * no successful fetch can clear that §6.3 verdict. If the claim ever widens,
+ * this becomes a bug — a feed that is not a feed, answering 200, promoted back
+ * to active.
  */
-export async function releaseFeed(feedId: bigint, nextInSeconds: number): Promise<void> {
+export async function releaseFeed(
+  feedId: bigint,
+  nextInSeconds: number,
+  status?: FeedStatus,
+): Promise<void> {
   await prisma.$executeRaw`
     UPDATE cadence.feeds
     SET lease_until = NULL,
-        next_fetch_at = now() + make_interval(secs => ${Math.max(60, Math.floor(nextInSeconds))})
+        next_fetch_at = now() + make_interval(secs => ${Math.max(60, Math.floor(nextInSeconds))}),
+        status = COALESCE(${status ?? null}::cadence.feed_status, status),
+        dead_at = CASE
+                    WHEN ${status ?? null}::cadence.feed_status = 'dead'
+                    THEN COALESCE(dead_at, now())
+                    ELSE dead_at
+                  END
+    WHERE id = ${feedId}
+  `;
+}
+
+/**
+ * Stores the interval the adaptive rule computed, for the health screen.
+ *
+ * `fetch_interval_s` is what "Checked every …" renders from, and nothing wrote
+ * it before M10 — so the column held its default of 3600 while the real cadence
+ * came from whatever `next_fetch_at` happened to say. A screen reporting an
+ * interval the scheduler does not use is worse than one reporting none.
+ *
+ * `median_post_gap_s` is stored alongside it because it is the INPUT, and a
+ * reader asking "why is this checked twice a day?" is asking about the gap.
+ */
+export async function storeInterval(
+  feedId: bigint,
+  intervalS: number,
+  medianGapS: number | null,
+  /**
+   * The `<ttl>` the feed just declared, in seconds.
+   *
+   * Persisted here because nothing else ever wrote it. `parse.ts` has produced
+   * it since M2 and the seed sets it for one fixture, but no poll stored it —
+   * so on a real feed `declared_ttl_s` stayed NULL forever and the `<ttl>`
+   * floor in `interval.ts` was dead code. A politeness request the publisher
+   * took the trouble to send, silently discarded.
+   */
+  declaredTtlS?: number | null,
+): Promise<void> {
+  await prisma.$executeRaw`
+    UPDATE cadence.feeds
+    SET fetch_interval_s = ${Math.round(intervalS)},
+        median_post_gap_s = COALESCE(${medianGapS === null ? null : Math.round(medianGapS)}, median_post_gap_s),
+        -- COALESCE so a poll of a feed that dropped its <ttl> keeps the last
+        -- one it declared, rather than quietly losing the floor.
+        declared_ttl_s = COALESCE(${declaredTtlS ?? null}, declared_ttl_s)
     WHERE id = ${feedId}
   `;
 }
@@ -226,7 +311,14 @@ export async function storeValidators(
       unchanged_polls = 0,
       last_success_at = now(),
       last_error_code = NULL,
-      last_error_text = NULL
+      last_error_text = NULL,
+      -- CLEARED, so first_failure_at means "the current run of failures"
+      -- rather than "the first failure ever". Without this, a feed that failed
+      -- once months ago and has been healthy since would, on its next single
+      -- failure, measure a months-long run and be marked dead instantly --
+      -- and dead is terminal. The 14-day rule in backoff.ts reads this field
+      -- and is only correct if a success resets it.
+      first_failure_at = NULL
     WHERE id = ${feedId}
   `;
 }
@@ -239,7 +331,14 @@ export async function recordUnchanged(feedId: bigint): Promise<void> {
       unchanged_polls = unchanged_polls + 1,
       last_success_at = now(),
       last_error_code = NULL,
-      last_error_text = NULL
+      last_error_text = NULL,
+      -- CLEARED, so first_failure_at means "the current run of failures"
+      -- rather than "the first failure ever". Without this, a feed that failed
+      -- once months ago and has been healthy since would, on its next single
+      -- failure, measure a months-long run and be marked dead instantly --
+      -- and dead is terminal. The 14-day rule in backoff.ts reads this field
+      -- and is only correct if a success resets it.
+      first_failure_at = NULL
     WHERE id = ${feedId}
   `;
 }

@@ -6,16 +6,21 @@ import { parse } from "@/lib/ingest/parse";
 import { runPoll } from "@/lib/ingest/poll";
 import { recordPoll } from "@/lib/ingest/fetch-log";
 import { emptyCounters } from "@/lib/ingest/dedupe";
+import type { FeedStatus } from "@/lib/types";
 
 import {
   claimDueFeeds,
+  recentPublishedAts,
   recordFailure,
   recordUnchanged,
   releaseFeed,
+  storeInterval,
   storeValidators,
   CLAIM_BATCH,
   type ClaimedFeed,
 } from "./claim";
+import { afterFailure } from "./backoff";
+import { jitterFor, medianGapSeconds, nextIntervalSeconds, JITTER_SPREAD_S } from "./interval";
 
 /*
  * One tick of the sweep. ARCHITECTURE §6.4.
@@ -131,7 +136,13 @@ async function pollOne(feed: ClaimedFeed, now: Date, deadline: number): Promise<
     return { kind: "skipped", itemsNew: 0, retryAfterS: null };
   }
 
+  /*
+   * The fallback, used only if something throws before a real one is computed.
+   * Every normal path overwrites it — a success from the adaptive rule, a
+   * failure from the backoff curve.
+   */
   let nextInSeconds = feed.fetchIntervalS;
+  let status: FeedStatus | undefined;
   try {
     const result = await fetchFeed(
       feed.feedUrl,
@@ -141,6 +152,33 @@ async function pollOne(feed: ClaimedFeed, now: Date, deadline: number): Promise<
 
     if (result.kind === "unchanged") {
       await recordUnchanged(feed.id);
+      /*
+       * A 304 reschedules on the adaptive rule, not on the stored constant.
+       *
+       * §6.4's widening lives here: `unchanged_polls` has just been
+       * incremented, so once it passes the threshold the interval doubles and a
+       * quiet feed is asked less often. Using the stored interval instead would
+       * mean the widening never took effect on the only outcome that triggers
+       * it.
+       */
+      const history = await recentPublishedAts(feed.id);
+      nextInSeconds = nextIntervalSeconds(feed.id, {
+        publishedAts: history,
+        declaredTtlS: feed.declaredTtlS,
+        unchangedPolls: feed.unchangedPolls + 1,
+      });
+      /*
+       * STORED on this path too, and leaving it out was a real bug.
+       *
+       * The 304 branch is the ONLY place the interval actually changes — the
+       * widening is driven by `unchanged_polls`, which only a 304 increments.
+       * Computing the new interval and not persisting it meant
+       * `fetch_interval_s` kept its old value on the one path that moves it,
+       * so the health screen's "Checked every …" reported a cadence the
+       * scheduler was not using.
+       */
+      await storeInterval(feed.id, nextInSeconds, medianGapSeconds(history));
+      status = "active";
       await recordPoll(feed.id, emptyCounters(), {
         statusCode: result.status,
         durationMs: result.durationMs,
@@ -169,9 +207,21 @@ async function pollOne(feed: ClaimedFeed, now: Date, deadline: number): Promise<
        * §6.4 lists honouring it alongside the backoff curve; M10 owns the
        * curve, but this part costs one line and the alternative is rude.
        */
-      if (result.retryAfterS !== null) {
-        nextInSeconds = Math.max(nextInSeconds, result.retryAfterS);
-      }
+      /*
+       * The curve and the verdict together (§6.4). `consecutiveFailures + 1`
+       * because the claim read the row BEFORE `recordFailure` incremented it,
+       * and the curve is a function of the count including this failure —
+       * off-by-one here means every feed retries one step too fast forever.
+       */
+      const decided = afterFailure({
+        consecutiveFailures: feed.consecutiveFailures + 1,
+        retryAfterS: result.retryAfterS,
+        jitterUnit: jitterFor(feed.id) / (JITTER_SPREAD_S / 2),
+        firstFailureAt: feed.firstFailureAt,
+        now,
+      });
+      nextInSeconds = decided.nextInSeconds;
+      status = decided.status;
       return { kind: "failed", itemsNew: 0, retryAfterS: result.retryAfterS };
     }
 
@@ -185,6 +235,19 @@ async function pollOne(feed: ClaimedFeed, now: Date, deadline: number): Promise<
         bytes: result.bytes,
         errorCode: parsed.reason,
       });
+      // A body that will not parse is a failure like any other, and takes the
+      // same curve. It is NOT `not_a_feed`: that is §6.3's verdict for an
+      // address that was never a feed, which is a different fact from a feed
+      // that served something broken today.
+      const decided = afterFailure({
+        consecutiveFailures: feed.consecutiveFailures + 1,
+        retryAfterS: null,
+        jitterUnit: jitterFor(feed.id) / (JITTER_SPREAD_S / 2),
+        firstFailureAt: feed.firstFailureAt,
+        now,
+      });
+      nextInSeconds = decided.nextInSeconds;
+      status = decided.status;
       return { kind: "failed", itemsNew: 0, retryAfterS: null };
     }
 
@@ -216,15 +279,37 @@ async function pollOne(feed: ClaimedFeed, now: Date, deadline: number): Promise<
       { statusCode: result.status, durationMs: result.durationMs, bytes: result.bytes },
       now,
     );
+    /*
+     * Rescheduled from the history INCLUDING what this poll just wrote, which
+     * is why this runs after `runPoll` rather than before. A feed's first poll
+     * has no articles at all, so computing the interval beforehand would give
+     * every new feed the six-hour default regardless of how often it posts.
+     */
+    const history = await recentPublishedAts(feed.id);
+    nextInSeconds = nextIntervalSeconds(feed.id, {
+      publishedAts: history,
+      declaredTtlS: feed.declaredTtlS,
+      // Reset: a changed body is §6.4's "resets both counters".
+      unchangedPolls: 0,
+    });
+    status = "active";
+    await storeInterval(
+      feed.id,
+      nextInSeconds,
+      medianGapSeconds(history),
+      // The `<ttl>` this poll just read. Nothing persisted it before, so the
+      // floor in `interval.ts` was dead code on every real feed.
+      parsed.declaredTtlS,
+    );
+
     // The counters are CARRIED BACK, not discarded. They were thrown away, so
     // every tick's summary reported `itemsNew: 0` — and that summary is the only
-    // place a human sees a tick's outcome until M10's health screen reads
-    // `fetch_log`.
+    // place a human sees a tick's outcome.
     return { kind: "changed", itemsNew: counters.itemsNew, retryAfterS: null };
   } finally {
     // In a `finally` so an unexpected throw still frees the feed. Otherwise one
     // bug costs that feed its lease for 120 seconds for no reason.
-    await releaseFeed(feed.id, nextInSeconds);
+    await releaseFeed(feed.id, nextInSeconds, status);
   }
 }
 
