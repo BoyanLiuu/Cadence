@@ -421,6 +421,16 @@ model FetchLog {
   mergedByGuid    Int @default(0) @map("merged_by_guid")
   mergedByUrl     Int @default(0) @map("merged_by_url")
   mergedByContent Int @default(0) @map("merged_by_content")
+  /// The guid-trust signal, and NOT derivable from the three counters above.
+  ///
+  /// Items that matched an existing article while carrying a guid that pointed
+  /// at that same row (`agreed`) or somewhere else (`churned`). §6.1's detector
+  /// divides `merged_by_url` by `items_seen`, which is right only for a feed
+  /// already trusted: on an untrusted feed rung 1 does not route, so everything
+  /// merges at rung 2 and that rate is 1.0 for a well-behaved publisher. Since
+  /// every feed starts untrusted, the literal formula flags them all.
+  guidAgreed      Int @default(0) @map("guid_agreed")
+  guidChurned     Int @default(0) @map("guid_churned")
   revised         Int @default(0)
   errorCode       String? @map("error_code")
   note            String?

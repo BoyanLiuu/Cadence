@@ -3,7 +3,9 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { otherFeedCount, type Article, type Cursor, type Page, type Scope } from "@/lib/types";
+import { type Article, type Cursor, type Page, type Scope } from "@/lib/types";
+
+import { ArticleBadges } from "./revised-badge";
 import { hrefForNewResultSet, hrefWith, type ReaderParams } from "@/lib/view-params";
 
 /*
@@ -72,7 +74,6 @@ function Row({
   params: ReaderParams;
 }) {
   const read = article.readAt !== null;
-  const alsoIn = otherFeedCount(article);
 
   return (
     <li className="border-rule border-b">
@@ -98,20 +99,7 @@ function Row({
           {article.title}
         </span>
         <span className="text-muted text-sm">{article.summary}</span>
-        {(alsoIn > 0 || article.revisedAt) && (
-          <span className="gap-2xs mt-3xs flex flex-wrap">
-            {alsoIn > 0 && (
-              <span className="gap-2xs border-rule bg-paper-hi text-ink-2 px-xs inline-flex min-h-5 items-center rounded-[2px] border text-xs font-medium whitespace-nowrap">
-                Also in {alsoIn} {alsoIn === 1 ? "feed" : "feeds"}
-              </span>
-            )}
-            {article.revisedAt && (
-              <span className="gap-2xs border-rule bg-paper-hi text-ink-2 px-xs inline-flex min-h-5 items-center rounded-[2px] border text-xs font-medium whitespace-nowrap">
-                Revised
-              </span>
-            )}
-          </span>
-        )}
+        <ArticleBadges article={article} />
       </Link>
     </li>
   );

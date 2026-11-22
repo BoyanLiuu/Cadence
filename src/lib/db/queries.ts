@@ -245,13 +245,35 @@ export async function findByUrlHash(urlHash: Uint8Array): Promise<bigint | null>
  * taking a second and taking half a minute, and §6.4's budget is 240s for
  * TWENTY-FIVE feeds.
  */
-export async function findManyByUrlHash(urlHashes: Uint8Array[]): Promise<Map<string, bigint>> {
+export type UrlMatch = {
+  articleId: bigint;
+  /**
+   * The feed that saw the article FIRST, i.e. `articles.feed_id`.
+   *
+   * Carried because rung 2 is GLOBAL while the guid map is feed-scoped, so a
+   * match here may be a row another feed owns — and the guid-trust signal must
+   * not read that as the publisher breaking a promise. See the note in
+   * `dedupe.ts` where the counters are incremented.
+   */
+  ownerFeedId: bigint;
+};
+
+export async function findManyByUrlHash(urlHashes: Uint8Array[]): Promise<Map<string, UrlMatch>> {
   if (urlHashes.length === 0) return new Map();
-  const rows = await prisma.$queryRaw<{ url_hash: Uint8Array; article_id: bigint }[]>`
-    SELECT url_hash, article_id FROM cadence.article_urls
-    WHERE url_hash = ANY(${urlHashes}::bytea[])
+  const rows = await prisma.$queryRaw<
+    { url_hash: Uint8Array; article_id: bigint; feed_id: bigint }[]
+  >`
+    SELECT au.url_hash, au.article_id, a.feed_id
+    FROM cadence.article_urls au
+    JOIN cadence.articles a ON a.id = au.article_id
+    WHERE au.url_hash = ANY(${urlHashes}::bytea[])
   `;
-  return new Map(rows.map((r) => [Buffer.from(r.url_hash).toString("hex"), r.article_id]));
+  return new Map(
+    rows.map((r) => [
+      Buffer.from(r.url_hash).toString("hex"),
+      { articleId: r.article_id, ownerFeedId: r.feed_id },
+    ]),
+  );
 }
 
 /**

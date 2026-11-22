@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { RevisionOverride } from "@/components/health/revision-override";
 import { AppBar } from "@/components/app-bar";
 import { getFeedHealth, listSubscriptions } from "@/lib/server/article-service";
 import { getViewer } from "@/lib/server/viewer";
@@ -94,6 +95,8 @@ export default async function FeedChecksPage({ params }: { params: Promise<{ id:
             )}
           </div>
         )}
+
+        <RevisionOverride sub={sub} />
 
         <section className="gap-md grid">
           <h2>Its checks</h2>

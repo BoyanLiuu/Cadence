@@ -80,6 +80,26 @@ function stateOf(sub: SubscriptionWithUnread): State {
         detail: feed.lastError?.code === "timeout" ? "Timed out" : "Failing",
       };
     default:
+      /*
+       * A demoted feed, BEFORE the "New" check.
+       *
+       * `guid_unstable` is permanent (§6.1) and `recordTrust` zeroes
+       * `clean_polls` when it demotes — so a flagged feed satisfies both
+       * branches, and this order is what decides which one shows. Reporting it
+       * as "New" would say it is being treated cautiously while it proves
+       * itself, when in fact it has already failed to.
+       *
+       * Says the LEARNED FACT, not what we do about it: the Collapsed column
+       * on the same row already reads "92% by address", so an earlier wording
+       * of "matched by address" made the row say it twice.
+       *
+       * Not a warning. The feed works; it just cannot be believed about its
+       * own ids, which is a fact rather than a fault, and §8 asks this screen
+       * to let a reader verify the deduplication rather than trust it.
+       */
+      if (feed.guidUnstable) {
+        return { label: "Active", warn: false, detail: "Its ids changed on every build" };
+      }
       if (feed.cleanPolls !== null && feed.cleanPolls < 3) {
         return { label: "New", warn: false, detail: "Matching by address first" };
       }

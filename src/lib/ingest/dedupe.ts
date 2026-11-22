@@ -11,6 +11,7 @@ import {
   upsertByGuid,
   upsertByUrl,
   type ArticleWrite,
+  type UrlMatch,
 } from "@/lib/db/queries";
 import type { MergeRung, RawItem } from "@/lib/types";
 
@@ -65,6 +66,33 @@ export type LadderCounters = {
   itemsCapped: number;
   /** True when the per-poll insert cap refused at least one insert (N7). */
   capHit: boolean;
+
+  /*
+   * THE GUID-TRUST SIGNAL, and the only measure that can bootstrap.
+   *
+   * §6.1's detector is `items_merged_by_url / items_seen > 0.8`, and that is
+   * correct for a feed whose guids are already TRUSTED: rung 1 routes, so a
+   * churned guid shows up as a rung-2 merge. Applied to an UNTRUSTED feed it
+   * inverts — rung 1 does not route at all, so every re-polled item merges at
+   * rung 2 and the rate is 1.0 for a perfectly well-behaved publisher.
+   *
+   * Taken literally that permanently demotes every new feed on its first three
+   * polls, which is the opposite of "trusted slowly". So trust is earned on
+   * whether the publisher's guid AGREED with the row the ladder actually
+   * matched — a question that can be asked whether or not rung 1 is routing,
+   * because the guid map is loaded either way.
+   */
+  /** Matched an existing article, and the item's guid pointed at that same row. */
+  guidAgreed: number;
+  /**
+   * Matched an existing article while carrying a guid that pointed elsewhere.
+   *
+   * "Elsewhere" is nothing at all, or a different row. Either way the publisher
+   * changed an identifier it had promised to keep — the static-site generator
+   * baking a build timestamp into the guid, which is the case §6.1 calls
+   * adversarial.
+   */
+  guidChurned: number;
 };
 
 export function emptyCounters(): LadderCounters {
@@ -78,6 +106,8 @@ export function emptyCounters(): LadderCounters {
     droppedNoIdentity: 0,
     itemsCapped: 0,
     capHit: false,
+    guidAgreed: 0,
+    guidChurned: 0,
   };
 }
 
@@ -100,6 +130,65 @@ export type FeedTrust = {
   cleanPolls: number;
   guidTrustOverride: "auto" | "guid" | "url";
 };
+
+/**
+ * Is the row we matched one THIS FEED owns?
+ *
+ * The guid-trust signal is only meaningful for rows whose identifier this feed
+ * supplied, and that is not every row it matches — rung 2 is GLOBAL while the
+ * guid map is scoped to `feed_id`. So a feed that overlaps another feed's
+ * articles matches them at rung 2, finds nothing in its own guid map, and looks
+ * like it churned every identifier it has.
+ *
+ * That was a real and bad failure, because the overlap is ordinary: a site's
+ * main feed plus one of its category feeds, an aggregator, or the syndication
+ * rung 2 exists to collapse. Such a feed scored 100% churn on EVERY poll, was
+ * flagged `guid_unstable` on its third, and could never recover — `mergeInto`
+ * does not write `guid_hash`, so the row keeps the owner's identifier forever.
+ * The health screen then told the reader the publisher "changed its ids on
+ * every build", which was false.
+ *
+ * Judged on `articles.feed_id`, the feed that saw the article first, because
+ * that is the feed whose guid is stored on the row.
+ */
+function ownsMatchedRow(
+  feedId: bigint,
+  resolution: Resolution,
+  known: KnownMaps,
+  urlHex: string,
+): boolean {
+  // Rung 1 matched, so the row is in this feed's own guid map by construction.
+  if (resolution.rung === "guid") return true;
+  // Rung 3 is feed-scoped too: `findManyByContentHash` takes the feed id.
+  if (resolution.rung === "content") return true;
+  // Rung 2 is the global one. Looked up by THIS ITEM'S address, which is how
+  // rung 2 matched in the first place, so it is one map hit rather than a scan
+  // of the whole poll per item. A match we cannot find is not judged, which is
+  // the conservative direction.
+  return known.byUrl.get(urlHex)?.ownerFeedId === feedId;
+}
+
+/**
+ * Does rung 1 ROUTE for this feed?
+ *
+ * Skipped when `guid_unstable` is set — a learned quirk, not configuration, and
+ * once set it is skipped FOREVER. Also skipped while the feed has fewer than
+ * three clean polls: §6.1's "trusted slowly", and the promise the add-feed
+ * screen makes to the reader.
+ *
+ * One function rather than the same expression in two places, because the two
+ * copies could drift and the consequence of them disagreeing is duplicates.
+ *
+ * Note what this does NOT gate: the guid LOOKUP still runs either way, because
+ * `guidAgreed`/`guidChurned` are how a feed earns its way out of the untrusted
+ * state. Gating the lookup on trust made the signal unobservable on exactly the
+ * feeds being judged.
+ */
+export function trustsGuids(feed: FeedTrust): boolean {
+  if (feed.guidTrustOverride === "guid") return true;
+  if (feed.guidTrustOverride === "url") return false;
+  return !feed.guidUnstable && feed.cleanPolls >= 3;
+}
 
 /** One item's resolution. `rung` is null when the article was new. */
 export type Resolution = {
@@ -159,7 +248,7 @@ function bodyTextOf(item: RawItem): string {
  * duplicates because the position changes on the next poll (§6.3).
  */
 type KnownMaps = {
-  byUrl: Map<string, bigint>;
+  byUrl: Map<string, UrlMatch>;
   byGuid: Map<string, bigint>;
   byContent: Map<string, bigint>;
 };
@@ -232,11 +321,7 @@ async function resolve(
    * §6.4's budget is 240 seconds for TWENTY-FIVE feeds. When absent, the
    * per-item lookup is used — which is what a single-item call wants.
    */
-  known?: {
-    byUrl: Map<string, bigint>;
-    byGuid: Map<string, bigint>;
-    byContent: Map<string, bigint>;
-  },
+  known?: KnownMaps,
   allowInsert = true,
 ): Promise<Resolution | "capped" | null> {
   const keys = keysFor(item);
@@ -261,17 +346,8 @@ async function resolve(
     textLen: text.length === 0 ? null : text.length,
   };
 
-  /*
-   * Is rung 1 live for this feed?
-   *
-   * Skipped when `guid_unstable` is set — a learned quirk, not configuration,
-   * and once set it is skipped FOREVER. Also skipped while the feed has fewer
-   * than three clean polls: §6.1's "trusted slowly", and the promise the
-   * add-feed screen makes to the reader.
-   */
-  const trustGuid =
-    feed.guidTrustOverride === "guid" ||
-    (feed.guidTrustOverride === "auto" && !feed.guidUnstable && feed.cleanPolls >= 3);
+  // Is rung 1 live for this feed? See `trustsGuids`.
+  const trustGuid = trustsGuids(feed);
 
   /*
    * THE LADDER, in §6.1's order: guid, then url, then content.
@@ -318,7 +394,9 @@ async function resolve(
   // RUNG 2 — the canonical address, GLOBALLY, including addresses an article
   // has moved away from.
   {
-    const existing = known ? (known.byUrl.get(urlHex) ?? null) : await findByUrlHash(keys.urlHash);
+    const existing = known
+      ? (known.byUrl.get(urlHex)?.articleId ?? null)
+      : await findByUrlHash(keys.urlHash);
     if (existing !== null) {
       const outcome = await mergeInto(existing, write);
       await recordUrl(existing, keys.urlHash, keys.url);
@@ -445,25 +523,32 @@ export async function ingestItems(
   /*
    * ONE pre-check query for the whole poll, not one per item.
    *
-   * Only needed when the guids are not trusted — which is exactly when the
-   * pre-check runs at all. The addresses are computed twice (here and in
-   * `resolveAndWrite`), which is cheap and pure, and keeps the per-item path
-   * usable on its own.
+   * The addresses are computed twice (here and in `resolveAndWrite`), which is
+   * cheap and pure, and keeps the per-item path usable on its own.
    */
-  const trusted =
-    feed.guidTrustOverride === "guid" ||
-    (feed.guidTrustOverride === "auto" && !feed.guidUnstable && feed.cleanPolls >= 3);
   const keyed = items.map((item) => keysFor(item));
   const known = {
     // ALWAYS loaded, trusted guids or not: see the note in `resolveAndWrite`
     // about aliases in `article_urls` that no constraint can catch.
     byUrl: await findManyByUrlHash(keyed.flatMap((k) => (k === null ? [] : [k.urlHash]))),
-    byGuid: trusted
-      ? await findManyByGuidHash(
-          feed.id,
-          keyed.flatMap((k) => (k === null || k.guidHash === null ? [] : [k.guidHash])),
-        )
-      : new Map<string, bigint>(),
+    /*
+     * ALSO always loaded, and that is a change with a reason.
+     *
+     * It used to be `trusted ? … : new Map()`, which made the guid invisible on
+     * exactly the feeds whose guids are being judged. An untrusted feed then
+     * merged every re-polled item at rung 2, so §6.1's
+     * `merged_by_url / items_seen` read 1.0 for a perfectly well-behaved
+     * publisher — and a literal reading of the detector would have flagged
+     * every new feed `guid_unstable` on its third poll, permanently.
+     *
+     * Loading it always costs one query per poll and lets `guidAgreed` /
+     * `guidChurned` be measured whether or not rung 1 is ROUTING. Trust is
+     * earned on that, not on the collapse rate.
+     */
+    byGuid: await findManyByGuidHash(
+      feed.id,
+      keyed.flatMap((k) => (k === null || k.guidHash === null ? [] : [k.guidHash])),
+    ),
     // Rung 3's lookup, which has no constraint behind it and so must run
     // before the write rather than after a failure. Keyed off `keyed` so an
     // item with no identity at all contributes nothing here either.
@@ -475,7 +560,7 @@ export async function ingestItems(
     ),
   };
 
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
     counters.itemsSeen += 1;
 
     /*
@@ -511,22 +596,33 @@ export async function ingestItems(
     else counters.mergedByContent += 1;
 
     if (resolution.revised) counters.revised += 1;
+
+    /*
+     * THE TRUST SIGNAL — did the publisher's guid agree with the row we matched?
+     *
+     * Only asked of items that MATCHED something. A new article has nothing to
+     * agree with, and counting it either way would make a feed's score depend
+     * on how much it published rather than on whether its identifiers hold
+     * still.
+     *
+     * An item with no guid at all is also skipped. A publisher that never
+     * promised an identifier has not broken one — §6.3 keeps those feeds
+     * working through rungs 2 and 3, and they simply never earn rung 1.
+     */
+    if (resolution.rung !== null) {
+      const keys = keyed[index];
+      const guidHex =
+        keys?.guidHash === null || keys?.guidHash === undefined
+          ? null
+          : Buffer.from(keys.guidHash).toString("hex");
+      const urlHex = keys === null ? "" : Buffer.from(keys.urlHash).toString("hex");
+      if (guidHex !== null && ownsMatchedRow(feed.id, resolution, known, urlHex)) {
+        const claimed = known.byGuid.get(guidHex) ?? null;
+        if (claimed === resolution.articleId) counters.guidAgreed += 1;
+        else counters.guidChurned += 1;
+      }
+    }
   }
 
   return { counters, resolutions };
-}
-
-/**
- * Should this feed stop trusting its guids?
- *
- * §6.1's detection, from counters already kept. Flipping the flag only stops
- * FUTURE duplicates, which is why the pre-check above exists as well.
- */
-export function shouldFlagGuidUnstable(
-  recent: { itemsSeen: number; mergedByUrl: number }[],
-): boolean {
-  // Three consecutive polls, each with enough items to mean anything.
-  const polls = recent.slice(0, 3);
-  if (polls.length < 3) return false;
-  return polls.every((p) => p.itemsSeen >= 5 && p.mergedByUrl / p.itemsSeen > 0.8);
 }

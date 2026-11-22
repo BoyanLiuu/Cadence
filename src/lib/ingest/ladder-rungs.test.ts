@@ -5,7 +5,7 @@ import { CAN_WRITE_DB } from "@/lib/db/guards";
 import type { RawItem } from "@/lib/types";
 
 import { urlsFor } from "./article-urls";
-import { ingestItems, resolveAndWrite, shouldFlagGuidUnstable, type FeedTrust } from "./dedupe";
+import { ingestItems, resolveAndWrite, type FeedTrust } from "./dedupe";
 
 /*
  * What this suite is for: a rung that silently never fires.
@@ -451,61 +451,5 @@ describeDb("each rung fires on the case only it can resolve", { timeout: 120_000
         counters.mergedByContent +
         counters.droppedNoIdentity,
     ).toBe(counters.itemsSeen);
-  });
-});
-
-describe("learning that a feed lies about its guids", () => {
-  it("flags after three consecutive polls collapsing mostly by address", () => {
-    // §6.1's detection, from counters already kept. Pure, so no database.
-    const churning = [
-      { itemsSeen: 12, mergedByUrl: 11 },
-      { itemsSeen: 12, mergedByUrl: 12 },
-      { itemsSeen: 12, mergedByUrl: 11 },
-    ];
-    expect(shouldFlagGuidUnstable(churning)).toBe(true);
-  });
-
-  it("does NOT flag on a single bad poll", () => {
-    // One rebuild is not a pattern, and the flag is permanent.
-    expect(
-      shouldFlagGuidUnstable([
-        { itemsSeen: 12, mergedByUrl: 12 },
-        { itemsSeen: 12, mergedByUrl: 0 },
-        { itemsSeen: 12, mergedByUrl: 0 },
-      ]),
-    ).toBe(false);
-  });
-
-  it("ignores polls too small to mean anything", () => {
-    // §6.1 requires itemsSeen >= 5: a two-item feed where both collapsed is
-    // not evidence of anything.
-    expect(
-      shouldFlagGuidUnstable([
-        { itemsSeen: 2, mergedByUrl: 2 },
-        { itemsSeen: 2, mergedByUrl: 2 },
-        { itemsSeen: 2, mergedByUrl: 2 },
-      ]),
-    ).toBe(false);
-  });
-
-  it("needs three polls, not two", () => {
-    expect(
-      shouldFlagGuidUnstable([
-        { itemsSeen: 12, mergedByUrl: 12 },
-        { itemsSeen: 12, mergedByUrl: 12 },
-      ]),
-    ).toBe(false);
-  });
-
-  it("does not flag a feed collapsing just under the threshold", () => {
-    // 0.8 exactly is not "> 0.8". A feed with a few genuine republications
-    // must not lose rung 1 forever.
-    expect(
-      shouldFlagGuidUnstable([
-        { itemsSeen: 10, mergedByUrl: 8 },
-        { itemsSeen: 10, mergedByUrl: 8 },
-        { itemsSeen: 10, mergedByUrl: 8 },
-      ]),
-    ).toBe(false);
   });
 });

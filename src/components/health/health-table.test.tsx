@@ -116,7 +116,35 @@ describe("a missing number is said honestly, never as a zero", () => {
     // §6.1: a feed collapsing by ADDRESS is a feed whose GUIDs cannot be
     // trusted, which is the single most useful thing this table reports.
     render(<HealthTable subs={[sub(9)]} folders={FOLDERS} />);
-    expect(within(rowFor("Ledger & Lathe")).getByText(/by address/)).toBeTruthy();
+    expect(within(rowFor("Ledger & Lathe")).getByText(/% by address/)).toBeTruthy();
+  });
+
+  it("says a demoted feed's ids changed, rather than calling it New", () => {
+    /*
+     * `guid_unstable` is permanent (§6.1), and `recordTrust` zeroes
+     * `clean_polls` when it demotes — so a flagged feed satisfies the "New"
+     * branch TOO, and the branch order is what decides which one shows.
+     * Reporting it as New would say it is being treated cautiously while it
+     * proves itself, when it has already failed to.
+     *
+     * `clean_polls: 0` is the state that actually collides, and it has to be
+     * constructed: fixture feed 9 carries `cleanPolls: null`, so the "New"
+     * branch could never fire for it and the assertion below would pass
+     * whatever the branch order was.
+     *
+     * Not a warning: the feed works, it just cannot be believed about its own
+     * ids. That is a fact rather than a fault.
+     */
+    const demoted = sub(9);
+    const row = {
+      ...demoted,
+      feed: { ...demoted.feed, guidUnstable: true, cleanPolls: 0 },
+    };
+    render(<HealthTable subs={[row]} folders={FOLDERS} />);
+    const cells = within(rowFor("Ledger & Lathe"));
+    expect(cells.getByText("Its ids changed on every build")).toBeTruthy();
+    expect(cells.queryByText("New")).toBeNull();
+    expect(cells.queryByText("Matching by address first")).toBeNull();
   });
 });
 
