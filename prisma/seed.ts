@@ -3,8 +3,18 @@ import { createHash } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 
+import type { FetchLogEntry } from "../src/lib/types";
+
 import { PrismaClient } from "../src/generated/prisma/client";
-import { articles, feeds, folders, sampleUser, subscriptions, ticks } from "../src/lib/fixtures";
+import {
+  SAMPLE_NOW,
+  articles,
+  feeds,
+  folders,
+  sampleUser,
+  subscriptions,
+  ticks,
+} from "../src/lib/fixtures";
 import { canonicalUrl } from "../src/lib/ingest/canonical-url";
 import { contentHash } from "../src/lib/ingest/content-hash";
 
@@ -256,14 +266,97 @@ async function main() {
     }
   }
 
-  // The fetch log, from each feed's fixture tail plus the tick fixtures.
+  /*
+   * THE FETCH LOG, rebased onto the current clock.
+   *
+   * The health screen's per-day figures come from a `groupBy` over `fetch_log`
+   * rows dated `>= start of UTC day`, and every fixture log entry carries a
+   * FROZEN date — the corpus's `SAMPLE_NOW` is 2026-11-12T09:40Z. Written at
+   * their literal dates, none of them has been "today" since the corpus was
+   * authored, so the database path showed **0 for every counter on every
+   * feed**. For five milestones. It survived because an all-empty health table
+   * is a believable state rather than an obviously broken one, which is the
+   * failure mode that screen can least afford.
+   *
+   * Restamping each entry at `Date.now()` is the wrong fix twice over: the
+   * fixtures MODULE is frozen TypeScript that component tests read directly,
+   * so moving only the seeded copies would make the two implementations
+   * disagree on every date instead of just on these counters — and a tail
+   * whose eight checks all share one instant is not a tail.
+   *
+   * So the whole log is shifted by a WHOLE NUMBER OF DAYS, which lands the
+   * corpus's own "today" on the real today and leaves every relative age
+   * intact: feed 5's six checks still read one per day going back six days,
+   * and feed 8's failures still sit a fortnight back.
+   *
+   * The fixtures turn out to be exactly consistent under that shift. For nine
+   * of the twelve feeds the entries dated 11-12 account for the whole of
+   * `today` — rows, 304s, failures and item sums alike. The other three are
+   * checked often enough that their day is bigger than the tail shows (feed 1
+   * shows 8 of 39 checks), and only the REMAINDER is synthesised, below.
+   */
+  const startOfUtcDay = (d: Date) => {
+    const start = new Date(d);
+    start.setUTCHours(0, 0, 0, 0);
+    return start;
+  };
+
+  const corpusNow = new Date(SAMPLE_NOW);
+  const corpusDayStart = startOfUtcDay(corpusNow);
+  const startOfToday = startOfUtcDay(new Date());
+  const dayShiftMs = startOfToday.getTime() - corpusDayStart.getTime();
+
+  /*
+   * Times inside the corpus's day are SQUEEZED into the part of today that has
+   * actually elapsed, so no check is stamped in the future — a check dated
+   * ahead of now would read as a clock problem on the one screen that exists
+   * to be trusted. Seeding at 03:00 UTC maps the corpus's 00:00–09:40 onto
+   * 00:00–03:00; seeding any time after 09:40 leaves the times as written.
+   * Earlier days need no squeeze: a whole-day shift keeps them in the past.
+   */
+  const corpusElapsedMs = corpusNow.getTime() - corpusDayStart.getTime();
+
+  /*
+   * With a floor of one second, for the pathological case. Seeding in the first
+   * instants of a UTC day leaves no room at all: the squeeze goes to zero, every
+   * row today collapses onto midnight, and the tail's "newest first" becomes a
+   * TIE that `take 8` resolves however the database feels — so the health screen
+   * shows synthetic rows, which is the exact bug the rebasing exists to avoid.
+   *
+   * The cost is bounded and unobservable: inside the first second of a UTC day a
+   * row can be stamped up to a second ahead of now, and is in the past before
+   * anything renders it. The version of this that floored at a MINUTE is what
+   * made that trade badly — a minute is long enough to show on screen.
+   */
+  const MIN_DAY_SPAN_MS = 1_000;
+  const elapsedTodayMs = Math.max(MIN_DAY_SPAN_MS, Date.now() - startOfToday.getTime());
+  const squeeze = Math.min(1, elapsedTodayMs / corpusElapsedMs);
+
+  const rebase = (iso: string): Date => {
+    const shifted = new Date(iso).getTime() + dayShiftMs;
+    const intoDay = shifted - startOfToday.getTime();
+    if (intoDay < 0) return new Date(shifted);
+    if (intoDay > corpusElapsedMs) {
+      // A fixture entry dated after the corpus's own "now" has no honest place
+      // on a real clock: squeezing it would still land it in the future.
+      throw new Error(`fixture log entry ${iso} is after SAMPLE_NOW (${SAMPLE_NOW})`);
+    }
+    return new Date(startOfToday.getTime() + Math.round(intoDay * squeeze));
+  };
+
+  const isNotModified = (code: FetchLogEntry["code"]) => code === 304;
+  // Matches what the service counts as a failure: an error code, or a status
+  // past 400. A non-numeric fixture code (`html`, `timeout`) becomes an
+  // `error_code` below, so it counts here too.
+  const isFailure = (code: FetchLogEntry["code"]) => typeof code !== "number" || code >= 400;
+
   for (const feed of feeds) {
     for (const entry of feed.log) {
       const numericCode = typeof entry.code === "number" ? entry.code : null;
       await prisma.fetchLog.create({
         data: {
           feedId: BigInt(feed.id),
-          at: new Date(entry.at),
+          at: rebase(entry.at),
           statusCode: numericCode,
           errorCode: numericCode === null ? String(entry.code) : null,
           durationMs: entry.ms,
@@ -297,6 +390,164 @@ async function main() {
           guidChurned: entry.mergedByUrl,
           note: entry.note ?? null,
         },
+      });
+    }
+  }
+
+  /*
+   * THE REST OF TODAY, for the feeds whose day is bigger than their tail.
+   *
+   * `today` is an aggregate over every check since midnight; `log` is the
+   * newest handful. On a feed checked every fifteen minutes those are very
+   * different sizes — feed 1 shows 8 of 39 — so the unshown 31 have to exist
+   * as rows or the counters read low, which on this screen is indistinguishable
+   * from the ingestion having done less work than it did.
+   *
+   * Note which counters are ROWS and which are SUMS, because they are filled
+   * differently: `checks` is a row count, `n304` counts rows whose status is
+   * 304, `failed` counts rows with an error or a status past 400. The rest are
+   * sums over the day's rows.
+   *
+   * Every shortfall is derived by subtraction and every one is checked, so a
+   * fixture whose `today` block contradicts its own tail fails the seed by
+   * name instead of quietly seeding a day that could not have happened.
+   */
+  for (const feed of feeds) {
+    const t = feed.today;
+    const todayEntries = feed.log.filter((entry) => rebase(entry.at) >= startOfToday);
+
+    const sum = (pick: (entry: (typeof todayEntries)[number]) => number) =>
+      todayEntries.reduce((total, entry) => total + pick(entry), 0);
+
+    const short = (name: string, designed: number, shown: number) => {
+      if (shown > designed) {
+        throw new Error(
+          `feed ${feed.id} (${feed.title}): today's log entries already carry ` +
+            `${name} ${shown}, more than today.${name} ${designed}`,
+        );
+      }
+      return designed - shown;
+    };
+
+    const missingChecks = short("checks", t.checks, todayEntries.length);
+    const missing304 = short(
+      "n304",
+      t.n304,
+      todayEntries.filter((e) => isNotModified(e.code)).length,
+    );
+    const missingFailed = short(
+      "failed",
+      t.failed,
+      todayEntries.filter((e) => isFailure(e.code)).length,
+    );
+    const missingPlain = missingChecks - missing304 - missingFailed;
+    if (missingPlain < 0) {
+      throw new Error(
+        `feed ${feed.id} (${feed.title}): ${missing304} unshown 304s plus ` +
+          `${missingFailed} unshown failures exceed the ${missingChecks} unshown checks`,
+      );
+    }
+
+    const sums = {
+      itemsSeen: short(
+        "seen",
+        t.seen,
+        sum((e) => e.itemsSeen),
+      ),
+      itemsNew: short(
+        "new",
+        t.new,
+        sum((e) => e.itemsNew),
+      ),
+      mergedByGuid: short(
+        "mergedByGuid",
+        t.mergedByGuid,
+        sum((e) => e.mergedByGuid),
+      ),
+      mergedByUrl: short(
+        "mergedByUrl",
+        t.mergedByUrl,
+        sum((e) => e.mergedByUrl),
+      ),
+      mergedByContent: short(
+        "mergedByContent",
+        t.mergedByContent,
+        sum((e) => e.mergedByContent),
+      ),
+      revised: short(
+        "revised",
+        t.revised,
+        sum((e) => e.revised),
+      ),
+      // Derived from the rungs for the tail too — see the note above.
+      guidAgreed: short(
+        "guidAgreed",
+        t.guidAgreed,
+        sum((e) => e.mergedByGuid),
+      ),
+      guidChurned: short(
+        "guidChurned",
+        t.guidChurned,
+        sum((e) => e.mergedByUrl),
+      ),
+    };
+    const unplaceable = Object.entries(sums).filter(([, value]) => value > 0);
+    if (missingPlain === 0 && unplaceable.length > 0) {
+      // Only a successful check can carry items, so there is nowhere to put
+      // these. Silently dropping them is how `seen` and `new` would read low.
+      throw new Error(
+        `feed ${feed.id} (${feed.title}): no unshown successful check to carry ` +
+          unplaceable.map(([name, value]) => `${name} ${value}`).join(", "),
+      );
+    }
+    if (missingChecks === 0) continue;
+
+    /*
+     * Placed BEFORE the oldest entry today's tail shows, so the tail stays the
+     * tail: the health screen's recent checks and the tick timeline both read
+     * newest-first off this table, and synthetic rows stamped later would push
+     * the designed history off the end of the list.
+     */
+    const oldestShown = todayEntries.reduce(
+      (oldest, entry) => Math.min(oldest, rebase(entry.at).getTime()),
+      startOfToday.getTime() + elapsedTodayMs,
+    );
+    const window = oldestShown - startOfToday.getTime();
+    const at = (i: number) =>
+      new Date(startOfToday.getTime() + Math.round((window * (i + 1)) / (missingChecks + 1)));
+
+    // Oldest first, and the item-bearing checks oldest of all, so what sits
+    // nearest the visible tail is the 304s that dominate a quiet morning.
+    let i = 0;
+    for (let n = 0; n < missingPlain; n++, i++) {
+      // The sums ride on the FIRST of them; the rest are empty 200s. Spreading
+      // them evenly would need the totals to divide, and a fixture should not
+      // have to be arithmetically convenient.
+      const first = n === 0;
+      await prisma.fetchLog.create({
+        data: {
+          feedId: BigInt(feed.id),
+          at: at(i),
+          statusCode: 200,
+          durationMs: 180,
+          ...(first ? sums : {}),
+        },
+      });
+    }
+    for (let n = 0; n < missingFailed; n++, i++) {
+      await prisma.fetchLog.create({
+        data: {
+          feedId: BigInt(feed.id),
+          at: at(i),
+          statusCode: null,
+          errorCode: "timeout",
+          durationMs: 10_000,
+        },
+      });
+    }
+    for (let n = 0; n < missing304; n++, i++) {
+      await prisma.fetchLog.create({
+        data: { feedId: BigInt(feed.id), at: at(i), statusCode: 304, durationMs: 40 },
       });
     }
   }

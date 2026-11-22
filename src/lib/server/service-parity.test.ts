@@ -61,52 +61,122 @@ describeDb("the two implementations answer identically", () => {
     expect(fromDb.map((s) => s.unread)).toEqual(fromFixtures.map((s) => s.unread));
   });
 
-  it("listSubscriptions' today counters have the same SHAPE in both, and diverge in value", async () => {
+  it("listSubscriptions' today counters agree, field by field", async () => {
     /*
-     * A KNOWN DIVERGENCE, asserted so it cannot widen unnoticed.
+     * The sharpest comparison in this suite, and writing it found that the
+     * database path reported **0 for every counter on every feed** — for five
+     * milestones, because an all-empty health table is a believable state
+     * rather than an obviously broken one.
      *
-     * `today` is the one part of the service's answer the two implementations
-     * do not agree on, and writing this test is what found out:
+     * The cause was that `today` is derived from `fetch_log` rows dated
+     * `>= start of UTC day`, while every fixture log entry carries a frozen
+     * date from the corpus's own `NOW`. The seed now reconstructs each feed's
+     * designed day inside the current UTC day, so both sides report the same
+     * figures — see `prisma/seed.ts` for why reconstructing beat shifting every
+     * fixture date.
      *
-     *   fixtures   `today` is HAND-AUTHORED per feed — feed 1 says 39 checks —
-     *              designed so each health-screen state has a sample.
-     *   database   `today` is DERIVED by a `groupBy` over `fetch_log` rows
-     *              dated `>= start of UTC day`.
-     *
-     * The seeded log holds 69 rows across twelve feeds, and their fixture
-     * timestamps are already days in the past — so in the database path every
-     * counter reads 0 and the health screen shows "None read" for everything.
-     * Which is exactly why nobody noticed: an all-empty health table is a
-     * plausible state rather than an obviously broken one.
-     *
-     * Closing it means generating `fetch_log` rows from each feed's designed
-     * `today`, dated into the current day — a fixture-corpus change, not a
-     * service one. Recorded in the memo rather than done here.
-     *
-     * What IS asserted: both implementations return the same FIELDS, so a
-     * counter added to one and not the other still fails. That is the drift
-     * that actually bites — `guidAgreed`/`guidChurned` had to be added to the
-     * type, the query, twelve fixtures and the seed, and missing any one of
-     * them would show different numbers depending on who answered.
+     * Compared field by field rather than with one deep-equal so a failure
+     * names the counter that diverged. This block GROWS — M8 added
+     * `guidAgreed`/`guidChurned`, which had to reach the type, the query,
+     * twelve fixtures and the seed — and missing any one of those shows
+     * different numbers depending on which implementation answered, on the one
+     * screen Appendix E says exists to let a reader verify rather than trust.
      */
     const viewer = await getViewer();
     const fromDb = await db.listSubscriptions(viewer);
     const fromFixtures = await fixtures.listSubscriptions(viewer);
 
     expect(fromDb.length).toBe(fromFixtures.length);
-    // Guarded: an unseeded database would otherwise throw a TypeError on
-    // `[0]` and report a crash where the real answer is "nothing is seeded".
     expect(fromDb.length, "database has no subscriptions; run pnpm db:seed").toBeGreaterThan(0);
-    expect(Object.keys(fromDb[0].feed.today).sort()).toEqual(
-      Object.keys(fromFixtures[0].feed.today).sort(),
-    );
 
-    // Every counter is a number in both, rather than undefined in one.
-    for (const row of [...fromDb, ...fromFixtures]) {
-      for (const [key, value] of Object.entries(row.feed.today)) {
-        expect(typeof value, `feed ${row.feedId} · today.${key}`).toBe("number");
+    /*
+     * PRECONDITION, named rather than assumed.
+     *
+     * `today` is the only figure in this suite read off state the seed cannot
+     * freeze: it is an aggregate over rows dated `>= start of UTC day`, so a
+     * database seeded yesterday reports zero for all of it, and a sweep that
+     * has run since the seed reports more than the corpus describes. Both
+     * produce a wall of numeric diffs that say nothing about which
+     * implementation is wrong — so each is caught here and named instead.
+     */
+    const expectedChecks = fromFixtures.reduce((n, row) => n + row.feed.today.checks, 0);
+    const actualChecks = fromDb.reduce((n, row) => n + row.feed.today.checks, 0);
+    expect(expectedChecks, "the corpus describes no checks today").toBeGreaterThan(0);
+    expect(
+      actualChecks,
+      "every today counter is zero: the database was seeded on an earlier UTC " +
+        "day (today's counters are rebased at seed time). Run pnpm db:seed",
+    ).toBeGreaterThan(0);
+    expect(
+      actualChecks,
+      "more checks today than the corpus describes: a sweep has run since the " +
+        "seed, so fetch_log no longer holds only seeded rows. Run pnpm db:seed",
+    ).toBeLessThanOrEqual(expectedChecks);
+
+    const byId = new Map(fromFixtures.map((row) => [row.feedId, row]));
+    for (const row of fromDb) {
+      const expected = byId.get(row.feedId);
+      expect(expected, `feed ${row.feedId} missing from fixtures`).toBeDefined();
+      for (const key of Object.keys(row.feed.today) as (keyof typeof row.feed.today)[]) {
+        expect(row.feed.today[key], `feed ${row.feedId} (${row.feed.title}) · today.${key}`).toBe(
+          expected!.feed.today[key],
+        );
       }
     }
+  });
+
+  it("the fixture log tail is still the NEWEST thing in fetch_log", async () => {
+    /*
+     * The counters above are an aggregate over the day; `log` is the newest
+     * handful of rows, and the two are seeded from the same table. Making the
+     * counters right by writing rows dated inside today is therefore a way to
+     * make `log` WRONG — synthetic rows stamped later than the fixture tail
+     * push the designed history off the end of a `take 8`, and the health
+     * screen shows eight identical 200s where the corpus describes a rhythm of
+     * 304s and occasional fetches. That is what this asserts against.
+     *
+     * The comparison is a PREFIX and skips `at`, both deliberately. The corpus
+     * authors `log` as a partial tail of a bigger day — feed 1 shows 8 checks
+     * of 39 — so a feed can legitimately have older rows the fixtures do not
+     * carry, and the seed rebases dates onto the current clock so the frozen
+     * `at` values cannot match by construction. What must hold is that the
+     * designed entries come first, in order, unchanged.
+     */
+    const viewer = await getViewer();
+    const fromDb = await db.listSubscriptions(viewer);
+    const byId = new Map(
+      (await fixtures.listSubscriptions(viewer)).map((row) => [row.feedId, row]),
+    );
+
+    let compared = 0;
+    for (const row of fromDb) {
+      const expected = byId.get(row.feedId)!.feed.log;
+      const got = row.feed.log;
+      const shared = Math.min(expected.length, got.length);
+      expect(shared, `feed ${row.feedId} (${row.feed.title}) has no log entries`).toBeGreaterThan(
+        0,
+      );
+
+      for (let i = 0; i < shared; i += 1) {
+        const where = `feed ${row.feedId} (${row.feed.title}) · log[${i}]`;
+        const { at: _dbAt, ...gotRest } = got[i];
+        const { at: _fxAt, ...expectedRest } = expected[i];
+        expect(gotRest, where).toEqual(expectedRest);
+        compared += 1;
+      }
+
+      // Newest first, which `take 8` depends on meaning anything.
+      for (let i = 1; i < got.length; i += 1) {
+        expect(
+          got[i].at <= got[i - 1].at,
+          `feed ${row.feedId} (${row.feed.title}) · log[${i}] is newer than log[${i - 1}]`,
+        ).toBe(true);
+      }
+    }
+
+    // A guard on the guard: `shared` going to zero everywhere would make the
+    // loop above vacuous while still passing.
+    expect(compared, "no log entries were compared").toBeGreaterThan(fromDb.length);
   });
 
   it.each(SCOPES.map((s) => [JSON.stringify(s), s] as const))(
