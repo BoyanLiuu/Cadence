@@ -273,6 +273,28 @@ async function main() {
           mergedByUrl: entry.mergedByUrl,
           mergedByContent: entry.mergedByContent,
           revised: entry.revised,
+          /*
+           * DERIVED from the rungs, not carried per entry.
+           *
+           * `guid_agreed` / `guid_churned` arrived in M8 and the fixture log
+           * entries predate them. Rather than invent a value for all of them,
+           * they use the relationship that holds for a TRUSTED feed: an item
+           * matched at rung 1 agreed on its guid, and one matched at rung 2
+           * did not — which is exactly why the collapse rate is the churn
+           * signal once a feed is trusted (see `guid-trust.ts`).
+           *
+           * It is a derivation and not the real measurement, so it is right
+           * for the fixture feeds and would be wrong for an UNTRUSTED one,
+           * where everything matches at rung 2 whether the guids held or not.
+           * The one fixture feed in that state has no log entries with items.
+           *
+           * `mergedByContent` is ignored, which production counts as churn — a
+           * rung-3 match means the guid pointed nowhere. Harmless only because
+           * every fixture entry has it at zero; a fixture that set it would
+           * under-report churn here.
+           */
+          guidAgreed: entry.mergedByGuid,
+          guidChurned: entry.mergedByUrl,
           note: entry.note ?? null,
         },
       });

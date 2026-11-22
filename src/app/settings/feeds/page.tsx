@@ -80,6 +80,15 @@ export default async function FeedHealthPage() {
                 title: "Collapsed",
                 body: "Of the items read, the share that matched an article already here by its address or its text.",
               },
+              {
+                title: "ids held · N% of ids changed",
+                body:
+                  "Under Collapsed: whether this feed's own article ids stayed put. A feed can " +
+                  "collapse by address for two very different reasons — because it is new and not " +
+                  "yet trusted on its ids, or because it changes them on every build. Only the " +
+                  "second is the publisher's doing, and only this line tells them apart. Blank " +
+                  "when too few items arrived to judge.",
+              },
             ].map((item) => (
               <div key={item.title} className="gap-2xs border-rule pb-md grid border-b">
                 <h3 className="text-ink">{item.title}</h3>
@@ -87,8 +96,9 @@ export default async function FeedHealthPage() {
               </div>
             ))}
             <p className="border-rule bg-paper-hi text-ink-2 px-sm py-xs border text-xs leading-[1.45]">
-              These figures come from fixtures. M10 fills them from real{" "}
-              <code className="text-xs">fetch_log</code> rows.
+              These figures are read from <code className="text-xs">fetch_log</code>, one row per
+              check. They cover the current UTC day, so a feed checked only before midnight shows
+              none.
             </p>
           </aside>
         </section>

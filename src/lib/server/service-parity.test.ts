@@ -61,6 +61,54 @@ describeDb("the two implementations answer identically", () => {
     expect(fromDb.map((s) => s.unread)).toEqual(fromFixtures.map((s) => s.unread));
   });
 
+  it("listSubscriptions' today counters have the same SHAPE in both, and diverge in value", async () => {
+    /*
+     * A KNOWN DIVERGENCE, asserted so it cannot widen unnoticed.
+     *
+     * `today` is the one part of the service's answer the two implementations
+     * do not agree on, and writing this test is what found out:
+     *
+     *   fixtures   `today` is HAND-AUTHORED per feed — feed 1 says 39 checks —
+     *              designed so each health-screen state has a sample.
+     *   database   `today` is DERIVED by a `groupBy` over `fetch_log` rows
+     *              dated `>= start of UTC day`.
+     *
+     * The seeded log holds 69 rows across twelve feeds, and their fixture
+     * timestamps are already days in the past — so in the database path every
+     * counter reads 0 and the health screen shows "None read" for everything.
+     * Which is exactly why nobody noticed: an all-empty health table is a
+     * plausible state rather than an obviously broken one.
+     *
+     * Closing it means generating `fetch_log` rows from each feed's designed
+     * `today`, dated into the current day — a fixture-corpus change, not a
+     * service one. Recorded in the memo rather than done here.
+     *
+     * What IS asserted: both implementations return the same FIELDS, so a
+     * counter added to one and not the other still fails. That is the drift
+     * that actually bites — `guidAgreed`/`guidChurned` had to be added to the
+     * type, the query, twelve fixtures and the seed, and missing any one of
+     * them would show different numbers depending on who answered.
+     */
+    const viewer = await getViewer();
+    const fromDb = await db.listSubscriptions(viewer);
+    const fromFixtures = await fixtures.listSubscriptions(viewer);
+
+    expect(fromDb.length).toBe(fromFixtures.length);
+    // Guarded: an unseeded database would otherwise throw a TypeError on
+    // `[0]` and report a crash where the real answer is "nothing is seeded".
+    expect(fromDb.length, "database has no subscriptions; run pnpm db:seed").toBeGreaterThan(0);
+    expect(Object.keys(fromDb[0].feed.today).sort()).toEqual(
+      Object.keys(fromFixtures[0].feed.today).sort(),
+    );
+
+    // Every counter is a number in both, rather than undefined in one.
+    for (const row of [...fromDb, ...fromFixtures]) {
+      for (const [key, value] of Object.entries(row.feed.today)) {
+        expect(typeof value, `feed ${row.feedId} · today.${key}`).toBe("number");
+      }
+    }
+  });
+
   it.each(SCOPES.map((s) => [JSON.stringify(s), s] as const))(
     "countUnread for %s agrees",
     async (_label, scope) => {

@@ -137,6 +137,60 @@ function collapsed(sub: SubscriptionWithUnread): string {
   return `${pct}%${byUrl ? " by address" : byContent ? " by text" : ""}`;
 }
 
+/**
+ * The smallest sample this line will draw a conclusion from.
+ *
+ * Matches §6.1's own floor, which `guid-trust.ts` uses to decide whether a poll
+ * is worth judging at all. A screen that states a verdict the detector would
+ * refuse to make is telling the reader something the scheduler does not
+ * believe.
+ */
+const MIN_JUDGED_TO_REPORT = 5;
+
+/**
+ * WHY it collapsed by address — the part the percentage cannot say.
+ *
+ * "92 % by address" has two completely different causes and the reader has to
+ * be able to tell them apart:
+ *
+ *   the feed is NEW      rung 1 is not routing yet, so everything legitimately
+ *                        matches at rung 2 and the publisher is faultless
+ *   the ids CHURN        the publisher regenerates its guids on every build,
+ *                        and rung 1 would insert a duplicate per item if it
+ *                        were trusted
+ *
+ * Through the collapse rate alone those read identically, which is why M8
+ * records `guid_agreed` / `guid_churned` separately. This is the line that
+ * turns them into something a reader can act on, and Appendix E's "verify
+ * rather than trust" is the reason it exists at all: a number with no
+ * explanation is something you either believe or do not.
+ *
+ * Null when the day had nothing to judge — no matches, or TOO FEW to mean
+ * anything. §6.1's own detector ignores polls under five items for exactly
+ * that reason, and this line must not make a verdict the detector refuses to:
+ * two items both churning is not evidence, and "ids all changed" from a sample
+ * of two is the same mistake as rendering an unchecked feed's 304 ratio as
+ * `0%`.
+ *
+ * The absolute verdicts are decided on the COUNTERS, not on the rounded
+ * percentage. Rounding first says "ids held" when 1 of 401 items churned —
+ * 0.25 % rounds to zero — which hides a real churn event on the screen built
+ * to surface it, and says "ids all changed" when one item in three hundred
+ * agreed.
+ */
+function idsHeld(sub: SubscriptionWithUnread): string | null {
+  const { guidAgreed, guidChurned } = sub.feed.today;
+  const judged = guidAgreed + guidChurned;
+  if (judged < MIN_JUDGED_TO_REPORT) return null;
+
+  if (guidChurned === 0) return "ids held";
+  if (guidAgreed === 0) return "ids all changed";
+
+  // Clamped away from the absolutes, so a non-zero churn never reads as none.
+  const pct = Math.min(99, Math.max(1, Math.round((guidChurned / judged) * 100)));
+  return `${pct}% of ids changed`;
+}
+
 export function HealthTable({
   subs,
   folders,
@@ -201,6 +255,14 @@ export function HealthTable({
             const { feed } = sub;
             const state = stateOf(sub);
             const stopped = feed.status === "dead" || feed.status === "not_a_feed";
+            /*
+             * Suppressed for a flagged feed, because the State column already
+             * says "Its ids changed on every build" — permanently, which is the
+             * stronger statement. Showing "ids all changed" beside it makes the
+             * row say one thing twice, which is the duplication `stateOf`'s own
+             * comment records removing once already.
+             */
+            const ids = feed.guidUnstable ? null : idsHeld(sub);
             return (
               <tr key={sub.feedId} className="border-rule border-b align-top">
                 <td className="py-sm pr-md">
@@ -241,7 +303,14 @@ export function HealthTable({
                   {ratio(feed.today.n304, feed.today.checks, "None")}
                 </td>
                 <td className="py-sm pr-md num text-ink-2 text-right">{feed.today.new}</td>
-                <td className="py-sm pr-md text-ink-2 num">{collapsed(sub)}</td>
+                <td className="py-sm pr-md text-ink-2 num">
+                  <span className="gap-3xs grid">
+                    <span>{collapsed(sub)}</span>
+                    {/* The cause, when there is evidence for one. Omitted
+                        entirely rather than shown as a zero — see `idsHeld`. */}
+                    {ids !== null && <span className="text-muted text-xs">{ids}</span>}
+                  </span>
+                </td>
                 <td className="py-sm pr-md text-ink-2 num">
                   {stopped ? "Not checked" : everyPhrase(feed.intervalS)}
                 </td>

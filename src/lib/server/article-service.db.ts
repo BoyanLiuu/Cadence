@@ -78,6 +78,8 @@ async function todayByFeed(feedIds: bigint[]): Promise<Map<string, TodayCounters
       mergedByUrl: true,
       mergedByContent: true,
       revised: true,
+      guidAgreed: true,
+      guidChurned: true,
     },
   });
 
@@ -117,6 +119,8 @@ async function todayByFeed(feedIds: bigint[]): Promise<Map<string, TodayCounters
         mergedByUrl: r._sum.mergedByUrl ?? 0,
         mergedByContent: r._sum.mergedByContent ?? 0,
         revised: r._sum.revised ?? 0,
+        guidAgreed: r._sum.guidAgreed ?? 0,
+        guidChurned: r._sum.guidChurned ?? 0,
       },
     ]),
   );

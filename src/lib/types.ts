@@ -68,6 +68,24 @@ export type FeedToday = {
   mergedByUrl: number;
   mergedByContent: number;
   revised: number;
+  /*
+   * The guid-trust signal, which the collapse rate CANNOT express.
+   *
+   * "92 % collapsed by address" has two completely different causes and the
+   * reader needs to tell them apart:
+   *
+   *   the feed is new      rung 1 is not routing yet, so everything legitimately
+   *                        matches at rung 2. The publisher is faultless.
+   *   the ids churn        the publisher regenerates its guids on every build,
+   *                        and rung 1 would insert a duplicate for every item
+   *                        if it were trusted.
+   *
+   * Through `mergedByUrl` alone those are identical. These two say which, and
+   * they are the numbers Appendix E's "verify rather than trust" rests on for
+   * this column.
+   */
+  guidAgreed: number;
+  guidChurned: number;
 };
 
 export type Feed = {

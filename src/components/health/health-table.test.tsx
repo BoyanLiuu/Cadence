@@ -119,6 +119,127 @@ describe("a missing number is said honestly, never as a zero", () => {
     expect(within(rowFor("Ledger & Lathe")).getByText(/% by address/)).toBeTruthy();
   });
 
+  it("says WHY a feed collapsed by address, which the percentage cannot", () => {
+    /*
+     * The distinction this screen exists for. "92 % by address" has two
+     * completely different causes — a new feed whose rung 1 is not routing
+     * yet, and a publisher who regenerates its guids on every build — and
+     * through the collapse rate alone they read identically.
+     *
+     * A feed churning but NOT yet flagged, which is the case where this line
+     * is the only warning available. Feed 9 is already flagged, so its row
+     * suppresses this to avoid repeating the State column.
+     */
+    const churning = sub(1);
+    const row = {
+      ...churning,
+      feed: { ...churning.feed, today: { ...churning.feed.today, guidAgreed: 0, guidChurned: 11 } },
+    };
+    render(<HealthTable subs={[row]} folders={FOLDERS} />);
+    expect(within(rowFor("Harbour Wire")).getByText("ids all changed")).toBeTruthy();
+  });
+
+  it("says the ids HELD for a feed collapsing on its own guids", () => {
+    // The negative case. Feed 1 matches everything at rung 1, so its ids are
+    // holding still and the line must say so rather than being absent.
+    render(<HealthTable subs={[sub(1)]} folders={FOLDERS} />);
+    expect(within(rowFor("Harbour Wire")).getByText("ids held")).toBeTruthy();
+  });
+
+  it("reports a PARTIAL churn rate rather than rounding it to a verdict", () => {
+    // A feed with a little churn — a few moved articles — is neither
+    // "held" nor "all changed", and flattening it to either would hide a feed
+    // drifting toward demotion.
+    const partial = sub(1);
+    const row = {
+      ...partial,
+      feed: { ...partial.feed, today: { ...partial.feed.today, guidAgreed: 8, guidChurned: 2 } },
+    };
+    render(<HealthTable subs={[row]} folders={FOLDERS} />);
+    expect(within(rowFor("Harbour Wire")).getByText("20% of ids changed")).toBeTruthy();
+  });
+
+  it("says NOTHING about ids when the poll had nothing to judge", () => {
+    /*
+     * The same rule as the 304 ratio's empty cell: a poll with no matches is
+     * no evidence, and §6.4's own detector ignores those polls. Rendering
+     * "0 % of ids changed" from zero samples invents a fact — and on the one
+     * screen built to let a reader VERIFY the deduplication, a plausible
+     * fabricated number is worse than a blank.
+     */
+    const quiet = sub(1);
+    const row = {
+      ...quiet,
+      feed: { ...quiet.feed, today: { ...quiet.feed.today, guidAgreed: 0, guidChurned: 0 } },
+    };
+    render(<HealthTable subs={[row]} folders={FOLDERS} />);
+    const cells = within(rowFor("Harbour Wire"));
+    expect(cells.queryByText(/ids/)).toBeNull();
+    expect(cells.queryByText(/of ids changed/)).toBeNull();
+  });
+
+  it("refuses a verdict from TOO FEW judged items", () => {
+    /*
+     * §6.1's detector ignores polls under five items, and this line must not
+     * state a conclusion the detector would refuse to draw. Two items both
+     * churning is not evidence — and "ids all changed" from a sample of two is
+     * the same fabrication as rendering an unchecked feed's 304 ratio as 0 %.
+     *
+     * The docstring promised this floor before the code had it.
+     */
+    const tiny = sub(1);
+    const row = {
+      ...tiny,
+      feed: { ...tiny.feed, today: { ...tiny.feed.today, guidAgreed: 0, guidChurned: 2 } },
+    };
+    render(<HealthTable subs={[row]} folders={FOLDERS} />);
+    expect(within(rowFor("Harbour Wire")).queryByText(/ids/)).toBeNull();
+  });
+
+  it("does NOT round a real churn event away to 'ids held'", () => {
+    /*
+     * One churned item in four hundred is 0.25 %, which rounds to zero — so
+     * deciding the absolute verdicts from the ROUNDED percentage printed "ids
+     * held" over a genuine churn event, on the screen built to surface it.
+     * The verdicts are decided on the counters now.
+     */
+    const mostly = sub(1);
+    const row = {
+      ...mostly,
+      feed: { ...mostly.feed, today: { ...mostly.feed.today, guidAgreed: 400, guidChurned: 1 } },
+    };
+    render(<HealthTable subs={[row]} folders={FOLDERS} />);
+    const cells = within(rowFor("Harbour Wire"));
+    expect(cells.queryByText("ids held")).toBeNull();
+    expect(cells.getByText("1% of ids changed")).toBeTruthy();
+  });
+
+  it("does not round a single agreement away to 'ids all changed' either", () => {
+    // The mirror case: 1 of 301 agreeing is 99.7 % churn, which rounds to 100.
+    const mostly = sub(1);
+    const row = {
+      ...mostly,
+      feed: { ...mostly.feed, today: { ...mostly.feed.today, guidAgreed: 1, guidChurned: 300 } },
+    };
+    render(<HealthTable subs={[row]} folders={FOLDERS} />);
+    const cells = within(rowFor("Harbour Wire"));
+    expect(cells.queryByText("ids all changed")).toBeNull();
+    expect(cells.getByText("99% of ids changed")).toBeTruthy();
+  });
+
+  it("does not say the same thing twice on a demoted feed's row", () => {
+    /*
+     * The State column already says "Its ids changed on every build" —
+     * permanently, which is the stronger claim. Adding "ids all changed" beside
+     * it makes the row repeat itself, which is the duplication an earlier fix
+     * in this file removed once already.
+     */
+    render(<HealthTable subs={[sub(9)]} folders={FOLDERS} />);
+    const cells = within(rowFor("Ledger & Lathe"));
+    expect(cells.getByText("Its ids changed on every build")).toBeTruthy();
+    expect(cells.queryByText("ids all changed")).toBeNull();
+  });
+
   it("says a demoted feed's ids changed, rather than calling it New", () => {
     /*
      * `guid_unstable` is permanent (§6.1), and `recordTrust` zeroes

@@ -72,6 +72,9 @@ export type TodayCounters = {
   mergedByUrl: number;
   mergedByContent: number;
   revised: number;
+  /** The guid-trust signal; see `FeedToday` for why the collapse rate is not enough. */
+  guidAgreed: number;
+  guidChurned: number;
 };
 
 export const EMPTY_TODAY: TodayCounters = {
@@ -84,6 +87,8 @@ export const EMPTY_TODAY: TodayCounters = {
   mergedByUrl: 0,
   mergedByContent: 0,
   revised: 0,
+  guidAgreed: 0,
+  guidChurned: 0,
 };
 
 /**
