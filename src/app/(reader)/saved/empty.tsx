@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { READER_PATH } from "@/lib/routes";
+
 import { Button } from "@/components/ui/button";
 
 /*
@@ -29,7 +31,7 @@ export function SavedEmpty() {
         no hurry.
       </p>
       <Button asChild variant="outline">
-        <Link href="/">Back to the reader</Link>
+        <Link href={READER_PATH}>Back to the reader</Link>
       </Button>
     </section>
   );

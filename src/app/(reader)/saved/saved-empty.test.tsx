@@ -37,7 +37,10 @@ describe("Saved's own empty state", () => {
 
   it("offers a way back to the reader", () => {
     render(<SavedEmpty />);
-    expect(screen.getByRole("link", { name: /back to the reader/i })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: /back to the reader/i })).toHaveAttribute(
+      "href",
+      "/reader",
+    );
   });
 });
 

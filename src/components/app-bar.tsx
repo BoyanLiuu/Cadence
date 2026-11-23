@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { READER_PATH } from "@/lib/routes";
+
 import { Button } from "@/components/ui/button";
 
 /*
@@ -31,7 +33,7 @@ export function AppBar({
     <header className="ground border-ink sticky top-0 z-[var(--z-sticky-nav)] border-b">
       <div className="gap-xl px-lg flex min-h-[var(--bar-height)] items-center">
         <Link
-          href="/"
+          href={READER_PATH}
           aria-label="Cadence, the reader"
           className="font-display text-ink hover:text-ink-2 text-xl leading-none tracking-[-0.02em] whitespace-nowrap no-underline"
         >
@@ -41,7 +43,7 @@ export function AppBar({
         <nav aria-label="Main">
           <ul className="gap-lg flex list-none p-0">
             {[
-              { href: "/", label: "Reader", key: "reader" },
+              { href: READER_PATH, label: "Reader", key: "reader" },
               { href: "/saved", label: "Saved", key: "saved" },
               { href: "/settings/feeds", label: "Feeds", key: "feeds" },
             ].map((item) => (

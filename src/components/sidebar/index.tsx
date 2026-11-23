@@ -2,6 +2,7 @@ import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
 import type { Folder, SubscriptionWithUnread } from "@/lib/types";
+import { READER_PATH } from "@/lib/routes";
 import { hrefWith, pathWith, type ReaderParams } from "@/lib/view-params";
 
 /*
@@ -118,7 +119,7 @@ export function Sidebar({
            * link led to `/?scope=all` — a page headed "All articles" — while
            * still being marked as the current "All unread".
            */
-          href={pathWith("/", params, { folder: null, scope: "unread" })}
+          href={pathWith(READER_PATH, params, { folder: null, scope: "unread" })}
           aria-current={
             !currentFeedId && params.folder === undefined && scope === "unread" ? "page" : undefined
           }
@@ -135,7 +136,7 @@ export function Sidebar({
           return (
             <div key={folder.id}>
               <Link
-                href={pathWith("/", params, { folder: String(folder.id) })}
+                href={pathWith(READER_PATH, params, { folder: String(folder.id) })}
                 // Without this, nothing in the sidebar is marked current on a
                 // folder view — the reader cannot see where they are.
                 aria-current={currentFolderId === folder.id ? "page" : undefined}

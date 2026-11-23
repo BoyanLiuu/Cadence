@@ -114,11 +114,15 @@ describe("pathWith carries the view's shape to another route", () => {
   });
 
   it("can set a folder while moving to the root", () => {
-    expect(pathWith("/", { scope: "all" }, { folder: "3" })).toBe("/?scope=all&folder=3");
+    expect(pathWith("/reader", { scope: "all" }, { folder: "3" })).toBe(
+      "/reader?scope=all&folder=3",
+    );
   });
 
   it("can clear the folder, for the All-unread link", () => {
-    expect(pathWith("/", { scope: "all", folder: "3" }, { folder: null })).toBe("/?scope=all");
+    expect(pathWith("/reader", { scope: "all", folder: "3" }, { folder: null })).toBe(
+      "/reader?scope=all",
+    );
   });
 });
 

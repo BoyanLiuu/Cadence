@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { READER_PATH } from "@/lib/routes";
+
 import { AppBar } from "@/components/app-bar";
 import { listArticles, listSubscriptions } from "@/lib/server/article-service";
 import { getViewer } from "@/lib/server/viewer";
@@ -138,7 +140,7 @@ export default async function SavedPage({
                 {shown.map((article) => (
                   <li key={article.id} className="border-rule border-b">
                     <Link
-                      href={`/?article=${article.id}`}
+                      href={`${READER_PATH}?article=${article.id}`}
                       className="gap-sm px-sm py-md hover:bg-paper-2 grid items-baseline no-underline transition-colors md:grid-cols-[minmax(0,1fr)_14rem_7rem_5rem_5rem]"
                     >
                       <span className="font-display text-ink text-xl text-pretty">

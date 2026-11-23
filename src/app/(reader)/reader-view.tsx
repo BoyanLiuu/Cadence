@@ -20,7 +20,7 @@ import type { Article, Scope } from "@/lib/types";
 import { strictId } from "@/lib/view-params";
 
 /*
- * The three-pane shell, shared by `/` and `/feed/[id]`.
+ * The three-pane shell, shared by `/reader` and `/feed/[id]`.
  *
  * One component for both routes because they ARE the same screen with a
  * different scope — the prototype draws them identically. Splitting them would
