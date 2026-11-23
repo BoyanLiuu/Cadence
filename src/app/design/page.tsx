@@ -1,6 +1,6 @@
 import { AppBar } from "@/components/app-bar";
 import { listSubscriptions } from "@/lib/server/article-service";
-import { getViewer } from "@/lib/server/viewer";
+import { requireViewer } from "@/lib/server/viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,13 +74,14 @@ const SPACING = ["3xs", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"];
 export default async function DesignSystemPage() {
   // Resolved once per request and passed down — never read again further in,
   // and never taken from a request argument (§3).
-  const viewer = await getViewer();
+  const viewer = await requireViewer();
   const subs = await listSubscriptions(viewer);
-  const account = viewer.kind === "user" ? viewer.user : null;
+  // `requireViewer()` redirected an anon away, so this is always a reader.
+  const account = viewer.user;
 
   return (
     <>
-      <AppBar accountName={account?.name ?? ""} initials={account?.initials ?? ""} />
+      <AppBar accountName={account.name} initials={account.initials} />
 
       <main className="gap-2xl px-lg py-xl mx-auto grid max-w-[920px]">
         <header className="gap-xs grid">

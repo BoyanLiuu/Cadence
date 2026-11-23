@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { RevisionOverride } from "@/components/health/revision-override";
 import { AppBar } from "@/components/app-bar";
 import { getFeedHealth, listSubscriptions } from "@/lib/server/article-service";
-import { getViewer } from "@/lib/server/viewer";
+import { requireViewer } from "@/lib/server/viewer";
 import { strictId } from "@/lib/view-params";
 import type { FetchLogEntry } from "@/lib/types";
 
@@ -47,8 +47,9 @@ function outcome(entry: FetchLogEntry): string {
 }
 
 export default async function FeedChecksPage({ params }: { params: Promise<{ id: string }> }) {
-  const viewer = await getViewer();
-  const account = viewer.kind === "user" ? viewer.user : null;
+  const viewer = await requireViewer();
+  // `requireViewer()` redirected an anon away, so this is always a reader.
+  const account = viewer.user;
 
   const { id } = await params;
   const feedId = strictId(id);
@@ -64,11 +65,7 @@ export default async function FeedChecksPage({ params }: { params: Promise<{ id:
 
   return (
     <>
-      <AppBar
-        accountName={account?.name ?? ""}
-        initials={account?.initials ?? ""}
-        current="feeds"
-      />
+      <AppBar accountName={account.name} initials={account.initials} current="feeds" />
 
       <main className="px-lg py-xl gap-lg mx-auto grid max-w-[1180px]">
         <nav aria-label="Breadcrumb" className="text-sm">

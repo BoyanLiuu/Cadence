@@ -20,6 +20,18 @@ export default defineConfig({
      * mode`, which reads like a connection leak and is not one. 4 x 3 = 12
      * fits with headroom.
      *
+     * THOSE 15 CLIENTS BELONG TO THE WHOLE PROJECT, not to Cadence. One
+     * Supabase project is shared across the workspace with a schema per app,
+     * so `paste` and `hacker_news_clone` draw on the same allowance — a run
+     * that takes all of it does not just slow itself down. Raising the cap is a
+     * decision about the neighbours.
+     *
+     * THE CAP IS A CONSEQUENCE OF THE LOCAL CONNECTION, not of the suite.
+     * `DATABASE_URL` points at the SESSION pooler on :5432 because the
+     * transaction pooler on :6543 is unreachable from here (measured:
+     * `ETIMEDOUT` to all three addresses, while 5432 answered). On :6543 the
+     * client ceiling is far higher and this could go. See `.env.example`.
+     *
      * HERE AND NOT IN `test:db`, which is where it first went and where review
      * found it does not hold: `CADENCE_DB_WRITE_TESTS` can be set in `.env`
      * (and `.env.example` invites exactly that), which `vitest.setup.ts` loads

@@ -6,7 +6,7 @@ import { TickTimeline } from "@/components/health/tick-timeline";
 import { Button } from "@/components/ui/button";
 import { feedsNeedingAttention } from "@/components/sidebar";
 import { listFolders, listSubscriptions, listTicks } from "@/lib/server/article-service";
-import { getViewer } from "@/lib/server/viewer";
+import { requireViewer } from "@/lib/server/viewer";
 
 /*
  * `GET /settings/feeds` — the health table and the tick timeline.
@@ -18,8 +18,9 @@ import { getViewer } from "@/lib/server/viewer";
  * you a publisher's GUIDs cannot be trusted.
  */
 export default async function FeedHealthPage() {
-  const viewer = await getViewer();
-  const account = viewer.kind === "user" ? viewer.user : null;
+  const viewer = await requireViewer();
+  // `requireViewer()` redirected an anon away, so this is always a reader.
+  const account = viewer.user;
   const [subs, folders, { ticks, budgetMs }] = await Promise.all([
     listSubscriptions(viewer),
     listFolders(viewer),
@@ -35,11 +36,7 @@ export default async function FeedHealthPage() {
 
   return (
     <>
-      <AppBar
-        accountName={account?.name ?? ""}
-        initials={account?.initials ?? ""}
-        current="feeds"
-      />
+      <AppBar accountName={account.name} initials={account.initials} current="feeds" />
 
       <main className="px-lg py-xl gap-2xl mx-auto grid max-w-[1400px]">
         <header className="gap-sm flex flex-wrap items-start justify-between">

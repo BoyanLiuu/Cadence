@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { sampleAddresses } from "@/lib/fixtures/discover";
 import { listFolders, listSubscriptions } from "@/lib/server/article-service";
 import { discoverFeeds } from "@/lib/server/mutations";
-import { getViewer } from "@/lib/server/viewer";
+import { requireViewer } from "@/lib/server/viewer";
 import { trimmedParam } from "@/lib/view-params";
 import type { Candidate, DiscoveryResult } from "@/lib/types";
 
@@ -155,8 +155,9 @@ export default async function AddFeedPage({
   // anyone can send, and nothing stops them.
   searchParams: Promise<{ address?: string | string[]; feed?: string | string[] }>;
 }) {
-  const viewer = await getViewer();
-  const account = viewer.kind === "user" ? viewer.user : null;
+  const viewer = await requireViewer();
+  // `requireViewer()` redirected an anon away, so this is always a reader.
+  const account = viewer.user;
   const [folders, subs] = await Promise.all([listFolders(viewer), listSubscriptions(viewer)]);
 
   const { address, feed } = await searchParams;
@@ -185,7 +186,7 @@ export default async function AddFeedPage({
 
   return (
     <>
-      <AppBar accountName={account?.name ?? ""} initials={account?.initials ?? ""} current="none" />
+      <AppBar accountName={account.name} initials={account.initials} current="none" />
 
       <main className="px-lg py-xl gap-xl mx-auto grid max-w-[1180px] lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="gap-lg grid">

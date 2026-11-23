@@ -1,12 +1,25 @@
 ## Running the database suites
 
-`pnpm test:db` caps vitest at **4 workers**, and the cap is load-bearing rather
-than cautious. Every test file is its own process with its own Prisma pool, and
-that pool holds up to **3** connections (`poolMax()` in `src/lib/db/client.ts`),
-while Supabase's session pooler allows **15 clients**. Unbounded, 54 files ask
-for up to 162 — so the suite passed by luck for weeks and then failed in
-batches with `EMAXCONNSESSION: max clients reached in session mode`, which reads
-like a leak and is not one. 4 × 3 = 12 fits with headroom.
+Vitest is capped at **4 workers** (`vitest.config.mts`), and the cap is
+load-bearing rather than cautious. Every test file is its own process with its
+own Prisma pool, and that pool holds up to **3** connections (`poolMax()` in
+`src/lib/db/client.ts`), while Supabase's session pooler allows **15 clients**.
+Unbounded, 54 files ask for up to 162 — so the suite passed by luck for weeks
+and then failed in batches with `EMAXCONNSESSION: max clients reached in session
+mode`, which reads like a leak and is not one. 4 × 3 = 12 fits with headroom.
+
+**Those 15 clients are the whole Supabase project's, not Cadence's.** One
+project is shared across the workspace with a schema per app, so `paste` and
+`hacker_news_clone` draw on the same allowance. A run that takes all of it
+breaks someone else's afternoon, which is the same reason `CADENCE_DB_WRITE_TESTS`
+is opt-in.
+
+**The cap exists because of the local connection, not the suite.**
+`DATABASE_URL` points at the session pooler on `:5432`; deployment should use
+the transaction pooler on `:6543`, where the ceiling is far higher and this
+could go. 6543 is unreachable from at least one network here — measured
+`ETIMEDOUT` to all three pooler addresses while 5432 answered — so the local
+fallback is the documented one, same as `paste/.env.example` describes.
 
 Two things follow:
 

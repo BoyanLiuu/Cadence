@@ -4,7 +4,7 @@ import { READER_PATH } from "@/lib/routes";
 
 import { AppBar } from "@/components/app-bar";
 import { listArticles, listSubscriptions } from "@/lib/server/article-service";
-import { getViewer } from "@/lib/server/viewer";
+import { requireViewer } from "@/lib/server/viewer";
 import { displayFeedId } from "@/lib/article-feed";
 import { firstParam } from "@/lib/view-params";
 import type { Article, Cursor } from "@/lib/types";
@@ -43,8 +43,9 @@ export default async function SavedPage({
 }: {
   searchParams: Promise<{ show?: string | string[] }>;
 }) {
-  const viewer = await getViewer();
-  const account = viewer.kind === "user" ? viewer.user : null;
+  const viewer = await requireViewer();
+  // `requireViewer()` redirected an anon away, so this is always a reader.
+  const account = viewer.user;
 
   /*
    * EVERY saved article, not one page of them.
@@ -96,11 +97,7 @@ export default async function SavedPage({
 
   return (
     <>
-      <AppBar
-        accountName={account?.name ?? ""}
-        initials={account?.initials ?? ""}
-        current="saved"
-      />
+      <AppBar accountName={account.name} initials={account.initials} current="saved" />
 
       <main className="px-lg py-xl gap-lg mx-auto grid max-w-[1180px]">
         <header className="gap-xs grid">

@@ -16,6 +16,7 @@ import {
   ticks,
 } from "../src/lib/fixtures";
 import { canonicalUrl } from "../src/lib/ingest/canonical-url";
+import { placeholderEmailFor } from "../src/lib/server/placeholder-user";
 import { contentHash } from "../src/lib/ingest/content-hash";
 
 /*
@@ -602,11 +603,11 @@ async function main() {
    * answers 24 rows where the fixtures say 12, and fails. A better test of the
    * scoping than the one fixture folder belonging to "Someone else".
    *
-   * INERT UNTIL THE VIEWER IS REAL, and worth stating rather than implying:
-   * `getViewer()` still returns the fixture reader, so signing in as this id
-   * today still shows the fixture reader's screen. These rows exist so that
-   * the step which resolves the Clerk session has something to resolve TO —
-   * they are not reachable before it.
+   * REACHABLE ONLY ONCE A REAL SESSION RESOLVES, which `getViewer()` now does:
+   * signing in as this id shows these rows, and the placeholder `users` row
+   * below is corrected from the Clerk session on the first authenticated
+   * request. Before that step landed, this block was inert — worth saying,
+   * because the comment that said so outlived it by one commit.
    */
   const devUserId = process.env.CADENCE_DEV_USER_ID?.trim();
 
@@ -626,22 +627,27 @@ async function main() {
     }
 
     /*
-     * PLACEHOLDER email and name, and they STAY placeholders until
-     * `getViewer()` upserts this row from the Clerk session — which it does
-     * not do yet. Only Clerk knows the real values, and it is the only place
-     * they should come from: writing them here would put a personal address in
-     * a public repository. So anyone reading this row today sees
-     * "Signed-in reader", and that is correct rather than stale.
+     * PLACEHOLDER email and name, replaced by `getViewer()` from the Clerk
+     * session on the first authenticated request. Only Clerk knows the real
+     * values, and it is the only place they should come from: writing them here
+     * would put a personal address in a public repository. Until someone signs
+     * in as this id the row reads "Signed-in reader", which is accurate — the
+     * reader has not been seen yet.
      *
      * `email` is UNIQUE, so the placeholder is derived from the id and cannot
      * collide with the fixture reader's or with `@example.invalid`.
+     *
+     * THE DOMAIN IS A CONTRACT, not decoration: `viewer.ts` recognises
+     * `@placeholder.invalid` as "not resolved yet" and replaces the row's email
+     * and name from the Clerk session on first authenticated sight. Change it
+     * here and the row says "Signed-in reader" for the life of the database.
      */
     await prisma.user.upsert({
       where: { id: devUserId },
       update: {},
       create: {
         id: devUserId,
-        email: `${devUserId}@placeholder.invalid`,
+        email: placeholderEmailFor(devUserId),
         name: "Signed-in reader",
       },
     });

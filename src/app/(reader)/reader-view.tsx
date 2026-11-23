@@ -14,7 +14,7 @@ import {
   listFolders,
   listSubscriptions,
 } from "@/lib/server/article-service";
-import { getViewer } from "@/lib/server/viewer";
+import { requireViewer } from "@/lib/server/viewer";
 import { displayFeedId } from "@/lib/article-feed";
 import type { Article, Scope } from "@/lib/types";
 import { strictId } from "@/lib/view-params";
@@ -47,8 +47,9 @@ export async function ReaderView({
   feedId?: number;
 }) {
   // Resolved once per request and passed down, never read again further in (§3).
-  const viewer = await getViewer();
-  const account = viewer.kind === "user" ? viewer.user : null;
+  const viewer = await requireViewer();
+  // `requireViewer()` redirected an anon away, so this is always a reader.
+  const account = viewer.user;
 
   const [subs, folders] = await Promise.all([listSubscriptions(viewer), listFolders(viewer)]);
 
@@ -147,11 +148,7 @@ export async function ReaderView({
 
   return (
     <>
-      <AppBar
-        accountName={account?.name ?? ""}
-        initials={account?.initials ?? ""}
-        current="reader"
-      />
+      <AppBar accountName={account.name} initials={account.initials} current="reader" />
       <div className="grid min-h-[calc(100dvh-var(--bar-height))] items-start md:grid-cols-[var(--side-w)_minmax(0,1fr)] lg:grid-cols-[var(--side-w)_var(--list-w)_minmax(0,1fr)]">
         <Sidebar
           folders={folders}
