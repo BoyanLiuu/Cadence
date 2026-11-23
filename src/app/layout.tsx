@@ -1,4 +1,3 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Geist, Hedvig_Letters_Serif, Sofia_Sans_Extra_Condensed } from "next/font/google";
 
@@ -47,11 +46,29 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geist.variable} ${hedvig.variable} ${sofia.variable}`}>
+      {/*
+       * NO ClerkProvider HERE, deliberately.
+       *
+       * `clerk init` put one in this layout, which wraps every route. Measured
+       * on the running server, that made the reader request EIGHT scripts from
+       * a remote `*.clerk.accounts.dev` origin plus two calls to Clerk's API —
+       * on the surface that renders titles, summaries and extracted bodies
+       * fetched from arbitrary publishers. §6.5's whole argument is that this
+       * page gets the smallest attack surface in the product, and a
+       * third-party script on it is the opposite of that.
+       *
+       * It buys nothing either: the provider exists to serve Clerk's own
+       * CLIENT components, and no reading surface renders one. `auth()` and
+       * `currentUser()` from `@clerk/nextjs/server` work with no provider at
+       * all, which is how `getViewer()` will resolve the session — so the
+       * account slot in the app bar stays server-rendered text.
+       *
+       * Scoped instead to `sign-in/layout.tsx` and `sign-up/layout.tsx`, the
+       * only two routes that render `<SignIn />` and `<SignUp />`.
+       */}
       <body>
-        <ClerkProvider>
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster position="bottom-center" closeButton />
-        </ClerkProvider>
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster position="bottom-center" closeButton />
       </body>
     </html>
   );
