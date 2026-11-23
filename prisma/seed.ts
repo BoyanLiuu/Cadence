@@ -572,6 +572,141 @@ async function main() {
     );
   }
 
+  /*
+   * A SECOND READER, so a real signed-in account has something to read.
+   *
+   * Every subscription, folder and read mark in the corpus belongs to the
+   * fixture reader. The moment `getViewer()` resolves a real Clerk session,
+   * that account owns nothing: the sidebar is empty, the unread count is zero,
+   * and the product looks broken on first sign-in — through a scoping rule
+   * working exactly as designed.
+   *
+   * So the fixture reader's rows are CLONED for the signed-in id. Cloned from
+   * the DATABASE rather than re-derived from the fixtures, because the fixture
+   * reader's rows have already been through every mapping above and a second
+   * derivation is a second chance to disagree with the first.
+   *
+   * The id comes from the environment and is never committed. It is a personal
+   * development id, this repository is public, and hardcoding one would also
+   * make the seed useless to anyone else who cloned it.
+   *
+   * WHAT THIS DELIBERATELY DOES NOT COPY: feeds and articles. Both are SHARED
+   * (Appendix D), so the two readers reference the same twelve `feeds` rows and
+   * the same 124 articles — which is the shape `shared-feed.spec.ts` will
+   * assert, and seeding per-reader copies here would hide the very bug that
+   * suite exists to catch.
+   *
+   * It also means the parity suite gains a real second owner. The suite reads
+   * as the FIXTURE reader, which is exactly what makes an unscoped read
+   * visible: a `listSubscriptions` that forgot its `user_id` filter now
+   * answers 24 rows where the fixtures say 12, and fails. A better test of the
+   * scoping than the one fixture folder belonging to "Someone else".
+   *
+   * INERT UNTIL THE VIEWER IS REAL, and worth stating rather than implying:
+   * `getViewer()` still returns the fixture reader, so signing in as this id
+   * today still shows the fixture reader's screen. These rows exist so that
+   * the step which resolves the Clerk session has something to resolve TO —
+   * they are not reachable before it.
+   */
+  const devUserId = process.env.CADENCE_DEV_USER_ID?.trim();
+
+  if (devUserId !== undefined && devUserId !== "") {
+    if (!devUserId.startsWith("user_")) {
+      // Loudly, because the alternative is seeding a reader nobody can sign in
+      // as and wondering why the screen is empty. Clerk user ids are `user_…`;
+      // an application id or an email here is a typo, not a choice.
+      throw new Error(
+        `CADENCE_DEV_USER_ID must be a Clerk user id starting with "user_", got "${devUserId}"`,
+      );
+    }
+    if (devUserId === sampleUser.id) {
+      throw new Error(
+        `CADENCE_DEV_USER_ID is the fixture reader's id; it must be a real Clerk user id`,
+      );
+    }
+
+    /*
+     * PLACEHOLDER email and name, and they STAY placeholders until
+     * `getViewer()` upserts this row from the Clerk session — which it does
+     * not do yet. Only Clerk knows the real values, and it is the only place
+     * they should come from: writing them here would put a personal address in
+     * a public repository. So anyone reading this row today sees
+     * "Signed-in reader", and that is correct rather than stale.
+     *
+     * `email` is UNIQUE, so the placeholder is derived from the id and cannot
+     * collide with the fixture reader's or with `@example.invalid`.
+     */
+    await prisma.user.upsert({
+      where: { id: devUserId },
+      update: {},
+      create: {
+        id: devUserId,
+        email: `${devUserId}@placeholder.invalid`,
+        name: "Signed-in reader",
+      },
+    });
+
+    // Folders keep their NAMES and POSITIONS but get new ids, because an id is
+    // the database's to choose and the fixture's 1, 2, 3 are already taken.
+    const folderIdFor = new Map<bigint, bigint>();
+    const sampleFolders = await prisma.folder.findMany({
+      where: { userId: sampleUser.id },
+      orderBy: { position: "asc" },
+    });
+    for (const folder of sampleFolders) {
+      const created = await prisma.folder.create({
+        data: { userId: devUserId, name: folder.name, position: folder.position },
+      });
+      folderIdFor.set(folder.id, created.id);
+    }
+
+    const sampleSubs = await prisma.subscription.findMany({ where: { userId: sampleUser.id } });
+    for (const sub of sampleSubs) {
+      await prisma.subscription.create({
+        data: {
+          userId: devUserId,
+          // The SAME feed. Two readers, one row, one fetch.
+          feedId: sub.feedId,
+          folderId: sub.folderId === null ? null : (folderIdFor.get(sub.folderId) ?? null),
+          customTitle: sub.customTitle,
+          fullTextMode: sub.fullTextMode,
+          resurfaceOnRevision: sub.resurfaceOnRevision,
+          // Copied even though no fixture sets it. A clone that omits one
+          // column is a clone that silently diverges the day something fills
+          // it in, and nothing here would fail to say so.
+          filterRules: sub.filterRules ?? undefined,
+          createdAt: sub.createdAt,
+        },
+      });
+    }
+
+    /*
+     * Read and saved state copied too, so the account opens on a believable
+     * reader rather than 124 unread articles — and so `saved` is not an empty
+     * screen on first sign-in. Still per-reader rows: marking something read
+     * here cannot touch the fixture reader's state, which is the point.
+     */
+    const sampleMarks = await prisma.userArticle.findMany({ where: { userId: sampleUser.id } });
+    for (const mark of sampleMarks) {
+      await prisma.userArticle.create({
+        data: {
+          userId: devUserId,
+          articleId: mark.articleId,
+          readAt: mark.readAt,
+          savedAt: mark.savedAt,
+          progress: mark.progress,
+          wasReadAt: mark.wasReadAt,
+        },
+      });
+    }
+
+    console.log(
+      `cloned the fixture reader's ${sampleFolders.length} folders, ` +
+        `${sampleSubs.length} subscriptions and ${sampleMarks.length} read/saved marks ` +
+        `for CADENCE_DEV_USER_ID`,
+    );
+  }
+
   const counts = {
     users: await prisma.user.count(),
     feeds: await prisma.feed.count(),
