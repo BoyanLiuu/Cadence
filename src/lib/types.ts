@@ -317,19 +317,30 @@ export type User = {
 export type Viewer = { kind: "anon" } | { kind: "user"; user: User };
 
 /**
- * What a viewer may do. The denial table is empty through phase 1: there is one
- * fixture reader and nothing to deny them. M11 fills it in, against rules
- * written here rather than invented then.
+ * What a viewer may do.
+ *
+ * AN ARRAY, with the type derived from it, so there is something to ENUMERATE
+ * at runtime. As a bare union this was a type and nothing else, and
+ * `assertCan`'s denial test could only name capabilities by hand — it checked
+ * two of the eight. A ninth added to the union would have been denied to nobody
+ * and tested by nothing, which is the one failure this table cannot afford.
+ *
+ * `satisfies` keeps the array and the type in step in the only direction that
+ * can drift: adding to the array widens the type, and the suite that iterates
+ * it then covers the new entry automatically.
  */
-export type Capability =
-  | "read"
-  | "subscribe"
-  | "unsubscribe"
-  | "set-read-state"
-  | "save"
-  | "merge"
-  | "extract"
-  | "discover";
+export const CAPABILITIES = [
+  "read",
+  "subscribe",
+  "unsubscribe",
+  "set-read-state",
+  "save",
+  "merge",
+  "extract",
+  "discover",
+] as const satisfies readonly string[];
+
+export type Capability = (typeof CAPABILITIES)[number];
 
 // ---------------------------------------------------------------- paging
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PAGE_SIZE, type Cursor } from "@/lib/types";
+import { CAPABILITIES, PAGE_SIZE, type Cursor } from "@/lib/types";
 
 import * as service from "./article-service";
 import * as mutations from "./mutations";
@@ -145,9 +145,28 @@ describe("the viewer", () => {
     if (viewer.kind === "user") expect(viewer.user.id).toMatch(/^user_/);
   });
 
-  it("denies an anon every capability, because there is no public reading surface", () => {
-    expect(() => assertCan(anon, "read")).toThrow(NotAllowedError);
-    expect(() => assertCan(anon, "subscribe")).toThrow(NotAllowedError);
+  it.each(CAPABILITIES)(
+    "denies an anon %s, because there is no public reading surface",
+    (capability) => {
+      /*
+       * EVERY capability, from the array rather than by hand. This named two of
+       * the eight until `CAPABILITIES` existed to iterate, which meant six
+       * could have been granted to visitors with nothing failing — and the
+       * ninth someone adds is the one most likely to be forgotten.
+       */
+      expect(() => assertCan(anon, capability)).toThrow(NotAllowedError);
+    },
+  );
+
+  it.each(CAPABILITIES)("allows a signed-in reader %s", async (capability) => {
+    /*
+     * The mirror, and it guards a change rather than restating the rule: with
+     * two actors every signed-in reader may do everything, so this passes
+     * trivially today. It stops passing the day someone adds a role check here
+     * — which is the moment that needs a decision rather than a quiet commit.
+     */
+    const viewer = await getViewer();
+    expect(() => assertCan(viewer, capability)).not.toThrow();
   });
 });
 

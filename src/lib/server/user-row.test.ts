@@ -14,8 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * unique violations. The `email` branch written to catch a taken address was
  * unreachable, and the failure surfaced from the read-back as "vanished
  * immediately after being written" — a message describing a concurrent delete,
- * for what is really the M15 Clerk cutover handing an existing address to a new
- * user id.
+ * for what is really an address already held under a different Clerk id.
  *
  * Mocked rather than run against Postgres, deliberately: the cases are a
  * duplicate `id` and a duplicate `email` arriving as Prisma errors, and
@@ -232,10 +231,10 @@ describe("the users row on a first authenticated request", () => {
      * swallowed this, so the branch below was unreachable and the failure came
      * out of the read-back as "vanished immediately after being written".
      *
-     * It is what the M15 dev-to-production Clerk cutover does to every account:
-     * a production instance issues new user ids for the same people, so every
-     * address arrives already held by a row under the old id. Rebinding it
-     * would hand the previous account's subscriptions to the new one.
+     * It needs two Clerk identities for one address — an account deleted and
+     * signed up again, or the address added to a second account. Rebinding the
+     * row would hand the first account's subscriptions to the second, so it
+     * refuses and names the address instead.
      */
     DB.failWith = P2002(target);
 

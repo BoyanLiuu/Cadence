@@ -168,9 +168,10 @@ async function rowFor(userId: string): Promise<User> {
    *           signed-in reader to `/sign-in` forever (Clerk sees a valid
    *           session and bounces them straight back). So it throws.
    *
-   * The email case is not hypothetical: it is what the dev-to-production Clerk
-   * cutover at M15 does to every account, since a production instance issues
-   * new user ids for the same people.
+   * The email case is reachable without a production instance — Cadence stays
+   * on Clerk's development one — but it needs two Clerk identities for one
+   * address: deleting an account and signing up again, or adding the same
+   * address to a second account. Rare, and the wrong answer to it is silent.
    */
   try {
     if (existing === null) {
@@ -180,8 +181,7 @@ async function rowFor(userId: string): Promise<User> {
        * unique violations — review found it made the `email` branch below
        * unreachable on this path, and the read-back then failed with "vanished
        * immediately after being written", a message describing a concurrent
-       * delete for what is really a taken address. Precisely the case the M15
-       * cutover causes, reported as the one thing it is not.
+       * delete for what is really a taken address — the one thing it is not.
        *
        * `create` throws on either conflict and the catch tells them apart.
        */
@@ -343,15 +343,28 @@ export class NotAllowedError extends Error {
 /**
  * The coarse gate: is this viewer allowed to attempt this at all?
  *
- * Every capability requires a session, because §2 leaves nothing for an anon to
- * do — every article list is somebody's subscription list, and the one public
- * surface (`/`) reads nothing and so never calls this.
+ * THE TABLE IS THIS SHAPE BECAUSE CADENCE HAS TWO ACTORS, not because it is
+ * unfinished. A visitor may do nothing — §2 leaves them nothing to do, since
+ * every article list is somebody's subscription list and the one public surface
+ * (`/`) reads nothing and never calls this — and a signed-in reader may do
+ * everything in `CAPABILITIES`. There is no third actor to distinguish: no
+ * moderator, no admin, no sharing. The sibling project keys its table on a
+ * DERIVED role for exactly that reason, because its §2 names three actors and
+ * `Viewer["kind"]` has two values; here the kind IS the role, and inventing a
+ * role dimension to make the table look fuller would be inventing a
+ * distinction the product does not have.
+ *
+ * So what makes this enforceable is not the table's shape but its
+ * EXHAUSTIVENESS: `capability-denial` iterates `CAPABILITIES` rather than
+ * naming a few, so a capability added to the union is covered the day it
+ * appears. That is the failure this gate cannot afford — a new write that
+ * nobody remembered to deny.
  *
  * THIS IS NOT THE WHOLE CHECK, and the distinction is where authorization bugs
  * live. `assertCan` answers "may a signed-in reader do this kind of thing";
- * whether THIS reader owns THAT row is a per-row question, and it is answered
- * by the `user_id` filter in every query. Passing this gate and then forgetting
- * the filter is the hole, which is why `scopes-authorization.test.ts` exists.
+ * whether THIS reader owns THAT row is a per-row question, answered by the
+ * `user_id` filter in every query. Passing this gate and then forgetting the
+ * filter is the hole, which is why `scopes-authorization.test.ts` exists.
  */
 export function assertCan(viewer: Viewer, capability: Capability): void {
   if (viewer.kind === "anon") throw new NotAllowedError(capability);
