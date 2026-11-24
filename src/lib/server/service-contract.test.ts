@@ -4,7 +4,7 @@ import { CAPABILITIES, PAGE_SIZE, type Cursor } from "@/lib/types";
 
 import * as service from "./article-service";
 import * as mutations from "./mutations";
-import { NotImplementedInStaticPhase } from "./mutations";
+import { NoDatabase, NotImplementedInStaticPhase } from "./mutations";
 import { assertCan, getViewer, NotAllowedError } from "./viewer";
 
 /*
@@ -24,13 +24,23 @@ import { assertCan, getViewer, NotAllowedError } from "./viewer";
 
 const anon = { kind: "anon" } as const;
 
+/**
+ * The module's WRITES, excluding the error classes it also exports.
+ *
+ * Structural rather than a list of names. The exclusion used to be
+ * `v !== NotImplementedInStaticPhase`, hand-maintained — and exporting a second
+ * error class (`NoDatabase`) immediately made two suites treat it as a mutation
+ * and assert it "refuses an anon". A class is not a write, and asking whether
+ * its prototype is an Error says so without anyone remembering to.
+ */
+const isWrite = (value: unknown): value is (...args: unknown[]) => Promise<unknown> =>
+  typeof value === "function" && !(value.prototype instanceof Error);
+
 describe("the service layer keeps Appendix C's contract", () => {
   // Only the FUNCTIONS are subject to the async/viewer-first rules. The module
   // also exports `dataSource`, a string naming which implementation is live.
   const reads = Object.entries(service).filter(([, v]) => typeof v === "function");
-  const writes = Object.entries(mutations).filter(
-    ([, v]) => typeof v === "function" && v !== NotImplementedInStaticPhase,
-  );
+  const writes = Object.entries(mutations).filter(([, v]) => isWrite(v));
 
   it("reports which implementation is live rather than leaving it inferred", () => {
     // M6 made this module a chooser between fixtures and Postgres. Which one
@@ -93,22 +103,55 @@ describe("the service layer keeps Appendix C's contract", () => {
 });
 
 /**
- * `discoverFeeds` is implemented from M5 — Appendix C says "M5 pure, M12
- * networked" — so it is the one function in this module that resolves.
+ * Writes that no longer throw, with the milestone that landed each.
+ *
+ * THIS SET IS THE SHRINKING HALF OF THE PROJECT. The suite below asserts the
+ * rest still answer with their receipt, which is what keeps the prototype's
+ * "nothing was sent" screens honest — and this list is how a write stops being
+ * covered by that assertion. Adding a name here is a deliberate step, so a
+ * mutation cannot quietly start persisting.
+ *
+ *   discoverFeeds   M5 — Appendix C: "M5 pure, M12 networked"
+ *   setReadState    M11 — the first durable write, PATCH /api/read-state
  */
-const IMPLEMENTED = new Set(["discoverFeeds"]);
+const IMPLEMENTED = new Set(["discoverFeeds", "setReadState"]);
 
 describe("mutations are declared but not implemented", () => {
-  it.each(
-    Object.entries(mutations).filter(
-      ([name, v]) =>
-        typeof v === "function" && v !== NotImplementedInStaticPhase && !IMPLEMENTED.has(name),
-    ),
-  )("%s throws NotImplementedInStaticPhase for a real viewer", async (_name, fn) => {
+  it.each(Object.entries(mutations).filter(([name, v]) => isWrite(v) && !IMPLEMENTED.has(name)))(
+    "%s throws NotImplementedInStaticPhase for a real viewer",
+    async (_name, fn) => {
+      const viewer = await getViewer();
+      await expect(
+        (fn as (...a: unknown[]) => Promise<unknown>)(viewer, 1, true),
+      ).rejects.toBeInstanceOf(NotImplementedInStaticPhase);
+    },
+  );
+
+  it("setReadState no longer answers with the phase receipt, now that M11 landed", async () => {
+    /*
+     * The other half of adding a name to `IMPLEMENTED`: the exemption has to be
+     * earned. Without this, listing a mutation there exempts it from the receipt
+     * assertion and proves nothing in its place — the reader's screen would
+     * still say "nothing was sent" with no test to contradict it.
+     *
+     * BRANCHES ON THE DATA SOURCE, because 561 of this project's tests predate
+     * the schema and must keep passing on a clone with no Supabase project
+     * (Appendix C rule 5). The first version asserted the resolved value
+     * outright and failed under `CADENCE_DATA_SOURCE=fixtures` and on any CI
+     * without `DATABASE_URL` — breaking that property to test a write.
+     *
+     * Either way it must not be `NotImplementedInStaticPhase`: with no database
+     * the honest answer is `NoDatabase`, which says the code exists and the
+     * configuration does not. Behaviour is covered by `read-state.test.ts`.
+     */
     const viewer = await getViewer();
-    await expect(
-      (fn as (...a: unknown[]) => Promise<unknown>)(viewer, 1, true),
-    ).rejects.toBeInstanceOf(NotImplementedInStaticPhase);
+    const outcome = mutations.setReadState(viewer, [], true);
+
+    if (service.dataSource === "db") {
+      await expect(outcome).resolves.toEqual({ applied: 0, ignored: 0 });
+    } else {
+      await expect(outcome).rejects.toBeInstanceOf(NoDatabase);
+    }
   });
 
   it("resolves discoverFeeds, which is pure from M5 rather than throwing", async () => {

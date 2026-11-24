@@ -1,7 +1,9 @@
 import { resolveSample } from "@/lib/fixtures/discover";
 import type { DiscoveryResult, Extraction, FullTextMode, Subscription, Viewer } from "@/lib/types";
 
-import { assertCan } from "./viewer";
+import { dataSource } from "./article-service";
+import { applyReadState, type ReadStateResult } from "./read-state.db";
+import { assertCan, requireUser } from "./viewer";
 
 /*
  * Every write the app will ever make, declared in M1 and implemented later.
@@ -25,6 +27,22 @@ export class NotImplementedInStaticPhase extends Error {
   ) {
     super(`Nothing was sent. ${endpoint} arrives in ${milestone}.`);
     this.name = "NotImplementedInStaticPhase";
+  }
+}
+
+/**
+ * A write that is implemented but has no database to write to.
+ *
+ * Distinct from `NotImplementedInStaticPhase`, which means "this milestone has
+ * not happened yet" and carries the milestone in its message. This means the
+ * code exists and the configuration does not — a different thing to tell
+ * somebody, and the only honest answer in fixtures mode, where the corpus is
+ * deep-frozen and a "write" could only pretend.
+ */
+export class NoDatabase extends Error {
+  constructor(readonly endpoint: string) {
+    super(`Nothing was sent. ${endpoint} needs a database, and DATABASE_URL is not configured.`);
+    this.name = "NoDatabase";
   }
 }
 
@@ -91,14 +109,39 @@ export async function unsubscribe(viewer: Viewer, feedId: number): Promise<void>
 }
 
 /**
- * Batched and IDEMPOTENT: `read_at = COALESCE(read_at, now())`, so a retry after
- * a dropped connection cannot un-read anything or double-count (§6.2).
+ * Marks articles read or unread. IMPLEMENTED at M11 — the first durable write.
+ *
+ * Batched and IDEMPOTENT: `read_at = COALESCE(read_at, now())`, so a retry
+ * after a dropped connection cannot un-read anything or double-count (§6.2).
+ *
+ * `assertCan` answers only "is this a signed-in reader". Which articles are
+ * THEIRS is a per-row question, and `applyReadState` answers it with the same
+ * subscription relation reads use — see `read-state.db.ts`.
+ *
+ * POSTGRES ONLY, with no fixtures counterpart, and that is the rule for every
+ * write rather than a shortcut here. Appendix C's two implementations exist so
+ * a READ can be compared; the fixture corpus is deep-frozen, so a fixtures
+ * "write" could only lie about having persisted. A clone with no database gets
+ * the receipt it already has, which is honest.
  */
-export async function setReadState(viewer: Viewer, ids: number[], read: boolean): Promise<void> {
+export async function setReadState(
+  viewer: Viewer,
+  ids: number[],
+  read: boolean,
+): Promise<ReadStateResult> {
   assertCan(viewer, "set-read-state");
-  void ids;
-  void read;
-  throw new NotImplementedInStaticPhase("PATCH /api/read-state", "M11");
+  const user = requireUser(viewer);
+
+  if (dataSource !== "db") {
+    /*
+     * `NoDatabase`, not the phase error. That one's message is "… arrives in
+     * M11", which is now false and was briefly worse — passing "a database" as
+     * the milestone produced the user-visible "arrives in a database."
+     */
+    throw new NoDatabase("PATCH /api/read-state");
+  }
+
+  return applyReadState(user.id, ids, read);
 }
 
 export async function saveArticle(viewer: Viewer, id: number, saved = true): Promise<void> {
