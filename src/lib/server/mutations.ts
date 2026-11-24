@@ -1,8 +1,16 @@
 import { resolveSample } from "@/lib/fixtures/discover";
-import type { DiscoveryResult, Extraction, FullTextMode, Subscription, Viewer } from "@/lib/types";
+import type {
+  DiscoveryResult,
+  Extraction,
+  FullTextMode,
+  ListFilter,
+  Scope,
+  Subscription,
+  Viewer,
+} from "@/lib/types";
 
 import { dataSource } from "./article-service";
-import { applyReadState, type ReadStateResult } from "./read-state.db";
+import { applyReadState, applyScopeRead, type ReadStateResult } from "./read-state.db";
 import { assertCan, requireUser } from "./viewer";
 
 /*
@@ -143,6 +151,66 @@ export async function setReadState(
   }
 
   return applyReadState(user.id, ids, read);
+}
+
+/**
+ * Marks every article in a scope read — the "Mark all read" button.
+ *
+ * TAKES THE SCOPE AND THE FILTER, not ids: `/api/read-state` caps a batch at
+ * 500 and a view can hold more. The set is resolved on the server against the
+ * same `where` the list itself uses, so what gets marked is exactly what was
+ * shown — the search term included, which it was not at first.
+ *
+ * Same gate and same per-row rule as `setReadState`: `assertCan` answers only
+ * "is this a signed-in reader", and the subscription relation inside the scope
+ * filter answers which articles are theirs.
+ */
+export async function markScopeRead(
+  viewer: Viewer,
+  scope: Scope,
+  filter?: ListFilter,
+): Promise<{ applied: number }> {
+  assertCan(viewer, "set-read-state");
+  const user = requireUser(viewer);
+
+  /*
+   * VALIDATED HERE AS WELL, because this scope crosses a trust boundary: it
+   * arrives from a client, and `Scope` is a TypeScript type that guarantees
+   * nothing at runtime. `scopeWhere` now throws on an unknown kind, and this is
+   * the second line of that defence rather than a duplicate of it — refusing at
+   * the edge means a malformed scope never reaches a query builder at all.
+   *
+   * This is not hypothetical. Before either check existed, `{}` resolved to
+   * `where: undefined`, which Prisma reads as no filter — one call marked the
+   * seeded corpus's 124 articles read, across feeds the reader does not follow.
+   */
+  if (!isScope(scope)) {
+    throw new Error(`Not a scope: ${JSON.stringify(scope)}`);
+  }
+
+  if (dataSource !== "db") throw new NoDatabase("mark all read");
+
+  return applyScopeRead(user.id, scope, filter);
+}
+
+/** A runtime check for `Scope`, which as a type is only a compile-time promise. */
+function isScope(value: unknown): value is Scope {
+  if (typeof value !== "object" || value === null) return false;
+  const scope = value as { kind?: unknown; feedId?: unknown; folderId?: unknown };
+  switch (scope.kind) {
+    case "unread":
+    case "all":
+    case "saved":
+      return true;
+    // INTEGERS, not just numbers. `1.5` passed a `typeof` check, reached
+    // `BigInt()` inside Prisma, and surfaced as a RangeError on the button.
+    case "feed":
+      return Number.isSafeInteger(scope.feedId);
+    case "folder":
+      return Number.isSafeInteger(scope.folderId);
+    default:
+      return false;
+  }
 }
 
 export async function saveArticle(viewer: Viewer, id: number, saved = true): Promise<void> {

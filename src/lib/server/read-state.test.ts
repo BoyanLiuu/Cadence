@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/client";
 import { CAN_WRITE_DB } from "@/lib/db/guards";
 
+import { markScopeRead } from "./mutations";
 import { applyReadState } from "./read-state.db";
 
 /*
@@ -45,6 +46,15 @@ describeDb("durable read state", () => {
   /** An article arriving through a feed nobody follows. */
   let theirs: bigint;
   const feeds: bigint[] = [];
+  /** The `User` this suite acts as, for the mutations that take a viewer. */
+  const reader = {
+    id: READER,
+    email: `${READER}@example.invalid`,
+    name: "Read-state reader",
+    initials: "RR",
+    tz: "UTC",
+    aiEnabled: false,
+  };
 
   async function makeFeedWithArticle(
     label: string,
@@ -184,6 +194,82 @@ describeDb("durable read state", () => {
   it("deduplicates a batch rather than counting an id twice", async () => {
     const result = await applyReadState(READER, [Number(mine), Number(mine)], true);
     expect(result).toEqual({ applied: 1, ignored: 0 });
+  });
+
+  it("REFUSES a malformed scope rather than marking everything", async () => {
+    /*
+     * THE HOLE THIS EXISTS FOR, which was open and which a test opened.
+     *
+     * `scopeWhere` had no `default`, so an unrecognised scope returned
+     * `undefined`, Prisma read `where: undefined` as NO FILTER, and every
+     * article in the database matched — including feeds the reader does not
+     * follow. A generic suite that calls each mutation with `(viewer, 1, true)`
+     * passed `1` as the scope and marked the seeded corpus's 124 articles read,
+     * which is how it was found.
+     *
+     * Asserted through the MUTATION, because that is where a client's scope
+     * arrives, and on the table as well: a thrown error means nothing if rows
+     * were written on the way.
+     */
+    const before = await prisma.userArticle.count({ where: { userId: READER } });
+
+    for (const bad of [1, null, undefined, {}, { kind: "everything" }, { kind: "feed" }]) {
+      await expect(
+        markScopeRead({ kind: "user", user: reader }, bad as never),
+        `scope ${JSON.stringify(bad)}`,
+      ).rejects.toThrow();
+    }
+
+    expect(await prisma.userArticle.count({ where: { userId: READER } })).toBe(before);
+  });
+
+  it("marks everything in a scope the reader DOES own", async () => {
+    // The feature, on this suite's own reader: one unfollowed article must stay
+    // untouched, which is the same filter the refusal above protects.
+    await applyReadState(READER, [Number(mine)], false);
+
+    const result = await markScopeRead({ kind: "user", user: reader }, { kind: "unread" });
+
+    expect(result.applied).toBeGreaterThan(0);
+    expect((await rowFor(mine))?.readAt).not.toBeNull();
+    expect(await rowFor(theirs)).toBeNull();
+  });
+
+  it("HONOURS the search filter, marking only what the view showed", async () => {
+    /*
+     * The bug this exists for: the button resolved the UNFILTERED scope, so a
+     * reader looking at three search results marked every unread article in the
+     * scope read. Silent, irreversible in practice, and the opposite of what
+     * they asked for.
+     *
+     * Two articles the reader follows, one matching the term. Marking with the
+     * filter must touch exactly one.
+     */
+    const matching = await makeFeedWithArticle("filter-hit");
+    await prisma.subscription.create({ data: { userId: READER, feedId: matching.feedId } });
+    await prisma.article.update({
+      where: { id: matching.articleId },
+      data: { title: "A story about quokkas" },
+    });
+
+    const other = await makeFeedWithArticle("filter-miss");
+    await prisma.subscription.create({ data: { userId: READER, feedId: other.feedId } });
+    await prisma.article.update({
+      where: { id: other.articleId },
+      data: { title: "Something else entirely" },
+    });
+
+    const result = await markScopeRead(
+      { kind: "user", user: reader },
+      { kind: "unread" },
+      {
+        query: "quokkas",
+      },
+    );
+
+    expect(result.applied).toBe(1);
+    expect((await rowFor(matching.articleId))?.readAt).not.toBeNull();
+    expect(await rowFor(other.articleId)).toBeNull();
   });
 
   it("counts ids it cannot even parse as ignored, rather than losing them", async () => {

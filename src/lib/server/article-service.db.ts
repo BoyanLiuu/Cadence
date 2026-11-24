@@ -348,7 +348,54 @@ function scopeWhere(scope: Scope, feedIds: bigint[], userId: string) {
         },
         ...(scope.unreadOnly ? unread : {}),
       };
+    default: {
+      /*
+       * THROWS, and this is not defensive decoration — it is a hole that was
+       * open. Without a default the function returned `undefined` for an
+       * unrecognised scope, Prisma read `where: undefined` as NO FILTER, and
+       * every article in the database matched: other readers' feeds included.
+       *
+       * Harmless while only reads used this and every caller passed a literal.
+       * `markScopeRead` changed that — it takes a scope from a CLIENT and
+       * writes, so `{}` marked a reader's entire history read, across feeds
+       * they do not follow. A generic test calling every mutation with `1` as
+       * its argument did exactly that, to the seeded corpus.
+       *
+       * `never` makes an unhandled kind a compile error too, so the next scope
+       * added cannot reach this at all.
+       */
+      const unreachable: never = scope;
+      throw new Error(`Unknown scope: ${JSON.stringify(unreachable)}`);
+    }
   }
+}
+
+/**
+ * The `where` that selects the articles one reader sees in one view.
+ *
+ * EXPORTED SO THERE IS ONE COPY. "Mark all read" has to mark exactly the
+ * articles the list is showing, which means the same subscription relation, the
+ * same scope rules AND the same title filter — a second implementation of that
+ * is how a read filter and a write filter drift apart, with the write being the
+ * one that matters.
+ *
+ * THE FILTER IS PART OF THE VIEW, not a refinement of it. Omitting it was a
+ * real bug: search "rust", see three rows, press the button, and every unread
+ * article in the scope was marked read. The reader asked about what was in
+ * front of them.
+ *
+ * `null` means the reader follows nothing, so no article is in scope at all —
+ * distinct from an empty `where`, which matches everything.
+ */
+export async function scopedArticleWhere(userId: string, scope: Scope, filter?: ListFilter) {
+  const feedIds = await subscribedFeedIds(userId);
+  if (feedIds.length === 0) return null;
+
+  const query = filter?.query?.trim();
+  return {
+    ...scopeWhere(scope, feedIds, userId),
+    ...(query ? { title: { contains: query, mode: "insensitive" as const } } : {}),
+  };
 }
 
 /**
@@ -358,6 +405,7 @@ function scopeWhere(scope: Scope, feedIds: bigint[], userId: string) {
  * page rather than a row count, so an article arriving mid-read cannot
  * duplicate or skip a row. Served by `articles_feed_time`.
  */
+
 export async function listArticles(
   viewer: Viewer,
   scope: Scope,

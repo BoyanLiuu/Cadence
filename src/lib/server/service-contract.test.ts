@@ -113,8 +113,16 @@ describe("the service layer keeps Appendix C's contract", () => {
  *
  *   discoverFeeds   M5 — Appendix C: "M5 pure, M12 networked"
  *   setReadState    M11 — the first durable write, PATCH /api/read-state
+ *   markScopeRead   M11 — "Mark all read", resolved from a scope
+ *
+ * THE SUITE BELOW CALLS EVERY OTHER MUTATION WITH `(viewer, 1, true)`, which is
+ * fine for a function that throws immediately and dangerous for one that does
+ * not. `markScopeRead` was briefly absent from this set, so that call reached a
+ * real implementation with `1` as its scope — and marked the seeded corpus's
+ * 124 articles read. Both the query builder and the mutation now refuse a
+ * malformed scope; this list is why the call stops happening at all.
  */
-const IMPLEMENTED = new Set(["discoverFeeds", "setReadState"]);
+const IMPLEMENTED = new Set(["discoverFeeds", "setReadState", "markScopeRead"]);
 
 describe("mutations are declared but not implemented", () => {
   it.each(Object.entries(mutations).filter(([name, v]) => isWrite(v) && !IMPLEMENTED.has(name)))(

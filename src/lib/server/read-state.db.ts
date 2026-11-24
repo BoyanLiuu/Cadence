@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/db/client";
+import type { ListFilter, Scope } from "@/lib/types";
+
+import { scopedArticleWhere } from "./article-service.db";
 
 /*
  * Durable read state (§6.2, M11).
@@ -123,4 +126,59 @@ export async function applyReadState(
   }
 
   return { applied: reachableIds.length, ignored: unique.length - reachableIds.length };
+}
+
+/**
+ * Marks everything in a scope read — the "Mark all read" button.
+ *
+ * NOT AN ID LIST, and that is the whole reason this exists separately.
+ * `PATCH /api/read-state` caps a batch at 500 because it is reachable by anyone
+ * with a session and the work is proportional to the ids; a scope can hold more
+ * than that, and a client paging through its own ids to work around the cap
+ * would be doing the database's job badly. So the scope travels instead and the
+ * set is resolved here.
+ *
+ * IT USES THE SAME `where` THE LIST USES, imported rather than rewritten. The
+ * articles marked have to be exactly the articles shown — INCLUDING the search
+ * filter, whose omission meant a reader looking at three search results marked
+ * every unread article in the scope. The subscription relation inside that
+ * filter is also the authorization check (§3), so a second copy would be two
+ * chances to disagree with the write being the dangerous one.
+ *
+ * The id fetch is unbounded, which is a real limit rather than an oversight: a
+ * personal reader's widest view is thousands of rows, and `unnest` takes an
+ * array that size. A shared instance would want this paged.
+ *
+ * Idempotent on the same terms as the batch path: `COALESCE` keeps an existing
+ * `read_at`, so a double-click marks nothing twice and moves no timestamp.
+ */
+export async function applyScopeRead(
+  userId: string,
+  scope: Scope,
+  filter?: ListFilter,
+): Promise<{ applied: number }> {
+  const where = await scopedArticleWhere(userId, scope, filter);
+  if (where === null) return { applied: 0 };
+
+  /*
+   * The ids are fetched and sent back rather than resolved inside one
+   * `INSERT … SELECT`, because the filter is a Prisma `where` and not SQL. The
+   * cost is one round trip carrying the ids; the alternative is hand-writing
+   * the scope rules in SQL, which is the duplication this function exists to
+   * avoid. A personal reader's "all unread" is thousands of rows at the very
+   * most, and `unnest` takes an array that size without complaint.
+   */
+  const rows = await prisma.article.findMany({ where, select: { id: true } });
+  if (rows.length === 0) return { applied: 0 };
+
+  const ids = rows.map((row) => row.id);
+  await prisma.$executeRaw`
+    INSERT INTO cadence.user_articles (user_id, article_id, read_at)
+    SELECT ${userId}, id, now()
+    FROM unnest(${ids}::bigint[]) AS id
+    ON CONFLICT (user_id, article_id)
+    DO UPDATE SET read_at = COALESCE(cadence.user_articles.read_at, now())
+  `;
+
+  return { applied: ids.length };
 }

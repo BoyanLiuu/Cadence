@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { type Article, type Cursor, type Page, type Scope } from "@/lib/types";
 import { hrefForNewResultSet, hrefWith, type ReaderParams } from "@/lib/view-params";
 
+import { MarkAllRead } from "./mark-all-read";
 import { MarkReadOnScroll } from "./mark-read-on-scroll";
 import { ArticleBadges } from "./revised-badge";
 
@@ -300,9 +301,13 @@ export function ArticleList({
             </Link>
           </div>
 
-          <Button variant="outline" size="sm" disabled={unreadCount === 0}>
-            Mark all read
-          </Button>
+          {/* `query` goes with the scope: the button marks what is on screen,
+              and a search term is part of that. */}
+          <MarkAllRead
+            scope={scope}
+            filter={query ? { query } : undefined}
+            unreadCount={unreadCount}
+          />
         </div>
 
         {/* GET to the current path: the search term becomes part of the URL,
