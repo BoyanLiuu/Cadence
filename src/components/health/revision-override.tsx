@@ -1,3 +1,4 @@
+import { ResurfaceToggle } from "@/app/settings/feeds/resurface-toggle";
 import type { Feed, SubscriptionWithUnread } from "@/lib/types";
 
 /*
@@ -15,11 +16,10 @@ import type { Feed, SubscriptionWithUnread } from "@/lib/types";
  * want different answers about the same feed and a feed row is shared by
  * everyone.
  *
- * It renders as a receipt rather than a working control, like every other write
- * in phase 1: `updateSubscription` throws `NotImplementedInStaticPhase` naming
- * the endpoint it will use, and the prototype boards that state deliberately
- * (`ux-24`, `ux-44`). Showing a switch that silently does nothing would be
- * worse than showing what is not wired yet.
+ * CONNECTED FROM M11. The toggle writes `subscriptions.resurface_on_revision`
+ * through a server action; the receipt that stood here until then is gone,
+ * because a receipt left in place after the write lands tells the reader their
+ * change was discarded when it was not.
  */
 
 /**
@@ -76,10 +76,7 @@ export function RevisionOverride({ sub }: { sub: SubscriptionWithUnread }) {
             ? "An edit returns this feed's articles to unread, and says when you had read it. Right for a changelog or a status page, where the edit is the news."
             : "An edit keeps your read mark and adds a “Revised” badge. A publisher fixing a typo does not put the article back in your unread count."}
         </p>
-        <p className="text-muted text-sm">
-          Nothing was sent: this control is not connected to PATCH /api/subscriptions/{sub.feedId}{" "}
-          yet. The setting shown is the stored one.
-        </p>
+        <ResurfaceToggle feedId={sub.feedId} on={on} />
       </div>
     </section>
   );

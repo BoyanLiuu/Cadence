@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { subscribe, updateSubscription } from "@/lib/server/mutations";
+import { revalidateQuietly } from "@/lib/server/revalidate";
 import { getViewer } from "@/lib/server/viewer";
 
 /*
@@ -25,25 +25,6 @@ import { getViewer } from "@/lib/server/viewer";
  * do, in exchange for the service layer matching the design it was written
  * against.
  */
-
-/**
- * Revalidation, which must never be able to report the write as failed.
- *
- * It is a CACHE HINT: by the time it runs the rows are written. Inside a `try`
- * its failure became "could not do the thing" for something already done;
- * moved outside, its failure became a REJECTION, which the client reports as
- * "nothing was marked" — a stronger falsehood than before. Review caught the
- * second version, introduced while fixing the first. So it swallows, and says
- * so in the log where a stale sidebar can be traced to it.
- */
-function revalidateQuietly(path: string, type?: "layout" | "page") {
-  try {
-    if (type === undefined) revalidatePath(path);
-    else revalidatePath(path, type);
-  } catch (error) {
-    console.error(`revalidatePath(${path}) failed; a screen may be stale`, error);
-  }
-}
 
 export type SubscribeState = { error: string } | null;
 
