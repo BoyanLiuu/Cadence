@@ -111,18 +111,42 @@ describe("the service layer keeps Appendix C's contract", () => {
  * covered by that assertion. Adding a name here is a deliberate step, so a
  * mutation cannot quietly start persisting.
  *
- *   discoverFeeds   M5 — Appendix C: "M5 pure, M12 networked"
- *   setReadState    M11 — the first durable write, PATCH /api/read-state
- *   markScopeRead   M11 — "Mark all read", resolved from a scope
+ *   discoverFeeds        M5 — Appendix C: "M5 pure, M12 networked"
+ *   setReadState         M11 — the first durable write, PATCH /api/read-state
+ *   markScopeRead        M11 — "Mark all read", resolved from a scope
+ *   subscribe            M11 — POST /api/subscriptions
+ *   updateSubscription   M11 — PATCH /api/subscriptions/:feedId
+ *   unsubscribe          M11 — DELETE /api/subscriptions/:feedId
  *
- * THE SUITE BELOW CALLS EVERY OTHER MUTATION WITH `(viewer, 1, true)`, which is
- * fine for a function that throws immediately and dangerous for one that does
- * not. `markScopeRead` was briefly absent from this set, so that call reached a
- * real implementation with `1` as its scope — and marked the seeded corpus's
- * 124 articles read. Both the query builder and the mutation now refuse a
- * malformed scope; this list is why the call stops happening at all.
+ * THE SUITE BELOW CALLS EVERY OTHER MUTATION WITH `(viewer, 1, true)` as a
+ * viewer and junk arguments, which is safe for a function that throws
+ * immediately and DESTRUCTIVE for one that does not. It has now cost real data
+ * twice:
+ *
+ *   `markScopeRead` absent from this list meant the call arrived with `1` as a
+ *   scope, which resolved to `where: undefined` and marked the seeded corpus's
+ *   124 articles read.
+ *
+ *   `unsubscribe` absent would be worse, and argument validation does NOT save
+ *   it: `1` is a perfectly well-formed feed id, and the fixture reader follows
+ *   feed 1 — so the call deletes a real subscription, correctly, having been
+ *   asked to. There is no shape of input check that makes "delete feed 1" safe.
+ *
+ * So the protection is this list, and it has to be updated in the same commit
+ * that implements a mutation. The argument checks added alongside are worth
+ * having for real callers; they are not a substitute for this.
  */
-const IMPLEMENTED = new Set(["discoverFeeds", "setReadState", "markScopeRead"]);
+/** Resolved once; these calls must not depend on a database being present. */
+const VIEWER_PLACEHOLDER = await getViewer();
+
+const IMPLEMENTED = new Set([
+  "discoverFeeds",
+  "setReadState",
+  "markScopeRead",
+  "subscribe",
+  "updateSubscription",
+  "unsubscribe",
+]);
 
 describe("mutations are declared but not implemented", () => {
   it.each(Object.entries(mutations).filter(([name, v]) => isWrite(v) && !IMPLEMENTED.has(name)))(
@@ -162,6 +186,30 @@ describe("mutations are declared but not implemented", () => {
     }
   });
 
+  it.each([
+    ["subscribe", () => mutations.subscribe(VIEWER_PLACEHOLDER, { feedUrl: "not a url" })],
+    ["updateSubscription", () => mutations.updateSubscription(VIEWER_PLACEHOLDER, 1.5, {})],
+    ["unsubscribe", () => mutations.unsubscribe(VIEWER_PLACEHOLDER, 1.5)],
+  ])("%s no longer answers with the phase receipt, now that M11 landed", async (_name, call) => {
+    /*
+     * THE EARNED EXEMPTION for the three subscription writes. Adding a name to
+     * `IMPLEMENTED` removes it from the receipt assertion above and proves
+     * nothing in its place, so each one is checked here.
+     *
+     * CALLED WITH INPUT THAT CANNOT SUCCEED — an unparseable address, a
+     * fractional feed id — precisely because these DO write now. `unsubscribe`
+     * with a valid id would delete a real subscription, which is how the
+     * generic harness cost data twice. A rejection that is not
+     * `NotImplementedInStaticPhase` is the whole assertion: it proves the stub
+     * is gone without asking the function to do anything.
+     *
+     * In fixtures mode the rejection is `NoDatabase`, which is also not the
+     * phase receipt, so this holds in both modes — and `pnpm check`, which runs
+     * without `CADENCE_DB_WRITE_TESTS`, covers these three for the first time.
+     */
+    await expect(call()).rejects.not.toBeInstanceOf(NotImplementedInStaticPhase);
+  });
+
   it("resolves discoverFeeds, which is pure from M5 rather than throwing", async () => {
     // The exception to the rule above, and it must be an explicit exception:
     // if this function silently went back to throwing, the add-feed screen
@@ -182,9 +230,15 @@ describe("mutations are declared but not implemented", () => {
   });
 
   it("names the endpoint, so the receipt screens can say what was not sent", async () => {
+    /*
+     * Checked against `extractArticle`, whose endpoint the reader pane prints
+     * verbatim — so this ties the error's `endpoint` to the string on screen.
+     * It used `subscribe` until M11 implemented that, which is the hazard of
+     * picking an example from a list that shrinks.
+     */
     const viewer = await getViewer();
-    await expect(mutations.subscribe(viewer, { feedUrl: "x" })).rejects.toMatchObject({
-      endpoint: "POST /api/subscriptions",
+    await expect(mutations.extractArticle(viewer, 1)).rejects.toMatchObject({
+      endpoint: "POST /api/articles/:id/extract",
     });
   });
 });

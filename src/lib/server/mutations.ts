@@ -11,6 +11,7 @@ import type {
 
 import { dataSource } from "./article-service";
 import { applyReadState, applyScopeRead, type ReadStateResult } from "./read-state.db";
+import { addSubscription, editSubscription, removeSubscription } from "./subscriptions.db";
 import { assertCan, requireUser } from "./viewer";
 
 /*
@@ -94,9 +95,46 @@ export async function discoverFeeds(viewer: Viewer, url: string): Promise<Discov
  */
 export async function subscribe(viewer: Viewer, input: SubscribeInput): Promise<Subscription> {
   assertCan(viewer, "subscribe");
-  void input;
-  throw new NotImplementedInStaticPhase("POST /api/subscriptions", "M11");
+  const user = requireUser(viewer);
+  if (dataSource !== "db") throw new NoDatabase("POST /api/subscriptions");
+
+  /*
+   * VALIDATED HERE, where the trust boundary is. Three separate failures were
+   * reachable without this, all of them 500s on a form:
+   *
+   *   `feedUrl: "my favourite blog"` created a permanent, unfetchable `feeds`
+   *   row — permanent because feed rows are deliberately never reaped
+   *   (`removeSubscription` explains why), so one typo is a row forever.
+   *
+   *   `folderId: 1.5` reached `BigInt()` inside `checkFolder` and threw a
+   *   RangeError. `feedId` was already checked on the other two mutations; this
+   *   one let a folder id past.
+   *
+   *   `fullTextMode: "whatever"` would have reached the enum column.
+   */
+  const feedUrl = typeof input?.feedUrl === "string" ? input.feedUrl.trim() : "";
+  if (!isHttpUrl(feedUrl)) throw new Error("That is not a feed address.");
+
+  const folderId = input?.folderId ?? null;
+  if (folderId !== null && !Number.isSafeInteger(folderId)) {
+    throw new Error(`Not a folder id: ${JSON.stringify(folderId)}`);
+  }
+
+  return addSubscription(user.id, feedUrl, folderId);
 }
+
+/** An address the poller could actually fetch. */
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/** `fullTextMode`'s values, which arrive from a form and are not a type. */
+const FULL_TEXT_MODES: readonly FullTextMode[] = ["off", "on_demand", "always"];
 
 export async function updateSubscription(
   viewer: Viewer,
@@ -104,16 +142,45 @@ export async function updateSubscription(
   input: UpdateSubscriptionInput,
 ): Promise<Subscription> {
   assertCan(viewer, "subscribe");
-  void feedId;
-  void input;
-  throw new NotImplementedInStaticPhase("PATCH /api/subscriptions/:feedId", "M11");
+  const user = requireUser(viewer);
+  if (dataSource !== "db") throw new NoDatabase("PATCH /api/subscriptions/:feedId");
+  if (!Number.isSafeInteger(feedId)) throw new Error(`Not a feed id: ${JSON.stringify(feedId)}`);
+
+  /*
+   * `guidTrustOverride` is accepted by the type and NOT forwarded. It is in the
+   * database and in this input shape, but not on the `Feed` domain type and not
+   * on any screen — Appendix E leaves it as an escape hatch for a feed whose
+   * ids cannot be judged automatically. Forwarding it would mean a reader
+   * changing a column that belongs to the SHARED feed row, which is the one
+   * thing this file refuses throughout. It needs its own decision first.
+   */
+  if (
+    input?.folderId !== undefined &&
+    input.folderId !== null &&
+    !Number.isSafeInteger(input.folderId)
+  ) {
+    throw new Error(`Not a folder id: ${JSON.stringify(input.folderId)}`);
+  }
+  if (input?.fullTextMode !== undefined && !FULL_TEXT_MODES.includes(input.fullTextMode)) {
+    throw new Error(`Not a full-text mode: ${JSON.stringify(input.fullTextMode)}`);
+  }
+
+  return editSubscription(user.id, feedId, {
+    folderId: input?.folderId,
+    customTitle: input?.customTitle,
+    fullTextMode: input?.fullTextMode,
+    resurfaceOnRevision: input?.resurfaceOnRevision,
+  });
 }
 
 /** The feed row survives while any subscriber remains. */
 export async function unsubscribe(viewer: Viewer, feedId: number): Promise<void> {
   assertCan(viewer, "unsubscribe");
-  void feedId;
-  throw new NotImplementedInStaticPhase("DELETE /api/subscriptions/:feedId", "M11");
+  const user = requireUser(viewer);
+  if (dataSource !== "db") throw new NoDatabase("DELETE /api/subscriptions/:feedId");
+  if (!Number.isSafeInteger(feedId)) throw new Error(`Not a feed id: ${JSON.stringify(feedId)}`);
+
+  return removeSubscription(user.id, feedId);
 }
 
 /**
@@ -217,7 +284,18 @@ export async function saveArticle(viewer: Viewer, id: number, saved = true): Pro
   assertCan(viewer, "save");
   void id;
   void saved;
-  throw new NotImplementedInStaticPhase("PATCH /api/read-state", "M12");
+  /*
+   * `PATCH /api/articles/:id/save`, and ARCHITECTURE's Writes table does not
+   * list it — saving is the one write with no designed endpoint, which is why
+   * this named `PATCH /api/read-state` until now: borrowed from the neighbour
+   * that does have one. The receipt screen would have cited the wrong route.
+   *
+   * Named consistently with the rest rather than left wrong; the doc gap is
+   * recorded in the memo. M12 is where it has to be settled, because the saved
+   * shelf is its own surface (§2) and `saved_at` is a different column from
+   * `read_at` even though both live on `user_articles`.
+   */
+  throw new NotImplementedInStaticPhase("PATCH /api/articles/:id/save", "M12");
 }
 
 /**
