@@ -121,8 +121,9 @@ export async function unsubscribe(viewer: Viewer, feedId: number): Promise<void>
  * POSTGRES ONLY, with no fixtures counterpart, and that is the rule for every
  * write rather than a shortcut here. Appendix C's two implementations exist so
  * a READ can be compared; the fixture corpus is deep-frozen, so a fixtures
- * "write" could only lie about having persisted. A clone with no database gets
- * the receipt it already has, which is honest.
+ * "write" could only lie about having persisted. With no database this throws
+ * `NoDatabase`, the route answers 501, and the client gives up and un-dims —
+ * so nothing on screen claims a mark that was never recorded.
  */
 export async function setReadState(
   viewer: Viewer,

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { Scope } from "@/lib/types";
+import type { Article, Scope } from "@/lib/types";
 
 import { ArticleList, type ListState } from "./index";
 
@@ -20,6 +20,27 @@ import { ArticleList, type ListState } from "./index";
 
 const noop = (id: number) => `Feed ${id}`;
 const SCOPE: Scope = { kind: "unread" };
+
+/** The fields a row renders, with the two the marking contract depends on. */
+const article = (id: number, readAt: string | null): Article => ({
+  id,
+  feedId: 1,
+  title: `Article ${id}`,
+  author: "",
+  url: `https://example.test/${id}`,
+  publishedAt: "2026-11-12T09:00:00.000Z",
+  fetchedAt: "2026-11-12T09:01:00.000Z",
+  words: 100,
+  summary: "",
+  body: [],
+  extractStatus: "none",
+  revisedAt: null,
+  revisionCount: 0,
+  revision: null,
+  arrivals: null,
+  readAt,
+  savedAt: null,
+});
 
 function renderList(state: ListState, overrides: Partial<Parameters<typeof ArticleList>[0]> = {}) {
   return render(
@@ -153,10 +174,43 @@ describe("the chrome is present in every state", () => {
     },
   );
 
-  it("shows the nothing-was-sent receipt, which is designed rather than a stub", () => {
+  it("no longer carries the nothing-was-sent receipt, because marks now persist", () => {
+    /*
+     * This asserted the receipt was PRESENT from M4 until M11, which was right
+     * both times: the prototype designs that copy (`ux-03`, `ux-10`, `ux-24`,
+     * `ux-44`, `ux-53`) and it was true while nothing was connected. The
+     * inversion is the deliverable — a receipt left behind after the write
+     * landed tells the reader their marks are being discarded when they are not,
+     * which is worse than having no receipt at all.
+     */
     renderList({ kind: "all-read", nextFetch: null });
-    expect(screen.getByText(/Nothing was sent/)).toBeTruthy();
-    expect(screen.getByText(/PATCH \/api\/read-state/)).toBeTruthy();
+    expect(screen.queryByText(/Nothing was sent/)).toBeNull();
+  });
+});
+
+describe("rows carry what optimistic marking needs", () => {
+  /*
+   * `mark-read-on-scroll.tsx` finds its rows with
+   * `[data-article-id][data-dimmed="false"]:not([data-open="true"])` and dims
+   * one by setting `data-dimmed="true"`. Both sides of that contract live in the DOM rather than
+   * in a prop, which is what keeps the list a Server Component — and means a
+   * rename here breaks the marking SILENTLY: every row still renders, nothing
+   * throws, and articles simply stop being marked as you read them.
+   */
+  it("gives every row an id and a dim state the client can set", () => {
+    renderList({
+      kind: "rows",
+      page: {
+        items: [article(4242, null), article(4243, "2026-11-12T09:00:00.000Z")],
+        next: null,
+      },
+    });
+
+    const unreadRow = document.querySelector('[data-article-id="4242"]');
+    const readRow = document.querySelector('[data-article-id="4243"]');
+
+    expect(unreadRow?.getAttribute("data-dimmed")).toBe("false");
+    expect(readRow?.getAttribute("data-dimmed")).toBe("true");
   });
 });
 

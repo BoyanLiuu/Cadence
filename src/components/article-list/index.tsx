@@ -4,9 +4,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type Article, type Cursor, type Page, type Scope } from "@/lib/types";
-
-import { ArticleBadges } from "./revised-badge";
 import { hrefForNewResultSet, hrefWith, type ReaderParams } from "@/lib/view-params";
+
+import { MarkReadOnScroll } from "./mark-read-on-scroll";
+import { ArticleBadges } from "./revised-badge";
 
 /*
  * The middle pane: a keyset-paginated list, the Unread/All toggle and title
@@ -75,27 +76,59 @@ function Row({
 }) {
   const read = article.readAt !== null;
 
+  /*
+   * READ STATE IS STYLED FROM `data-dimmed`, NOT FROM THE `read` BOOLEAN, and
+   * the indirection is the point: `mark-read-on-scroll.tsx` sets that attribute
+   * optimistically as a row scrolls past, so one selector renders both the
+   * database's answer and the client's guess. A row whose mark is later
+   * confirmed by the server changes nothing visually, which is what optimistic
+   * is supposed to mean.
+   *
+   * `data-article-id` is how that component finds its rows without the list
+   * being lifted into the client.
+   *
+   * The 150 ms is Appendix F's figure, and `transition-colors` is the whole
+   * animation — COLOUR ONLY, no size, no opacity on the row box. The reader is
+   * scrolling, and anything that moves layout under a thumb loses their place.
+   *
+   * ONE ATTRIBUTE CARRIES THE WHOLE DECISION, `read AND NOT open`, computed
+   * here. Two attempts got it wrong and both are worth recording:
+   *
+   *   A muted rule plus an open rule to override it — equal specificity, so
+   *   which wins is whichever Tailwind emits last, and it emits `read` last.
+   *   That left an OPENED row muted.
+   *
+   *   Stacking the variants, `in-data-[read=true]:in-data-[open=false]:`. That
+   *   compiles to `:where([data-open=false]) :where([data-read=true]) …` — two
+   *   ANCESTORS — and both attributes sit on this one `<li>`, so it matches
+   *   nothing at all. Found by grepping the built stylesheet, not by reasoning.
+   *
+   * So the condition is evaluated in TypeScript, where it is a boolean rather
+   * than a specificity question. `mark-read-on-scroll.tsx` sets the same
+   * attribute and skips open rows, so the two sides agree by construction.
+   */
   return (
-    <li className="border-rule border-b">
+    <li
+      className="border-rule border-b"
+      data-article-id={article.id}
+      data-open={open ? "true" : "false"}
+      data-dimmed={read && !open ? "true" : "false"}
+    >
       <Link
         // Keeps scope, search, folder AND the page: clicking a row on page 2
         // of All must not land on page 1 of Unread.
         href={hrefWith(params, { article: String(article.id) })}
         scroll={false}
         aria-current={open ? "true" : undefined}
-        className={`gap-2xs px-lg py-md hover:bg-paper-2 grid no-underline transition-colors ${
-          open ? "bg-paper-hi" : ""
-        }`}
+        className="gap-2xs px-lg py-md hover:bg-paper-2 in-data-[open=true]:bg-paper-hi grid no-underline transition-colors duration-150"
       >
         <span className="gap-sm text-ink-2 num flex justify-between text-xs font-medium">
-          <span className={read && !open ? "text-muted" : ""}>{feedTitle}</span>
+          <span className="in-data-[dimmed=true]:text-muted transition-colors duration-150">
+            {feedTitle}
+          </span>
           <span className="text-muted">{hhmm(article.publishedAt)}</span>
         </span>
-        <span
-          className={`font-display text-lg leading-[1.25] tracking-[-0.005em] text-pretty ${
-            read && !open ? "text-muted" : "text-ink"
-          }`}
-        >
+        <span className="font-display text-ink in-data-[dimmed=true]:text-muted text-lg leading-[1.25] tracking-[-0.005em] text-pretty transition-colors duration-150">
           {article.title}
         </span>
         <span className="text-muted text-sm">{article.summary}</span>
@@ -298,19 +331,18 @@ export function ArticleList({
             Search
           </Button>
         </form>
-
-        {/* The receipt the prototype designs for every write that cannot
-            persist yet (ux-03, ux-10, ux-24, ux-44, ux-53). */}
-        <p className="border-rule bg-paper-hi text-ink-2 px-sm py-xs mt-xs border text-xs leading-[1.45]">
-          Nothing was sent: this page is not connected to{" "}
-          <code className="text-xs">PATCH /api/read-state</code> yet. Marks are kept on this page
-          only.
-        </p>
       </div>
 
       <div className="border-ink flex-1 border-t">
         {state.kind === "rows" ? (
           <>
+            {/*
+             * Marks rows read as they scroll past, optimistically, flushed in
+             * batches. Mounted only where there is something to mark — an
+             * all-read list needs no observer — and it renders nothing, so it
+             * costs the list no layout.
+             */}
+            <MarkReadOnScroll enabled={state.page.items.some((a) => a.readAt === null)} />
             <ul className="m-0 list-none p-0">
               {state.page.items.map((a) => (
                 <Row

@@ -86,8 +86,17 @@ export async function PATCH(request: Request): Promise<Response> {
       return Response.json({ error: "Sign in to save your place" }, { status: 401 });
     }
     if (error instanceof NoDatabase) {
-      // Fixtures mode, which cannot persist. The screen's own receipt already
-      // says so; this says the same thing to a client.
+      /*
+       * Fixtures mode, which cannot persist. 501 and not 500, because the
+       * request was fine and the server is not: `mark-read-on-scroll.tsx`
+       * treats it as a refusal repeating cannot fix, gives up, and rolls back
+       * the dim rather than leaving rows looking marked.
+       *
+       * The screen used to carry a "nothing was sent" receipt saying this. It
+       * was removed when the write landed, because leaving it there once marks
+       * DO persist tells the reader the opposite of the truth — so in fixtures
+       * mode the honest signal is simply that nothing dims.
+       */
       return Response.json({ error: error.message }, { status: 501 });
     }
     console.error("read-state: applying marks failed", error);
