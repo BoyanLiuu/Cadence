@@ -1,6 +1,7 @@
 "use server";
 
 import { updateSubscription } from "@/lib/server/mutations";
+import { messageForActionError } from "@/lib/server/action-error";
 import { revalidateQuietly } from "@/lib/server/revalidate";
 import { getViewer } from "@/lib/server/viewer";
 
@@ -43,9 +44,7 @@ export async function setResurfaceOnRevision(
 
     await updateSubscription(viewer, feedId, { resurfaceOnRevision: !wasOn });
   } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Could not change that setting.",
-    };
+    return { error: messageForActionError(error, "Could not change that setting.") };
   }
 
   /*

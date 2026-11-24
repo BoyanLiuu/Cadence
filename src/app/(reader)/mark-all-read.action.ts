@@ -2,6 +2,7 @@
 
 import { markScopeRead } from "@/lib/server/mutations";
 import type { ListFilter, Scope } from "@/lib/types";
+import { messageForActionError } from "@/lib/server/action-error";
 import { revalidateQuietly } from "@/lib/server/revalidate";
 import { getViewer } from "@/lib/server/viewer";
 
@@ -50,8 +51,7 @@ export async function markAllRead(scope: Scope, filter?: ListFilter): Promise<Ma
      * an opaque digest in production, so the button could only say "something
      * went wrong". The caller shows this message and puts the rows back.
      */
-    const message = error instanceof Error ? error.message : "Could not mark these read";
-    return { error: message };
+    return { error: messageForActionError(error, "Could not mark these read") };
   }
 
   /*

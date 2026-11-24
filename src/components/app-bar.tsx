@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { signOut } from "@/app/sign-out.action";
 import { READER_PATH } from "@/lib/routes";
 
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,22 @@ export function AppBar({
             </span>
             <span className="hidden sm:inline">{accountName}</span>
           </span>
+
+          {/*
+           * A FORM, not a link, and the distinction is the whole safety of it:
+           * Next prefetches `<Link>` on hover, so a `<Link href="/sign-out">`
+           * here would sign a reader out for moving the mouse across the nav.
+           * Browsers and scanners prefetch too.
+           *
+           * No `"use client"` anywhere in this file — `<form action={…}>` posts
+           * a Server Action without a line of client JavaScript, which is what
+           * keeps Clerk's remote bundle off every signed-in page.
+           */}
+          <form action={signOut}>
+            <Button type="submit" variant="ghost" size="sm">
+              Sign out
+            </Button>
+          </form>
         </div>
       </div>
     </header>

@@ -22,6 +22,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const AUTH = vi.hoisted(() => ({ userId: null as string | null }));
 
+const REDIRECTED = vi.hoisted(() => ({ to: null as string | null }));
+
+vi.mock("next/navigation", () => ({
+  redirect: (to: string) => {
+    REDIRECTED.to = to;
+    // The real one signals by throwing, which the code under test relies on.
+    throw Object.assign(new Error("NEXT_REDIRECT"), { digest: `NEXT_REDIRECT;${to}` });
+  },
+}));
+
+vi.mock("next/headers", () => ({
+  headers: () => Promise.resolve(new Headers()),
+}));
+
 vi.mock("@clerk/nextjs/server", () => ({
   auth: () => Promise.resolve({ userId: AUTH.userId }),
   // REJECTS, which is what Clerk's Backend API does for a user it no longer
@@ -87,6 +101,26 @@ describe("getViewer fails closed", () => {
      * visitor a signed-in reader with every capability.
      */
     expect(await viewerWith({ CADENCE_DATA_SOURCE: "fixtures" })).toEqual({ kind: "anon" });
+  });
+
+  it("sends a SCREEN to /session-ended, which can clear the cookie", async () => {
+    /*
+     * The point of typing `StaleSession`, and it had no test: `getViewer()`
+     * throws so a Route Handler can answer a status code, and `requireViewer()`
+     * translates that into the one page carrying the sign-out form. Only an
+     * action may write a cookie, so a page that merely reported the error would
+     * leave the reader stuck for the life of the token — and `/sign-in` is the
+     * bounce loop.
+     */
+    AUTH.userId = "user_revoked";
+    for (const key of ENV_KEYS) delete process.env[key];
+    process.env.DATABASE_URL = "postgres://x";
+    REDIRECTED.to = null;
+    vi.resetModules();
+
+    const { requireViewer } = await import("./viewer");
+    await expect(requireViewer()).rejects.toThrow(/NEXT_REDIRECT/);
+    expect(REDIRECTED.to).toBe("/session-ended");
   });
 
   it("a stale session THROWS rather than reporting anon", async () => {

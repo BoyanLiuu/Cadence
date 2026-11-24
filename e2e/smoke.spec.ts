@@ -40,6 +40,30 @@ test("the home page states the claim and offers a way in", async ({ page }) => {
   await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
 });
 
+test("the session-ended page offers a way out, as a form and not a link", async ({ page }) => {
+  /*
+   * ux-04. The page exists because redirecting a stale session to `/sign-in`
+   * loops — Clerk still considers the token valid and bounces it back.
+   *
+   * ASSERTS IT IS A SUBMIT BUTTON INSIDE A FORM, which is the regression worth
+   * catching: turning this into `<Link href="/sign-out">` would look identical
+   * and sign readers out on hover, because Next prefetches links. A link cannot
+   * clear the cookie either — only an action may write one.
+   */
+  await page.goto("/session-ended");
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your session has ended");
+
+  const button = page.getByRole("button", { name: "Sign in again" });
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAttribute("type", "submit");
+  await expect(page.locator("form button[type=submit]")).toHaveCount(1);
+
+  // And pressing it leaves, rather than erroring — the whole point of the page.
+  await button.click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
 /*
  * §2: there is no public reading surface. Every one of these is somebody's
  * subscription list, so signed out they send you to sign in — and they must do

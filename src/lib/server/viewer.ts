@@ -135,14 +135,12 @@ async function rowFor(userId: string): Promise<User> {
      * until the token expires. A browser shows that as ERR_TOO_MANY_REDIRECTS,
      * which is worse than a message.
      *
-     * The right answer is to END the stale session rather than report it, so
-     * when sign-out lands this should redirect there instead — it is the one
-     * action that breaks the loop by clearing the cookie.
+     * TYPED, so `requireViewer` can send a SCREEN to `/session-ended` — the one
+     * page that can clear the cookie, because only an action may write one. A
+     * Route Handler keeps getting the throw, which is right: a background flush
+     * must not follow a redirect and report HTML as success.
      */
-    throw new Error(
-      `Clerk session names user ${userId}, which Clerk will not describe. The ` +
-        `session is stale; signing out and in again clears it.`,
-    );
+    throw new StaleSession(userId);
   }
 
   const email =
@@ -307,7 +305,20 @@ export const getViewer = cache(async (): Promise<Viewer> => {
  * resolver with no opinion about what to do when nobody is there.
  */
 export async function requireViewer(): Promise<Extract<Viewer, { kind: "user" }>> {
-  const viewer = await getViewer();
+  let viewer: Viewer;
+  try {
+    viewer = await getViewer();
+  } catch (error) {
+    /*
+     * A STALE SESSION GETS A WAY OUT, not an error page. `/session-ended`
+     * carries the sign-out form, which is the only thing that can clear the
+     * cookie — and sending them to `/sign-in` instead is the bounce loop,
+     * because Clerk still considers the token valid and would redirect them
+     * back to a reading surface.
+     */
+    if (error instanceof StaleSession) redirect("/session-ended");
+    throw error;
+  }
   if (viewer.kind === "anon") {
     /*
      * CARRIES WHERE THEY WERE GOING. Clerk reads `redirect_url` and returns
@@ -330,6 +341,25 @@ export async function requireViewer(): Promise<Extract<Viewer, { kind: "user" }>
     redirect(to);
   }
   return viewer;
+}
+
+/**
+ * A session Clerk will not describe: the account was deleted or the session
+ * revoked while its short-lived token was still valid.
+ *
+ * Its own type because the two callers want different things — a screen wants
+ * `/session-ended`, which can clear the cookie; a Route Handler wants a status
+ * code. `getViewer()` stays opinion-free and throws this; `requireViewer()`
+ * translates it.
+ */
+export class StaleSession extends Error {
+  constructor(readonly userId: string) {
+    super(
+      `Clerk session names user ${userId}, which Clerk will not describe. ` +
+        `The session is stale; signing out and in again clears it.`,
+    );
+    this.name = "StaleSession";
+  }
 }
 
 /** Thrown by `assertCan`. A denial is a 403, never a silent empty result. */

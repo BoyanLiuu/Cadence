@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { subscribe, updateSubscription } from "@/lib/server/mutations";
+import { messageForActionError } from "@/lib/server/action-error";
 import { revalidateQuietly } from "@/lib/server/revalidate";
 import { getViewer } from "@/lib/server/viewer";
 
@@ -76,7 +77,7 @@ export async function subscribeToFeed(
      * opaque digest in production, and this form's failures are things a reader
      * can act on — a bad address, a folder that is not theirs.
      */
-    return { error: error instanceof Error ? error.message : "Could not follow that feed." };
+    return { error: messageForActionError(error, "Could not follow that feed.") };
   }
 
   // The sidebar, the feeds list and the reader all derive from these rows.

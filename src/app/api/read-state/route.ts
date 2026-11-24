@@ -1,5 +1,6 @@
 import { NoDatabase, setReadState } from "@/lib/server/mutations";
-import { getViewer, NotAllowedError } from "@/lib/server/viewer";
+import type { Viewer } from "@/lib/types";
+import { getViewer, NotAllowedError, StaleSession } from "@/lib/server/viewer";
 
 /*
  * PATCH /api/read-state — the reader's marks, made durable (§6.2, M11).
@@ -32,7 +33,23 @@ const MAX_IDS = 500;
 type Body = { ids: unknown; read: unknown };
 
 export async function PATCH(request: Request): Promise<Response> {
-  const viewer = await getViewer();
+  /*
+   * INSIDE A TRY, because `getViewer()` throws for a session Clerk no longer
+   * recognises. Unhandled, that left the framework to answer 500 — and
+   * `mark-read-on-scroll.tsx` treats any 5xx as transient, so a reader whose
+   * account had been deleted retried every two seconds for as long as the tab
+   * stayed open, with rows left falsely dimmed. A 401 is the honest answer and
+   * the one the client stops on.
+   */
+  let viewer: Viewer;
+  try {
+    viewer = await getViewer();
+  } catch (error) {
+    if (error instanceof StaleSession) {
+      return Response.json({ error: "Your session has ended. Sign in again." }, { status: 401 });
+    }
+    throw error;
+  }
 
   let body: Body;
   try {

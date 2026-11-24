@@ -54,3 +54,32 @@ describe("the Add feed button", () => {
     expect(screen.getByRole("link", { name: /add feed/i })).toHaveAttribute("href", "/add");
   });
 });
+
+describe("signing out", () => {
+  /*
+   * What this guards: the hover hazard the control's own comment calls "the
+   * whole safety of it", which nothing tested.
+   *
+   * Next PREFETCHES `<Link>`, so `<Link href="/sign-out">` in a header signs a
+   * reader out for moving the mouse across the nav — and browsers and scanners
+   * prefetch too. Swapping the form for a link would look identical on screen,
+   * read more naturally in the JSX, and keep every other test green.
+   *
+   * A link also could not do the job: clearing a cookie needs an action or a
+   * route handler, so a `GET` would have nothing to clear it with.
+   */
+  it("is a submit button inside a form, never a link", () => {
+    render(<AppBar accountName="Elif Brandt" initials="EB" current="reader" />);
+
+    const button = screen.getByRole("button", { name: "Sign out" });
+    expect(button).toHaveAttribute("type", "submit");
+    expect(button.closest("form")).not.toBeNull();
+
+    // And nothing in the bar navigates to a sign-out URL.
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((link) => link.getAttribute("href") ?? "")
+      .filter((href) => href.includes("sign-out"));
+    expect(hrefs).toEqual([]);
+  });
+});
