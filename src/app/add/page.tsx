@@ -2,6 +2,9 @@ import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
 import { AppBar } from "@/components/app-bar";
+
+import { SubscribeForm } from "./subscribe-form";
+import { subscribeToFeed } from "./subscribe.action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sampleAddresses } from "@/lib/fixtures/discover";
@@ -240,7 +243,13 @@ export default async function AddFeedPage({
           )}
 
           {result?.kind === "found" && (
-            <form className="gap-lg grid">
+            /*
+             * KEYED ON THE CHOSEN FEED, so changing the selection remounts the
+             * form and clears `useActionState`. Without it the component stays
+             * mounted across candidate and address changes, and a
+             * "that folder does not exist" alert hangs under a different feed.
+             */
+            <SubscribeForm key={chosen?.feedUrl ?? "none"} action={subscribeToFeed}>
               <input type="hidden" name="address" value={typed} />
               <input type="hidden" name="feedUrl" value={chosen?.feedUrl ?? ""} />
               <section className="gap-md grid lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start">
@@ -273,12 +282,16 @@ export default async function AddFeedPage({
                     name="folderId"
                     className="border-rule bg-paper-hi px-sm text-ink h-10 rounded-[2px] border"
                   >
+                    {/* FIRST, so it is the default. It was last, which made
+                        the reader's first folder the default — and now that
+                        this form writes, subscribing without touching the
+                        select filed the feed somewhere nobody chose. */}
+                    <option value="">No folder</option>
                     {folders.map((folder) => (
                       <option key={folder.id} value={folder.id}>
                         {folder.name}
                       </option>
                     ))}
-                    <option value="">No folder</option>
                   </select>
                 </div>
                 <div className="gap-2xs grid">
@@ -292,22 +305,10 @@ export default async function AddFeedPage({
                 </div>
               </div>
 
-              {/* The accent is reserved for the one committing action on the
-                  page (Appendix E), which is why nothing else here is orange. */}
-              <Button
-                type="submit"
-                formAction="?"
-                className="bg-accent text-accent-ink hover:bg-accent-hover justify-self-start"
-              >
-                Subscribe
-              </Button>
-
               <p className="border-rule bg-paper-hi text-ink-2 px-sm py-xs max-w-[46rem] border text-xs leading-[1.45]">
-                Nothing will be sent: this page is not connected to{" "}
-                <code className="text-xs">POST /api/subscriptions</code> yet, which arrives in M11.
-                Discovery above is real — it reads the sample map rather than the web until M12.
+                Discovery reads the sample map rather than the web until M12 — subscribing is real.
               </p>
-            </form>
+            </SubscribeForm>
           )}
 
           {result !== null && result.kind !== "found" && <Failure result={result} />}
@@ -343,7 +344,7 @@ export default async function AddFeedPage({
             </div>
           ))}
           <p className="text-muted text-xs">
-            {subs.length} feeds followed. Nothing on this page changes that yet.
+            {subs.length} {subs.length === 1 ? "feed" : "feeds"} followed.
           </p>
         </aside>
       </main>

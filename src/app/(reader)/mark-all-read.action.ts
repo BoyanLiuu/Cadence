@@ -30,9 +30,30 @@ import { getViewer } from "@/lib/server/viewer";
  * resolved to `where: undefined` and marked a whole corpus read.
  */
 
+/**
+ * Revalidation, which must never be able to report the write as failed.
+ *
+ * It is a CACHE HINT: by the time it runs the rows are written. Inside a `try`
+ * its failure became "could not do the thing" for something already done;
+ * moved outside, its failure became a REJECTION, which the client reports as
+ * "nothing was marked" — a stronger falsehood than before. Review caught the
+ * second version, introduced while fixing the first. So it swallows, and says
+ * so in the log where a stale sidebar can be traced to it.
+ */
+function revalidateQuietly(path: string, type?: "layout" | "page") {
+  try {
+    if (type === undefined) revalidatePath(path);
+    else revalidatePath(path, type);
+  } catch (error) {
+    console.error(`revalidatePath(${path}) failed; a screen may be stale`, error);
+  }
+}
+
 export type MarkAllReadResult = { applied: number } | { error: string };
 
 export async function markAllRead(scope: Scope, filter?: ListFilter): Promise<MarkAllReadResult> {
+  let result: { applied: number };
+
   try {
     /*
      * INSIDE THE TRY. It was outside, and `getViewer()` is one of the things
@@ -42,16 +63,7 @@ export async function markAllRead(scope: Scope, filter?: ListFilter): Promise<Ma
      * first line can skip it.
      */
     const viewer = await getViewer();
-    const result = await markScopeRead(viewer, scope, filter);
-
-    /*
-     * Revalidates the whole reader subtree, not just the current URL: the
-     * sidebar's per-feed badges and the header's total are derived from the
-     * same rows, and leaving those stale is how a count the product promises to
-     * be trustworthy stops being.
-     */
-    revalidatePath("/reader", "layout");
-    return result;
+    result = await markScopeRead(viewer, scope, filter);
   } catch (error) {
     /*
      * RETURNED, NOT THROWN. A thrown error in an action reaches the client as
@@ -61,4 +73,12 @@ export async function markAllRead(scope: Scope, filter?: ListFilter): Promise<Ma
     const message = error instanceof Error ? error.message : "Could not mark these read";
     return { error: message };
   }
+
+  /*
+   * The whole reader subtree, not just the current URL: the sidebar's per-feed
+   * badges and the header's total come from the same rows, and leaving those
+   * stale is how a count the product promises to be trustworthy stops being.
+   */
+  revalidateQuietly("/reader", "layout");
+  return result;
 }
