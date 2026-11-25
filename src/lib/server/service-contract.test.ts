@@ -117,6 +117,7 @@ describe("the service layer keeps Appendix C's contract", () => {
  *   subscribe            M11 — POST /api/subscriptions
  *   updateSubscription   M11 — PATCH /api/subscriptions/:feedId
  *   unsubscribe          M11 — DELETE /api/subscriptions/:feedId
+ *   saveArticle          M12 — the saved shelf, a server action
  *
  * THE SUITE BELOW CALLS EVERY OTHER MUTATION WITH `(viewer, 1, true)` as a
  * viewer and junk arguments, which is safe for a function that throws
@@ -146,6 +147,7 @@ const IMPLEMENTED = new Set([
   "subscribe",
   "updateSubscription",
   "unsubscribe",
+  "saveArticle",
 ]);
 
 describe("mutations are declared but not implemented", () => {
@@ -190,6 +192,7 @@ describe("mutations are declared but not implemented", () => {
     ["subscribe", () => mutations.subscribe(VIEWER_PLACEHOLDER, { feedUrl: "not a url" })],
     ["updateSubscription", () => mutations.updateSubscription(VIEWER_PLACEHOLDER, 1.5, {})],
     ["unsubscribe", () => mutations.unsubscribe(VIEWER_PLACEHOLDER, 1.5)],
+    ["saveArticle", () => mutations.saveArticle(VIEWER_PLACEHOLDER, 1.5, true)],
   ])("%s no longer answers with the phase receipt, now that M11 landed", async (_name, call) => {
     /*
      * THE EARNED EXEMPTION for the three subscription writes. Adding a name to

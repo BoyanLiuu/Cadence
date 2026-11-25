@@ -11,6 +11,7 @@ import type {
 
 import { dataSource } from "./article-service";
 import { applyReadState, applyScopeRead, type ReadStateResult } from "./read-state.db";
+import { applySaved, type SavedResult } from "./saved.db";
 import { addSubscription, editSubscription, removeSubscription } from "./subscriptions.db";
 import { assertCan, requireUser } from "./viewer";
 
@@ -280,22 +281,12 @@ function isScope(value: unknown): value is Scope {
   }
 }
 
-export async function saveArticle(viewer: Viewer, id: number, saved = true): Promise<void> {
+export async function saveArticle(viewer: Viewer, id: number, saved = true): Promise<SavedResult> {
   assertCan(viewer, "save");
-  void id;
-  void saved;
-  /*
-   * `PATCH /api/articles/:id/save`, and ARCHITECTURE's Writes table does not
-   * list it — saving is the one write with no designed endpoint, which is why
-   * this named `PATCH /api/read-state` until now: borrowed from the neighbour
-   * that does have one. The receipt screen would have cited the wrong route.
-   *
-   * Named consistently with the rest rather than left wrong; the doc gap is
-   * recorded in the memo. M12 is where it has to be settled, because the saved
-   * shelf is its own surface (§2) and `saved_at` is a different column from
-   * `read_at` even though both live on `user_articles`.
-   */
-  throw new NotImplementedInStaticPhase("PATCH /api/articles/:id/save", "M12");
+  const user = requireUser(viewer);
+  if (dataSource !== "db") throw new NoDatabase("saving an article");
+
+  return applySaved(user.id, id, saved);
 }
 
 /**

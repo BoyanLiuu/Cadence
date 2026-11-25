@@ -28,6 +28,31 @@ import { scopedArticleWhere } from "./article-service.db";
  * null is exactly as unread as no row at all.
  */
 
+/**
+ * Which of these articles this reader may touch at all.
+ *
+ * EXPORTED SO THERE IS ONE COPY, which matters more here than anywhere else in
+ * the project: articles are GLOBAL rows (Appendix B), so an id is just a
+ * number, and RLS is bypassed by the owning role. This filter IS the
+ * authorization model (§3) with nothing behind it — so saving, marking read and
+ * anything later that writes `user_articles` all ask the same question in the
+ * same words.
+ *
+ * The relation is the one `scopeWhere` uses for reads: an arrival through a feed
+ * this reader subscribes to. Checking the subscription on the ARRIVING feed
+ * rather than on the article is what stops a shared article being reachable
+ * through somebody else's subscription.
+ */
+export async function reachableArticles(userId: string, ids: bigint[]): Promise<{ id: bigint }[]> {
+  return prisma.article.findMany({
+    where: {
+      id: { in: ids },
+      arrivals: { some: { feed: { subscriptions: { some: { userId } } } } },
+    },
+    select: { id: true },
+  });
+}
+
 export type ReadStateResult = {
   /** Articles whose state now matches the request. */
   applied: number;
@@ -83,13 +108,7 @@ export async function applyReadState(
    * feed rather than on the article is what stops a shared article being
    * reachable through somebody else's subscription.
    */
-  const reachable = await prisma.article.findMany({
-    where: {
-      id: { in: asBigInt },
-      arrivals: { some: { feed: { subscriptions: { some: { userId } } } } },
-    },
-    select: { id: true },
-  });
+  const reachable = await reachableArticles(userId, asBigInt);
 
   if (reachable.length === 0) return { applied: 0, ignored: unique.length };
 

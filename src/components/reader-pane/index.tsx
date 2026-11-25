@@ -1,6 +1,8 @@
-import { Bookmark, ExternalLink, Square } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+
+import { ArticleActions } from "./article-actions";
 import { NORM_VERSION } from "@/lib/ingest/canonical-url";
 import { joinSetAside, redlineUrl } from "@/lib/ingest/url-redline";
 import { otherFeedCount, type Article } from "@/lib/types";
@@ -220,14 +222,17 @@ export function ReaderPane({
         </p>
 
         <div className="gap-xs pb-md border-rule flex flex-wrap border-b">
-          <Button variant="outline" size="sm">
-            <Bookmark aria-hidden="true" />
-            {article.savedAt ? "Saved" : "Save"}
-          </Button>
-          <Button variant="outline" size="sm">
-            <Square aria-hidden="true" />
-            {article.readAt ? "Mark unread" : "Mark read"}
-          </Button>
+          {/*
+           * KEYED ON THE ARTICLE, so switching articles remounts this and
+           * drops both the error message and any optimistic guess. Without it
+           * a failure from one article hangs under the buttons of the next.
+           */}
+          <ArticleActions
+            key={article.id}
+            articleId={article.id}
+            saved={article.savedAt !== null}
+            read={article.readAt !== null}
+          />
           <Button asChild variant="outline" size="sm">
             <a href={article.url} target="_blank" rel="noopener noreferrer">
               <ExternalLink aria-hidden="true" />
