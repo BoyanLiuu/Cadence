@@ -347,7 +347,6 @@ export const CAPABILITIES = [
   "unsubscribe",
   "set-read-state",
   "save",
-  "merge",
   "extract",
   "discover",
 ] as const satisfies readonly string[];

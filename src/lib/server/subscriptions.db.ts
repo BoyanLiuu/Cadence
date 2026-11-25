@@ -36,12 +36,13 @@ const sha256 = (value: string): Uint8Array<ArrayBuffer> => {
 /**
  * Rung 2's key for a feed address.
  *
- * EXPORTED so "already followed" asks the same question `addSubscription`
- * answers. Discovery compares on this hash rather than on the string, so a
- * reader who pastes `http://www.x.example/feed/` is told they already follow
- * `https://x.example/feed` — which they do.
+ * NOT exported, and that is the point of `markFollowed` living in this file:
+ * "already followed" asks the same question `addSubscription` answers, with no
+ * second caller able to ask it differently. Both compare on this hash rather
+ * than on the string, so a reader who pastes `http://www.x.example/feed/` is
+ * told they already follow `https://x.example/feed` — which they do.
  */
-export function urlHashOf(feedUrl: string): Uint8Array<ArrayBuffer> {
+function urlHashOf(feedUrl: string): Uint8Array<ArrayBuffer> {
   const key = canonicalUrl(feedUrl);
   // `canonicalUrl` refuses an address it cannot key. Hashing the raw string
   // keeps such a feed insertable and still unique, rather than dropping it.

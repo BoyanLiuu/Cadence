@@ -314,21 +314,6 @@ export async function saveArticle(viewer: Viewer, id: number, saved = true): Pro
   return applySaved(user.id, id, saved);
 }
 
-/**
- * The manual dedup escape hatch: writes the loser's `url_hash` into the
- * winner's `article_urls`, so the merged address keeps resolving (§6.1).
- */
-export async function mergeArticles(
-  viewer: Viewer,
-  keepId: number,
-  mergeId: number,
-): Promise<void> {
-  assertCan(viewer, "merge");
-  void keepId;
-  void mergeId;
-  throw new NotImplementedInStaticPhase("POST /api/articles/merge", "M12");
-}
-
 /** One fetch per article, cached forever, per-host concurrency of 1 (§6.5). */
 export async function extractArticle(viewer: Viewer, id: number): Promise<Extraction> {
   assertCan(viewer, "extract");

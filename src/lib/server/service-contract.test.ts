@@ -277,10 +277,12 @@ describe("the viewer", () => {
     "denies an anon %s, because there is no public reading surface",
     (capability) => {
       /*
-       * EVERY capability, from the array rather than by hand. This named two of
-       * the eight until `CAPABILITIES` existed to iterate, which meant six
+       * EVERY capability, from the array rather than by hand. This named two
+       * of them until `CAPABILITIES` existed to iterate, which meant the rest
        * could have been granted to visitors with nothing failing — and the
-       * ninth someone adds is the one most likely to be forgotten.
+       * next one someone adds is the one most likely to be forgotten. Counting
+       * them in this comment was itself wrong within a week: `merge` was cut at
+       * M12 and "two of the eight" became two of the seven.
        */
       expect(() => assertCan(anon, capability)).toThrow(NotAllowedError);
     },
