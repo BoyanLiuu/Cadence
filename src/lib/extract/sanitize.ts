@@ -278,5 +278,24 @@ export function textOf(html: string): string {
    * through `sanitizeHtml` on every production path.
    */
   holder.innerHTML = html;
-  return holder.textContent ?? "";
+
+  /*
+   * BLOCK BOUNDARIES BECOME SPACES. `textContent` alone concatenates, so
+   * `<p>alone</p><p>Open</p>` reads "aloneOpen" — two words glued into a
+   * non-word. That matters twice: it is the text a `thin` measurement counts,
+   * and it is what `articles.text_len` stores and the reading-time estimate
+   * divides.
+   *
+   * `innerText` would do this natively and jsdom does not implement it, so the
+   * separator is inserted explicitly. Whitespace is then collapsed, because
+   * `contentHash` collapses it too and a measurement that disagreed with the
+   * hash's view of the same body would be a second normaliser to keep in step.
+   */
+  for (const block of holder.querySelectorAll(
+    "p, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre, tr, br, figcaption",
+  )) {
+    block.after(holder.ownerDocument.createTextNode(" "));
+  }
+
+  return (holder.textContent ?? "").replace(/\s+/g, " ").trim();
 }

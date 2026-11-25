@@ -547,7 +547,11 @@ export async function getArticle(viewer: Viewer, id: number): Promise<Article | 
     },
   });
 
-  return row === null ? null : toArticle(row, row.userArticles[0] ?? null, row.arrivals);
+  // `withBody`, and ONLY here: this is the one read whose result reaches the
+  // reading pane. The list reads above deliberately leave it `""`.
+  return row === null
+    ? null
+    : toArticle(row, row.userArticles[0] ?? null, row.arrivals, { withBody: true });
 }
 
 /** One feed's `fetch_log` tail. `[]` for a feed this reader does not follow. */

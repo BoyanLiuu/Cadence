@@ -343,6 +343,135 @@
     24px 24px;
 }
 
+/*
+ * The article body, which is now SANITISED HTML rather than a block tree.
+ *
+ * Styled here and not with utility classes because there are no elements in
+ * the component to put classes on — the markup comes from a publisher through
+ * `sanitizeHtml`, so these selectors are the only way to reach it. Every
+ * element §6.5's allowlist permits needs a rule, or the ones nobody thought
+ * about render unstyled: `blockquote`, `pre`, `table` and `figure` were all
+ * unreachable under the old `{p} | {h} | {li[]}` tree and are ordinary in real
+ * articles.
+ *
+ * MEASURE IS ON THE CHILDREN, not the container. A `max-width` on the wrapper
+ * would also narrow a table and a figure, which want the full column.
+ */
+/*
+ * NO `margin: 0` RESETS BELOW, and that is deliberate rather than an omission.
+ * `.article-body figure` is one class plus one type — specificity (0,1,1) —
+ * which outranks this rule's (0,1,0), so a reset there silently cancelled the
+ * flow spacing and rendered figures, blockquotes and code blocks flush against
+ * whatever preceded them. Tailwind's preflight already zeroes the user-agent
+ * margins, so the resets had nothing to do except defeat this.
+ */
+.article-body > * + * {
+  margin-top: var(--spacing-md);
+}
+
+.article-body p,
+.article-body ul,
+.article-body ol,
+.article-body blockquote {
+  max-width: 66ch;
+}
+
+.article-body h1,
+.article-body h2,
+.article-body h3,
+.article-body h4 {
+  margin-top: var(--spacing-lg);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+
+.article-body ul,
+.article-body ol {
+  padding-left: var(--spacing-lg);
+  display: grid;
+  gap: var(--spacing-2xs);
+}
+
+.article-body ul {
+  list-style: disc;
+}
+
+.article-body ol {
+  list-style: decimal;
+}
+
+.article-body a {
+  color: var(--color-ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* An image can be any size a publisher chose. Capped to the column so a
+   2000px photo does not set the pane's width and push the rest sideways. */
+.article-body img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.article-body figure {
+  display: grid;
+  gap: var(--spacing-2xs);
+}
+
+.article-body figcaption {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  max-width: 66ch;
+}
+
+.article-body blockquote {
+  padding-left: var(--spacing-md);
+  border-left: 2px solid var(--color-rule);
+  color: var(--color-ink-2);
+}
+
+/* `pre` SCROLLS rather than wrapping: a code block broken at the column width
+   is not the code the author wrote. */
+.article-body pre {
+  padding: var(--spacing-md);
+  background-color: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  overflow-x: auto;
+  font-size: var(--text-sm);
+}
+
+.article-body code {
+  font-size: 0.9em;
+}
+
+/*
+ * SCROLLS SIDEWAYS, like `pre` and for the same reason: a publisher's
+ * eight-column table cannot be made narrow without becoming unreadable, and
+ * the reading pane scrolls vertically — so an unbounded one pushes the whole
+ * three-pane layout wider and takes the sidebar off-screen.
+ *
+ * `display: block` on the table is what makes `overflow-x` apply at all; a
+ * `table` box ignores it.
+ */
+.article-body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.article-body th,
+.article-body td {
+  border: 1px solid var(--color-rule);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  text-align: left;
+  vertical-align: top;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *:not(.keep-motion),
   *:not(.keep-motion)::before,

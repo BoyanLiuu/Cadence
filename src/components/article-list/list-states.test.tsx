@@ -32,7 +32,7 @@ const article = (id: number, readAt: string | null): Article => ({
   fetchedAt: "2026-11-12T09:01:00.000Z",
   words: 100,
   summary: "",
-  body: [],
+  body: "",
   extractStatus: "none",
   revisedAt: null,
   revisionCount: 0,

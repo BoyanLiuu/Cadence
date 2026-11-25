@@ -75,21 +75,7 @@ const designed: Article[] = [
     words: 412,
     summary:
       "The harbour council approved the higher barrier by nine votes to four, with work to start after the spring tides.",
-    body: [
-      {
-        p: "The harbour council voted last night to raise the tidal barrier at the mouth of the estuary by a metre, ending two years of argument over how high the town should build against the sea.",
-      },
-      {
-        p: "The motion passed by nine votes to four. Work is due to start after the spring tides in April and to run through two summers, with the barrier's gates kept working throughout.",
-      },
-      { h: "What changes on the quay" },
-      {
-        p: "The higher wall closes the old slipway beside the fish market. Boats that launch there will use the new ramp at the north mole, which opens in March.",
-      },
-      {
-        p: "Councillors who voted against said the estimate had risen twice since the summer, and asked for a fixed price before any contract is signed.",
-      },
-    ],
+    body: "<p>The harbour council voted last night to raise the tidal barrier at the mouth of the estuary by a metre, ending two years of argument over how high the town should build against the sea.</p><p>The motion passed by nine votes to four. Work is due to start after the spring tides in April and to run through two summers, with the barrier's gates kept working throughout.</p><h3>What changes on the quay</h3><p>The higher wall closes the old slipway beside the fish market. Boats that launch there will use the new ramp at the north mole, which opens in March.</p><p>Councillors who voted against said the estimate had risen twice since the summer, and asked for a fixed price before any contract is signed.</p>",
     arrivals: [
       {
         feedId: 1,
@@ -121,14 +107,7 @@ const designed: Article[] = [
     fetchedAt: "11-12T08:52",
     words: 236,
     summary: "The 22:40 sailing returns tonight after a gearbox fault kept the boat in dry dock.",
-    body: [
-      {
-        p: "The night ferry to the islands sails again from tonight after a week in dry dock, the operator said this morning.",
-      },
-      {
-        p: "A gearbox fault found during a routine inspection kept the boat out of service. Passengers booked on cancelled sailings can travel on any crossing this week.",
-      },
-    ],
+    body: "<p>The night ferry to the islands sails again from tonight after a week in dry dock, the operator said this morning.</p><p>A gearbox fault found during a routine inspection kept the boat out of service. Passengers booked on cancelled sailings can travel on any crossing this week.</p>",
   }),
   A({
     id: 103,
@@ -141,14 +120,7 @@ const designed: Article[] = [
     words: 298,
     summary:
       "Merchants at the corn exchange say a wet October delayed the harvest but not the price.",
-    body: [
-      {
-        p: "Prices at the corn exchange held steady this week even as the last of the harvest came in a month late after a wet October.",
-      },
-      {
-        p: "Merchants said stores from last year had kept the market supplied, and that the late crop was smaller than hoped but sound.",
-      },
-    ],
+    body: "<p>Prices at the corn exchange held steady this week even as the last of the harvest came in a month late after a wet October.</p><p>Merchants said stores from last year had kept the market supplied, and that the late crop was smaller than hoped but sound.</p>",
   }),
   A({
     id: 104,
@@ -161,14 +133,7 @@ const designed: Article[] = [
     words: 344,
     savedAt: "11-12T08:30",
     summary: "The three cottages at Gull Point have stood empty since the light was automated.",
-    body: [
-      {
-        p: "The three keepers' cottages beside the lighthouse at Gull Point are for sale for the first time since they were built.",
-      },
-      {
-        p: "They have stood empty since the light was automated. The trust that owns them says buyers must keep the stone walls and the slate roofs as they are.",
-      },
-    ],
+    body: "<p>The three keepers' cottages beside the lighthouse at Gull Point are for sale for the first time since they were built.</p><p>They have stood empty since the light was automated. The trust that owns them says buyers must keep the stone walls and the slate roofs as they are.</p>",
   }),
   A({
     id: 105,
@@ -181,14 +146,7 @@ const designed: Article[] = [
     words: 268,
     summary:
       "Trains run to the normal timetable tomorrow after the union and the operator agreed terms at four this morning.",
-    body: [
-      {
-        p: "Tomorrow's rail strike has been called off after talks between the union and the operator ran through the night and ended in agreement at four this morning.",
-      },
-      {
-        p: "Trains will run to the normal timetable. The terms go to a vote of union members next week.",
-      },
-    ],
+    body: "<p>Tomorrow's rail strike has been called off after talks between the union and the operator ran through the night and ended in agreement at four this morning.</p><p>Trains will run to the normal timetable. The terms go to a vote of union members next week.</p>",
     arrivals: [
       {
         feedId: 1,
@@ -215,11 +173,7 @@ const designed: Article[] = [
     words: 152,
     readAt: "11-12T07:20",
     summary: "Visibility stays under 200 metres until about ten, the coastguard says.",
-    body: [
-      {
-        p: "The coastguard has warned small boats to stay in harbour this morning, with visibility in the estuary under 200 metres until about ten.",
-      },
-    ],
+    body: "<p>The coastguard has warned small boats to stay in harbour this morning, with visibility in the estuary under 200 metres until about ten.</p>",
   }),
   A({
     id: 107,
@@ -232,11 +186,7 @@ const designed: Article[] = [
     words: 310,
     readAt: "11-12T07:18",
     summary: "Work to deepen the channel begins in January and closes the outer berth for a month.",
-    body: [
-      {
-        p: "The port authority has awarded the contract to deepen the outer harbour channel. Work begins in January and closes the outer berth for a month.",
-      },
-    ],
+    body: "<p>The port authority has awarded the contract to deepen the outer harbour channel. Work begins in January and closes the outer berth for a month.</p>",
   }),
 
   // ----------------------------------------------------- The Lowland Courier
@@ -251,14 +201,7 @@ const designed: Article[] = [
     words: 220,
     summary:
       "The square closes from Monday for six weeks; the Saturday market moves to Bridge Street.",
-    body: [
-      {
-        p: "The market square closes to traffic and stalls from Monday for six weeks while the setts are lifted and relaid.",
-      },
-      {
-        p: "The Saturday market moves to Bridge Street for the duration, with the same stalls in the same order.",
-      },
-    ],
+    body: "<p>The market square closes to traffic and stalls from Monday for six weeks while the setts are lifted and relaid.</p><p>The Saturday market moves to Bridge Street for the duration, with the same stalls in the same order.</p>",
   }),
   A({
     id: 109,
@@ -271,14 +214,7 @@ const designed: Article[] = [
     words: 1180,
     summary:
       "Ninety years of bread on Mill Lane, and the night shift that kept the ovens lit through the floods.",
-    body: [
-      {
-        p: "The bakery on Mill Lane has baked every night for ninety years, including the week in 1953 when the water stood a foot deep in the street.",
-      },
-      {
-        p: "The night shift starts at eleven. By five the first trays are cooling in the window, and by seven there is a queue that reaches the corner.",
-      },
-    ],
+    body: "<p>The bakery on Mill Lane has baked every night for ninety years, including the week in 1953 when the water stood a foot deep in the street.</p><p>The night shift starts at eleven. By five the first trays are cooling in the window, and by seven there is a queue that reaches the corner.</p>",
   }),
   A({
     id: 110,
@@ -291,11 +227,7 @@ const designed: Article[] = [
     words: 540,
     readAt: "11-11T20:05",
     summary: "Six readers on the lane along the river road, for and against.",
-    body: [
-      {
-        p: "Six readers wrote this week about the new lane along the river road. Four are for it, two against, and all of them mention the bend by the boathouse.",
-      },
-    ],
+    body: "<p>Six readers wrote this week about the new lane along the river road. Four are for it, two against, and all of them mention the bend by the boathouse.</p>",
   }),
 
   // --------------------------------------------------------- Northgate Daily
@@ -310,14 +242,7 @@ const designed: Article[] = [
     words: 190,
     summary:
       "The library opens until eight on weekdays from December, with the reading room heated all day.",
-    body: [
-      {
-        p: "Northgate library will stay open until eight on weekday evenings from the first of December until the end of February.",
-      },
-      {
-        p: "The reading room will be heated all day, and the children's corner opens on Saturday mornings as well.",
-      },
-    ],
+    body: "<p>Northgate library will stay open until eight on weekday evenings from the first of December until the end of February.</p><p>The reading room will be heated all day, and the children's corner opens on Saturday mornings as well.</p>",
   }),
   A({
     id: 112,
@@ -331,11 +256,7 @@ const designed: Article[] = [
     readAt: "11-11T20:12",
     summary:
       "The planning committee turned down housing on the fields at St Anne's by six votes to five.",
-    body: [
-      {
-        p: "The planning committee has turned down the application to build on the playing fields at St Anne's, by six votes to five.",
-      },
-    ],
+    body: "<p>The planning committee has turned down the application to build on the playing fields at St Anne's, by six votes to five.</p>",
   }),
 
   // ----------------------------------------------------- Brightwater Gazette
@@ -350,11 +271,7 @@ const designed: Article[] = [
     words: 330,
     readAt: "11-08T21:30",
     summary: "Forty stalls and the tug of war, back on the green after three years.",
-    body: [
-      {
-        p: "The harvest fair returned to the green on Saturday after three years away, with forty stalls and the tug of war across the pond.",
-      },
-    ],
+    body: "<p>The harvest fair returned to the green on Saturday after three years away, with forty stalls and the tug of war across the pond.</p>",
   }),
 
   // ------------------------------------------------------ The Fenwick Review
@@ -369,17 +286,7 @@ const designed: Article[] = [
     words: 2140,
     summary:
       "A timetable is a record of what a town agreed to wait for. An essay on the 1962 edition.",
-    body: [
-      {
-        p: "A timetable is a record of what a town agreed to wait for. The 1962 edition of the island ferry's runs to eleven pages and has one sailing on Sundays.",
-      },
-      {
-        p: "Read closely, it is a census. The early boat on Tuesdays exists because the market was on Tuesdays; the late one on Fridays because the dance hall closed at eleven.",
-      },
-      {
-        p: "When the timetable changes, something in the town has already changed. The paper only catches up.",
-      },
-    ],
+    body: "<p>A timetable is a record of what a town agreed to wait for. The 1962 edition of the island ferry's runs to eleven pages and has one sailing on Sundays.</p><p>Read closely, it is a census. The early boat on Tuesdays exists because the market was on Tuesdays; the late one on Fridays because the dance hall closed at eleven.</p><p>When the timetable changes, something in the town has already changed. The paper only catches up.</p>",
   }),
   A({
     id: 115,
@@ -391,14 +298,7 @@ const designed: Article[] = [
     fetchedAt: "11-05T02:15",
     words: 1640,
     summary: "The first draft finds out what you meant. The second one says it.",
-    body: [
-      {
-        p: "The first draft finds out what you meant. The second one says it, and the third takes out the parts where you were finding out.",
-      },
-      {
-        p: "Most writing that fails stops after the first, because the first feels like the work. It is only the search for it.",
-      },
-    ],
+    body: "<p>The first draft finds out what you meant. The second one says it, and the third takes out the parts where you were finding out.</p><p>Most writing that fails stops after the first, because the first feels like the work. It is only the search for it.</p>",
   }),
   A({
     // The revision case: edited after being read, and it STAYED read (§6.2).
@@ -417,17 +317,7 @@ const designed: Article[] = [
     revisionCount: 1,
     summary:
       "For forty years the harbourmaster at Fenwick answered every letter he was sent, and kept a copy.",
-    body: [
-      {
-        p: "For forty years the harbourmaster at Fenwick answered every letter he was sent, and kept a carbon copy in a box under the chart table.",
-      },
-      {
-        p: "The log begins in 1913, the year the outer wall was finished. A reader in Fenwick wrote to say the first volume survives in the county archive.",
-      },
-      {
-        p: "Most of the letters are about moorings. Some are about weather, and a few, from the war years, are about sons.",
-      },
-    ],
+    body: "<p>For forty years the harbourmaster at Fenwick answered every letter he was sent, and kept a carbon copy in a box under the chart table.</p><p>The log begins in 1913, the year the outer wall was finished. A reader in Fenwick wrote to say the first volume survives in the county archive.</p><p>Most of the letters are about moorings. Some are about weather, and a few, from the war years, are about sons.</p>",
     revision: [
       "The log begins in ",
       { del: "1931" },
@@ -448,11 +338,7 @@ const designed: Article[] = [
     words: 1920,
     readAt: "10-22T19:44",
     summary: "A folded map tells you where you are by showing you everything you are not.",
-    body: [
-      {
-        p: "A folded map tells you where you are by showing you everything you are not. A phone shows you the dot and the street, and nothing past the next turning.",
-      },
-    ],
+    body: "<p>A folded map tells you where you are by showing you everything you are not. A phone shows you the dot and the street, and nothing past the next turning.</p>",
   }),
 
   // ------------------------------------------------------- Marginalia Weekly
@@ -471,11 +357,7 @@ const designed: Article[] = [
     extractStatus: "thin",
     summary:
       "A footnote lets a writer argue with herself in public. The best ones are where the real book is hiding, and the…",
-    body: [
-      {
-        p: "A footnote lets a writer argue with herself in public. The best ones are where the real book is hiding, and the…",
-      },
-    ],
+    body: "<p>A footnote lets a writer argue with herself in public. The best ones are where the real book is hiding, and the\u2026</p>",
   }),
   A({
     // extractStatus 'none': a teaser feed nothing has been fetched for yet.
@@ -491,11 +373,7 @@ const designed: Article[] = [
     extractStatus: "none",
     summary:
       "The second time through a book, you read the sentences instead of the story. That is when…",
-    body: [
-      {
-        p: "The second time through a book, you read the sentences instead of the story. That is when…",
-      },
-    ],
+    body: "<p>The second time through a book, you read the sentences instead of the story. That is when\u2026</p>",
   }),
 
   // -------------------------------------------------- Orchard Street Journal
@@ -510,14 +388,7 @@ const designed: Article[] = [
     words: 1310,
     summary:
       "Fifty-two walks down Orchard Street, one every Sunday, and what changed between them.",
-    body: [
-      {
-        p: "I walked the length of Orchard Street every Sunday for a year, at the same hour, and wrote down what had changed since the week before.",
-      },
-      {
-        p: "Most weeks it was small: a new name on a bell, a gate painted, a tree down after a storm. In March a whole shop front changed in a day.",
-      },
-    ],
+    body: "<p>I walked the length of Orchard Street every Sunday for a year, at the same hour, and wrote down what had changed since the week before.</p><p>Most weeks it was small: a new name on a bell, a gate painted, a tree down after a storm. In March a whole shop front changed in a day.</p>",
   }),
   A({
     id: 121,
@@ -532,11 +403,7 @@ const designed: Article[] = [
     savedAt: "10-28T08:15",
     summary:
       "The water rota, the shed roof and the question of the bonfire, settled in under an hour.",
-    body: [
-      {
-        p: "The committee met on Thursday and settled the water rota, the shed roof and the question of the bonfire in fifty minutes, which is a record.",
-      },
-    ],
+    body: "<p>The committee met on Thursday and settled the water rota, the shed roof and the question of the bonfire in fifty minutes, which is a record.</p>",
   }),
 
   // ------------------------------------------------------- Hollow Pine Notes
@@ -552,11 +419,7 @@ const designed: Article[] = [
     readAt: "10-21T07:40",
     summary:
       "Draining the pipes, stacking the wood and the list that hangs by the door until spring.",
-    body: [
-      {
-        p: "Every October the same list comes off the nail by the door: drain the pipes, stack the wood under cover, take the rope down from the jetty.",
-      },
-    ],
+    body: "<p>Every October the same list comes off the nail by the door: drain the pipes, stack the wood under cover, take the rope down from the jetty.</p>",
   }),
 
   // ---------------------------------------------------------- Ledger & Lathe
@@ -574,14 +437,7 @@ const designed: Article[] = [
     fetchedAt: "11-11T21:03",
     words: 1460,
     summary: "Half a thou of runout at the jaws, and the twenty minutes it takes to chase it out.",
-    body: [
-      {
-        p: "My chuck had half a thou of runout at the jaws, which is enough to see on a finished part. Here is the twenty minutes it took to chase it out.",
-      },
-      {
-        p: "Mount the indicator on the cross slide, touch it to a ground pin held in the jaws, and turn the spindle by hand.",
-      },
-    ],
+    body: "<p>My chuck had half a thou of runout at the jaws, which is enough to see on a finished part. Here is the twenty minutes it took to chase it out.</p><p>Mount the indicator on the cross slide, touch it to a ground pin held in the jaws, and turn the spindle by hand.</p>",
   }),
   A({
     id: 124,
@@ -594,14 +450,7 @@ const designed: Article[] = [
     words: 1490,
     summary:
       "Runout you can see on a finished part, and the twenty minutes it takes to chase it out with an indicator.",
-    body: [
-      {
-        p: "If you can see runout on a finished part, it is worth twenty minutes with a dial indicator. Mine was half a thou at the jaws.",
-      },
-      {
-        p: "Mount the indicator on the cross slide, touch it to a ground pin held in the jaws, and turn the spindle by hand.",
-      },
-    ],
+    body: "<p>If you can see runout on a finished part, it is worth twenty minutes with a dial indicator. Mine was half a thou at the jaws.</p><p>Mount the indicator on the cross slide, touch it to a ground pin held in the jaws, and turn the spindle by hand.</p>",
   }),
   A({
     id: 125,
@@ -614,11 +463,7 @@ const designed: Article[] = [
     words: 1120,
     readAt: "11-05T07:30",
     summary: "Two flat bevels, a burr you can feel and not see, and a strop.",
-    body: [
-      {
-        p: "A skew wants two flat bevels that meet in a straight edge. Grind them hollow and the edge rolls the first time it touches end grain.",
-      },
-    ],
+    body: "<p>A skew wants two flat bevels that meet in a straight edge. Grind them hollow and the edge rolls the first time it touches end grain.</p>",
   }),
 
   // ----------------------------------------------------- Plainfield Changelog
@@ -638,20 +483,7 @@ const designed: Article[] = [
     wasReadAt: D("11-11T22:05"),
     summary:
       "Maps now work without a connection, and importing a large file takes a third of the time.",
-    body: [
-      { h: "What's new" },
-      {
-        li: [
-          "Maps download for offline use, a region at a time",
-          "Importing a 50 MB file takes a third of the time it did in 4.1",
-          "Search keeps your last ten queries",
-        ],
-      },
-      { h: "Known issue" },
-      {
-        p: "On some tablets the offline map shows blank tiles at the edge of a region. A fix is in 4.2.1.",
-      },
-    ],
+    body: "<h3>What's new</h3><ul><li>Maps download for offline use, a region at a time</li><li>Importing a 50 MB file takes a third of the time it did in 4.1</li><li>Search keeps your last ten queries</li></ul><h3>Known issue</h3><p>On some tablets the offline map shows blank tiles at the edge of a region. A fix is in 4.2.1.</p>",
     revision: [
       {
         ins: "Known issue. On some tablets the offline map shows blank tiles at the edge of a region. A fix is in 4.2.1.",
@@ -669,11 +501,7 @@ const designed: Article[] = [
     words: 210,
     readAt: "10-30T08:02",
     summary: "The conflict screen no longer loses your choice when the phone sleeps.",
-    body: [
-      {
-        p: "The conflict screen no longer loses your choice when the phone goes to sleep in the middle of a sync.",
-      },
-    ],
+    body: "<p>The conflict screen no longer loses your choice when the phone goes to sleep in the middle of a sync.</p>",
   }),
 
   // ----------------------------------------------------- Kestrel Field Notes
@@ -688,11 +516,7 @@ const designed: Article[] = [
     fetchedAt: "11-11T15:02",
     words: 760,
     summary: "Rough-sawn timber, no paint and a slot 20 millimetres wide.",
-    body: [
-      {
-        p: "A bat box wants rough-sawn timber inside so they can grip, no paint or preservative, and an entry slot about 20 millimetres wide.",
-      },
-    ],
+    body: "<p>A bat box wants rough-sawn timber inside so they can grip, no paint or preservative, and an entry slot about 20 millimetres wide.</p>",
   }),
   A({
     id: 129,
@@ -704,11 +528,7 @@ const designed: Article[] = [
     fetchedAt: "11-11T15:02",
     words: 640,
     summary: "Minus two on the lower field at six, and the redwings in by eight.",
-    body: [
-      {
-        p: "Minus two on the lower field at six this morning. By eight the redwings were in the hawthorns along the lane.",
-      },
-    ],
+    body: "<p>Minus two on the lower field at six this morning. By eight the redwings were in the hawthorns along the lane.</p>",
   }),
   A({
     id: 130,
@@ -720,11 +540,7 @@ const designed: Article[] = [
     fetchedAt: "11-11T15:02",
     words: 1050,
     summary: "The same pocket notebook, refilled forty times, and what it says about the field.",
-    body: [
-      {
-        p: "I have used the same make of pocket notebook for ten years and filled forty of them. Laid end to end they are a record of one field.",
-      },
-    ],
+    body: "<p>I have used the same make of pocket notebook for ten years and filled forty of them. Laid end to end they are a record of one field.</p>",
   }),
 
   // ------------------------------------------------------- Saltmarsh Almanac
@@ -740,11 +556,7 @@ const designed: Article[] = [
     extractStatus: "none",
     summary:
       "Broad beans sown now stand through the winter and crop a month early. Here is how deep, how far apart and…",
-    body: [
-      {
-        p: "Broad beans sown now stand through the winter and crop a month early. Here is how deep, how far apart and…",
-      },
-    ],
+    body: "<p>Broad beans sown now stand through the winter and crop a month early. Here is how deep, how far apart and\u2026</p>",
   }),
   A({
     id: 132,
@@ -757,11 +569,7 @@ const designed: Article[] = [
     words: 720,
     readAt: "11-04T19:00",
     summary: "New glass, old putty knife, and why the frame faces south-east.",
-    body: [
-      {
-        p: "Two panes of the cold frame cracked in the last frost. Here is how to cut the old putty out without cracking a third.",
-      },
-    ],
+    body: "<p>Two panes of the cold frame cracked in the last frost. Here is how to cut the old putty out without cracking a third.</p>",
   }),
 
   // ------------------------------------------------ the two remaining states
@@ -781,11 +589,7 @@ const designed: Article[] = [
     extractStatus: "blocked",
     summary:
       "Every book worth keeping has a second book written beside it in pencil, and that one is yours…",
-    body: [
-      {
-        p: "Every book worth keeping has a second book written beside it in pencil, and that one is yours…",
-      },
-    ],
+    body: "<p>Every book worth keeping has a second book written beside it in pencil, and that one is yours\u2026</p>",
   }),
   A({
     // extractStatus 'failed': fetched, but Readability returned nothing usable.
@@ -799,7 +603,7 @@ const designed: Article[] = [
     words: 52,
     extractStatus: "failed",
     summary: "Open the middle, take the leader back by a third, and leave the spurs alone…",
-    body: [{ p: "Open the middle, take the leader back by a third, and leave the spurs alone…" }],
+    body: "<p>Open the middle, take the leader back by a third, and leave the spurs alone…</p>",
   }),
 ];
 
@@ -858,7 +662,7 @@ function ballast(count: number): Article[] {
       fetchedAt: iso,
       words: 180 + ((i * 37) % 900),
       summary: `A back-article kept only so the list has a second page. ${shape} ${subject}.`,
-      body: [{ p: `${shape} ${subject}. This row exists to be paged past, not to be read.` }],
+      body: `<p>${shape} ${subject}. This row exists to be paged past, not to be read.</p>`,
       extractStatus: "ok",
       revisedAt: null,
       revisionCount: 0,

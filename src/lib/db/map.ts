@@ -1,3 +1,4 @@
+import { sanitizeHtml } from "@/lib/extract/sanitize";
 import type { Article, Feed, FetchLogEntry, Folder, Subscription } from "@/lib/types";
 
 /*
@@ -213,6 +214,19 @@ export function toArticle(
    * fails is the exact thing Appendix C's parity rule is for.
    */
   arrivals?: { feedId: bigint; url: string | null; firstSeenAt: Date }[],
+  /**
+   * Whether to sanitise and return the body.
+   *
+   * OFF BY DEFAULT, because a list page maps fifty rows and no list renders a
+   * body — only the reading pane does. Sanitising fifty articles' HTML to
+   * throw it away is a DOM parse per row on every page of every scope.
+   *
+   * It is not an optimisation of the security boundary, which is the thing to
+   * be careful about here: an omitted body is `""`, never the raw column. The
+   * only way to get markup out of this function is to ask for it, and asking
+   * runs it through `sanitizeHtml`.
+   */
+  options: { withBody?: boolean } = {},
 ): Article {
   return {
     id: num(row.id),
@@ -226,10 +240,26 @@ export function toArticle(
     // the reading-time estimate needs.
     words: row.textLen === null ? 0 : Math.max(1, Math.round(row.textLen / 6)),
     summary: row.summaryHtml ?? "",
-    // The body is stored as HTML and rendered as blocks. M13 sanitises and
-    // parses it properly; until ingestion writes real content, one paragraph
-    // is the honest representation of what is there.
-    body: row.contentHtml ? [{ p: row.contentHtml }] : [],
+    /*
+     * SANITISED HERE, at the data boundary, and this is the only place the
+     * column is read.
+     *
+     * `content_html` is third-party markup — it arrived over the network from a
+     * publisher — so it is cleaned before it can reach a component, and the
+     * client therefore never holds markup it has to remember to clean. §6.5
+     * frames sanitisation as extraction's problem because that is where it was
+     * noticed; the feed path has had the same exposure since M2 and simply
+     * never rendered it. This used to be `[{ p: row.contentHtml }]`, one
+     * paragraph holding the whole document, which React escaped — so every
+     * article showed its own markup as visible text.
+     *
+     * Resolved against the ARTICLE's own address, which is where its relative
+     * links and images are relative to.
+     */
+    body:
+      options.withBody === true && row.contentHtml
+        ? sanitizeHtml(row.contentHtml, { baseUrl: row.url })
+        : "",
     extractStatus: row.extractStatus as Article["extractStatus"],
     revisedAt: iso(row.revisedAt),
     revisionCount: row.revisionCount,

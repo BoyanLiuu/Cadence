@@ -1,3 +1,4 @@
+import { sanitizeHtml } from "@/lib/extract/sanitize";
 import { articles, BUDGET_MS, feeds, folders, subscriptions, ticks } from "@/lib/fixtures";
 import {
   PAGE_SIZE,
@@ -244,7 +245,28 @@ export async function getArticle(viewer: Viewer, id: number): Promise<Article | 
   // Reachable through any subscribed feed, matching `inScope` — the two must
   // agree or a listed row opens to nothing.
   if (!article || !deliveredBy(article).some((feedId) => subscribed.has(feedId))) return null;
-  return article;
+
+  /*
+   * SANITISED HERE TOO, so the invariant holds on BOTH paths.
+   *
+   * `Article.body` reaches `dangerouslySetInnerHTML`, and the rule behind that
+   * is "nothing but sanitised HTML is ever in this field". The database path
+   * cleans `content_html` in `db/map.ts`; this path returned the fixture
+   * verbatim — safe today only because the corpus happens to contain no `a` or
+   * `img`, which is a property of the data rather than of the code.
+   *
+   * It is not a trust question. The fixtures are ours, and the sanitiser does
+   * more than remove attacks: it makes URLs absolute and adds `rel="noopener
+   * noreferrer"` to outbound links. Skipping it meant fixture mode would render
+   * a relative href against Cadence's own host, and an unhardened one, the
+   * moment anybody added a link to the corpus — a divergence between the two
+   * implementations that Appendix C's parity rule exists to prevent and that no
+   * current test would catch.
+   *
+   * `corpus-round-trip.test.ts` asserts this is a no-op on today's corpus, so
+   * it costs one DOM parse per article open and buys the invariant.
+   */
+  return { ...article, body: sanitizeHtml(article.body, { baseUrl: article.url }) };
 }
 
 /**

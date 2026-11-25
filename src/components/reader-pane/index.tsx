@@ -245,31 +245,32 @@ export function ReaderPane({
         <RevisionNote article={article} />
         <ExtractNote article={article} />
 
-        <div className="gap-md text-ink-2 grid text-[length:var(--text-read)] leading-[1.7]">
-          {article.body.map((block, i) => {
-            if ("h" in block) {
-              return (
-                <h3 key={i} className="mt-sm text-xl">
-                  {block.h}
-                </h3>
-              );
-            }
-            if ("li" in block) {
-              return (
-                <ul key={i} className="gap-2xs pl-lg m-0 grid max-w-[66ch] list-disc">
-                  {block.li.map((item, j) => (
-                    <li key={j}>{item}</li>
-                  ))}
-                </ul>
-              );
-            }
-            return (
-              <p key={i} className="max-w-[66ch]">
-                {block.p}
-              </p>
-            );
-          })}
-        </div>
+        {article.body === "" ? null : (
+          /*
+           * `dangerouslySetInnerHTML`, and the name is the right amount of
+           * alarming — so here is the argument for it.
+           *
+           * `Article.body` is SANITISED HTML. It is cleaned in `db/map.ts`, at
+           * the data boundary, against §6.5's allowlist: the client never
+           * receives markup it then has to remember to clean, which is the
+           * failure mode this would otherwise invite. `sanitize.test.ts` is
+           * what stands behind this line.
+           *
+           * The alternative was the `BodyBlock[]` tree this replaced —
+           * `{p} | {h} | {li[]}` rendered as elements. It was safe by
+           * construction and could not carry an `img`, a link, a blockquote, a
+           * code block or a table, which is most of what an article is. One
+           * paragraph holding a whole document, escaped by React, is what a
+           * reader actually saw.
+           *
+           * STYLED FROM `globals.css` rather than with classes, because there
+           * are no elements here to put classes on.
+           */
+          <div
+            className="article-body text-ink-2 text-[length:var(--text-read)] leading-[1.7]"
+            dangerouslySetInnerHTML={{ __html: article.body }}
+          />
+        )}
 
         <p className="pt-md border-rule text-muted border-t text-sm">
           From{" "}

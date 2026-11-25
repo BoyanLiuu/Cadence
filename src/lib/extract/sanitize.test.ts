@@ -296,6 +296,21 @@ describe("measuring what there is to read", () => {
     expect(textOf(wrapper).trim()).toBe("Two sentences. That is all.");
   });
 
+  it("puts a SPACE at a block boundary rather than gluing words", () => {
+    /*
+     * `textContent` concatenates, so this read "aloneOpen" — two words welded
+     * into a non-word. It feeds `articles.text_len` and the reading-time
+     * estimate, and it was briefly feeding `content_hash` through the seed,
+     * where the glued form produced a digest the poller could not reproduce.
+     */
+    expect(textOf("<p>alone</p><p>Open</p>")).toBe("alone Open");
+    expect(textOf("<ul><li>one</li><li>two</li></ul>")).toBe("one two");
+    expect(textOf("<p>a<br>b</p>")).toBe("a b");
+    // Collapsed and trimmed, because `contentHash` collapses too — a second
+    // normaliser that disagreed would be a second thing to keep in step.
+    expect(textOf("<p>  spaced   out  </p>")).toBe("spaced out");
+  });
+
   it("is empty for nothing, rather than throwing", () => {
     expect(textOf("")).toBe("");
     expect(textOf(null as unknown as string)).toBe("");

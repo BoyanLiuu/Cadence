@@ -157,9 +157,6 @@ export type SubscriptionWithUnread = Subscription & {
 /** Appendix D: `articles.extract_status` (§6.5). */
 export type ExtractStatus = "none" | "ok" | "thin" | "blocked" | "failed";
 
-/** A block of article body. Narrow on purpose: feed HTML is sanitised into this. */
-export type BodyBlock = { p: string } | { h: string } | { li: string[] };
-
 /** One span of a revision redline (§6.2). */
 export type RevisionSpan = string | { del: string } | { ins: string };
 
@@ -206,7 +203,16 @@ export type Article = {
   fetchedAt: string;
   words: number;
   summary: string;
-  body: BodyBlock[];
+  /**
+   * The article body as SANITISED HTML (§6.5), or `""` when there is none.
+   *
+   * Was `BodyBlock[]` — `{p} | {h} | {li[]}` — which could not carry `img`,
+   * `a`, `blockquote`, `pre`, `table` or `em`, all of which §6.5's allowlist
+   * permits and real articles use. A tree narrow enough to be obviously safe
+   * cannot carry an article, so the safety boundary is the sanitiser rather
+   * than the shape. NOTHING may put unsanitised markup here.
+   */
+  body: string;
   extractStatus: ExtractStatus;
   /** Set when a rung matched and the body had changed. Does NOT clear `readAt` (§6.2). */
   revisedAt: string | null;

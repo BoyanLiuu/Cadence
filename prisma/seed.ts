@@ -18,6 +18,7 @@ import {
 import { canonicalUrl } from "../src/lib/ingest/canonical-url";
 import { placeholderEmailFor } from "../src/lib/server/placeholder-user";
 import { contentHash } from "../src/lib/ingest/content-hash";
+import { textOf } from "../src/lib/extract/sanitize";
 
 /*
  * The M1 fixtures, written through the REAL schema.
@@ -96,20 +97,16 @@ function guidHashOf(article: { id: number; feedId: number }): Uint8Array<ArrayBu
   return sha256(`fixture:${article.feedId}:${article.id}`);
 }
 
-/** Plain text of a fixture body, for the content hash. */
-function bodyText(body: { p?: string; h?: string; li?: string[] }[]): string {
-  return body
-    .map((block) =>
-      "p" in block && block.p
-        ? block.p
-        : "h" in block && block.h
-          ? block.h
-          : "li" in block && block.li
-            ? block.li.join(" ")
-            : "",
-    )
-    .join(" ");
-}
+/*
+ * Fixture bodies are HTML now, so the seed stores the HTML and measures the
+ * TEXT — which is two different columns and used to be one value.
+ *
+ * It flattened the block array to a plain string and wrote THAT as
+ * `content_html`, so the database path has never held markup at all: the
+ * `<h3>` headings and every paragraph break were thrown away at seed time, and
+ * the reading pane's one-paragraph render looked correct because there was
+ * genuinely only one paragraph. Sanitising on read found nothing to sanitise.
+ */
 
 async function main() {
   // Order matters: children before parents, or the foreign keys refuse.
@@ -203,7 +200,7 @@ async function main() {
   }
 
   for (const article of articles) {
-    const text = bodyText(article.body as { p?: string; h?: string; li?: string[] }[]);
+    const text = textOf(article.body);
     const urlHash = urlHashOf(article.url);
 
     await prisma.article.create({
@@ -213,13 +210,33 @@ async function main() {
         guidHash: guidHashOf(article),
         url: article.url,
         urlHash,
-        contentHash: bytes(contentHash(article.title, text)),
+        /*
+         * HASHED FROM THE HTML, exactly as ingestion does.
+         *
+         * `dedupe.ts` passes `item.contentHtml` straight to `contentHash`,
+         * which strips and normalises internally — so handing it pre-stripped
+         * text means the seed and the poller normalise DIFFERENTLY and produce
+         * different digests for the same article. Measured: 15 of 124 seeded
+         * rows had a `content_hash` ingestion could not reproduce from the
+         * `content_html` stored beside it, because `textOf` glues `</p><p>`
+         * into one word where `contentHash`'s own stripper leaves a boundary.
+         *
+         * The consequence is not a failed lookup, which would be visible. The
+         * first poll that redelivers one of those articles UNCHANGED sees a
+         * different hash, calls it a revision, sets `revised_at`, bumps
+         * `revision_count` and — on a feed with resurface on — returns a read
+         * article to unread. Rung 3 also stops matching those rows.
+         *
+         * So the rule is: never normalise before `contentHash`. Give it the
+         * same input ingestion gives it and let one implementation decide.
+         */
+        contentHash: bytes(contentHash(article.title, article.body)),
         title: article.title,
         author: article.author || null,
         publishedAt: new Date(article.publishedAt),
         fetchedAt: new Date(article.fetchedAt),
         summaryHtml: article.summary || null,
-        contentHtml: text || null,
+        contentHtml: article.body || null,
         textLen: text.length,
         extractStatus: article.extractStatus,
         revisedAt: article.revisedAt ? new Date(article.revisedAt) : null,
