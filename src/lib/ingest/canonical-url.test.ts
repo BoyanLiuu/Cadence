@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { articleUrlHash } from "./dedupe";
 import { canonicalUrl, TRACKING_PARAM_PREFIXES, TRACKING_PARAMS } from "./canonical-url";
 
 /*
@@ -355,5 +356,51 @@ describe("determinism", () => {
       "https://X.Example:443/a/",
     ];
     expect(new Set(variants.map(canonicalUrl)).size).toBe(1);
+  });
+});
+
+describe("rung 2's article key", () => {
+  /*
+   * `articleUrlHash` was extracted at M13 so extraction's append to
+   * `article_urls` and ingestion's own lookup share ONE definition of the
+   * composition — the alternative was hand-copying `canonicalUrl` then
+   * `contentHash` then the byte narrowing into a second file, which is the
+   * same shape as the seed computing `content_hash` its own way and
+   * disagreeing with the poller on 15 of 124 articles.
+   */
+
+  it("is stable, and agrees across equivalent addresses", () => {
+    const a = articleUrlHash("https://x.example/post/a/");
+    const b = articleUrlHash("http://www.x.example/post/a?utm_source=rss");
+
+    expect(a).not.toBeNull();
+    // The whole point of keying on the canonical form rather than the string.
+    expect(Buffer.from(a!).toString("hex")).toBe(Buffer.from(b!).toString("hex"));
+  });
+
+  it("TAKES A RAW ADDRESS, and returns null for an already-canonical key", () => {
+    /*
+     * THE TRAP, pinned because I walked into it. The helper canonicalises what
+     * it is given, so passing it `canonicalUrl(url)` canonicalises twice — and
+     * a canonical key has no scheme, so the second pass fails and returns
+     * null. Inside `keysFor` that null went through a non-null assertion and
+     * reached `Buffer.from`, failing 57 tests across the ladder.
+     *
+     * Null rather than throwing is correct: an address that cannot be keyed is
+     * a real case (§6.3 — an item with no link at all), and the callers handle
+     * it. What is not safe is asserting non-null over it.
+     */
+    const raw = "https://x.example/post/a";
+    const key = canonicalUrl(raw);
+
+    expect(key).not.toBeNull();
+    expect(articleUrlHash(raw)).not.toBeNull();
+    expect(articleUrlHash(key), "a canonical key is not a valid input").toBeNull();
+  });
+
+  it("is null for an address with no key, rather than inventing one", () => {
+    for (const bad of ["", "   ", "not a url", null, undefined]) {
+      expect(articleUrlHash(bad), JSON.stringify(bad)).toBeNull();
+    }
   });
 });

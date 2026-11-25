@@ -12,6 +12,7 @@ import type {
 import { dataSource } from "./article-service";
 import { applyReadState, applyScopeRead, type ReadStateResult } from "./read-state.db";
 import { discoverAt } from "@/lib/ingest/discover";
+import { applyExtraction } from "./extract.db";
 import { applySaved, type SavedResult } from "./saved.db";
 import {
   addSubscription,
@@ -34,6 +35,24 @@ import { assertCan, requireUser } from "./viewer";
  * say exactly which request was not sent.
  */
 
+/**
+ * RETIRED AT M13, and kept rather than deleted — see below.
+ *
+ * NOTHING THROWS THIS ANY MORE. Every mutation this module declares is
+ * implemented, which is the end of the mechanism described above: there is no
+ * longer a write that renders a receipt instead of happening, so no screen can
+ * tell a reader "nothing was sent" and be right.
+ *
+ * It stays for two reasons rather than one. `service-contract.test.ts` asserts
+ * the set of mutations throwing it is EMPTY, which is a stronger claim than
+ * "this list is in sync" and needs the class to express. And a mutation added
+ * in a future phase that is wired to a form before it is built should use this
+ * rather than inventing a second receipt — the shape, and the argument for it,
+ * are worth keeping where they can be found.
+ *
+ * `NoDatabase` is the one that is still live, and it means something
+ * different: the code exists and the configuration does not.
+ */
 export class NotImplementedInStaticPhase extends Error {
   constructor(
     /** The route that will carry this write (§3). */
@@ -314,9 +333,18 @@ export async function saveArticle(viewer: Viewer, id: number, saved = true): Pro
   return applySaved(user.id, id, saved);
 }
 
-/** One fetch per article, cached forever, per-host concurrency of 1 (§6.5). */
+/**
+ * Reads the full text off the article's page, once and cached forever (§6.5).
+ *
+ * ONE PAGE LOAD PER ARTICLE A PERSON OPENED is the entire justification for
+ * being allowed to fetch at all: at ingest this would be an `[assumed]` 9 000
+ * unrequested page loads a day, which §6.5 calls the line between a reader and
+ * a crawler. So "cached forever" is not a performance choice here.
+ */
 export async function extractArticle(viewer: Viewer, id: number): Promise<Extraction> {
   assertCan(viewer, "extract");
-  void id;
-  throw new NotImplementedInStaticPhase("POST /api/articles/:id/extract", "M13");
+  const user = requireUser(viewer);
+  if (dataSource !== "db") throw new NoDatabase("POST /api/articles/:id/extract");
+
+  return applyExtraction(user.id, id);
 }

@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { CAPABILITIES, PAGE_SIZE, type Cursor } from "@/lib/types";
@@ -118,6 +121,7 @@ describe("the service layer keeps Appendix C's contract", () => {
  *   updateSubscription   M11 — PATCH /api/subscriptions/:feedId
  *   unsubscribe          M11 — DELETE /api/subscriptions/:feedId
  *   saveArticle          M12 — the saved shelf, a server action
+ *   extractArticle       M13 — on-open full text, POST /api/articles/:id/extract
  *
  * THE SUITE BELOW CALLS EVERY OTHER MUTATION WITH `(viewer, 1, true)` as a
  * viewer and junk arguments, which is safe for a function that throws
@@ -148,18 +152,54 @@ const IMPLEMENTED = new Set([
   "updateSubscription",
   "unsubscribe",
   "saveArticle",
+  "extractArticle",
 ]);
 
-describe("mutations are declared but not implemented", () => {
-  it.each(Object.entries(mutations).filter(([name, v]) => isWrite(v) && !IMPLEMENTED.has(name)))(
-    "%s throws NotImplementedInStaticPhase for a real viewer",
-    async (_name, fn) => {
-      const viewer = await getViewer();
-      await expect(
-        (fn as (...a: unknown[]) => Promise<unknown>)(viewer, 1, true),
-      ).rejects.toBeInstanceOf(NotImplementedInStaticPhase);
-    },
-  );
+describe("every declared mutation is implemented", () => {
+  it("leaves NOTHING throwing the phase receipt", async () => {
+    /*
+     * THE END OF PHASE 1'S RECEIPT MECHANISM, asserted rather than assumed.
+     *
+     * This block used to iterate the unimplemented mutations and check each
+     * threw `NotImplementedInStaticPhase`. At M13 that set became EMPTY, and
+     * an `it.each([])` proves nothing while looking like a passing suite —
+     * the vacuous shape this project has caught five times. So the assertion
+     * is inverted: nothing may throw the receipt.
+     *
+     * BY READING THE SOURCE, AND NOT BY CALLING THEM. My first version of this
+     * invoked every mutation with `(viewer, 1, true)` to see what it threw,
+     * which is precisely the harness the comment above spends twenty lines
+     * warning about: safe for a function that throws immediately, DESTRUCTIVE
+     * for one that does not. It would have called `unsubscribe(viewer, 1)` on
+     * a feed the fixture reader follows and `markScopeRead(viewer, 1, true)`
+     * with `1` as a scope — the two calls that have already cost real data
+     * here. Now that every mutation is implemented there is no safe version of
+     * that approach, because there is nothing left that throws before acting.
+     *
+     * The same tactic as `one-fetch-path.test.ts` and the seed guard, with the
+     * same caveat: a guard that reads source must read what the compiler
+     * reads. This looks for the constructor being called, so a rename fails
+     * the test rather than passing wrongly.
+     */
+    const source = await readFile(resolve(process.cwd(), "src/lib/server/mutations.ts"), "utf8");
+
+    // The class declaration and its doc comment mention the name; a THROW is
+    // the thing being looked for.
+    const throwsReceipt = [...source.matchAll(/throw new NotImplementedInStaticPhase\(/g)];
+
+    expect(
+      throwsReceipt.length,
+      "a mutation still answers with the phase receipt instead of writing",
+    ).toBe(0);
+  });
+
+  it("still has the receipt available for a write that is declared before it is built", () => {
+    // Retired, not deleted. The shape and the argument for it are worth
+    // keeping where someone adding a phase-2 mutation will find them.
+    expect(new NotImplementedInStaticPhase("POST /api/x", "M99").message).toContain(
+      "Nothing was sent",
+    );
+  });
 
   it("setReadState no longer answers with the phase receipt, now that M11 landed", async () => {
     /*
@@ -193,6 +233,7 @@ describe("mutations are declared but not implemented", () => {
     ["updateSubscription", () => mutations.updateSubscription(VIEWER_PLACEHOLDER, 1.5, {})],
     ["unsubscribe", () => mutations.unsubscribe(VIEWER_PLACEHOLDER, 1.5)],
     ["saveArticle", () => mutations.saveArticle(VIEWER_PLACEHOLDER, 1.5, true)],
+    ["extractArticle", () => mutations.extractArticle(VIEWER_PLACEHOLDER, 1.5)],
   ])("%s no longer answers with the phase receipt, now that M11 landed", async (_name, call) => {
     /*
      * THE EARNED EXEMPTION for the three subscription writes. Adding a name to
@@ -252,18 +293,22 @@ describe("mutations are declared but not implemented", () => {
     }
   });
 
-  it("names the endpoint, so the receipt screens can say what was not sent", async () => {
-    /*
-     * Checked against `extractArticle`, whose endpoint the reader pane prints
-     * verbatim — so this ties the error's `endpoint` to the string on screen.
-     * It used `subscribe` until M11 implemented that, which is the hazard of
-     * picking an example from a list that shrinks.
-     */
-    const viewer = await getViewer();
-    await expect(mutations.extractArticle(viewer, 1)).rejects.toMatchObject({
-      endpoint: "POST /api/articles/:id/extract",
-    });
-  });
+  /*
+   * REMOVED AT M13: "names the endpoint, so the receipt screens can say what
+   * was not sent".
+   *
+   * It called `extractArticle` and asserted the thrown error carried
+   * `endpoint: "POST /api/articles/:id/extract"`, tying the error's field to
+   * the string the reading pane printed. Implementing extraction made it throw
+   * `ArticleNotExtractable` instead, and there is no replacement example
+   * because NO mutation throws the receipt any more.
+   *
+   * Its own comment had already called this: "It used `subscribe` until M11
+   * implemented that, which is the hazard of picking an example from a list
+   * that shrinks." The list reached zero. The property it protected — the
+   * receipt carries a printable endpoint — is now on the constructor directly,
+   * above, which does not depend on a stub existing to be observed.
+   */
 });
 
 describe("the viewer", () => {

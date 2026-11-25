@@ -188,10 +188,58 @@ type ArticleRow = {
   textLen: number | null;
   summaryHtml: string | null;
   contentHtml: string | null;
+  /** The extraction, when one has been stored (§6.5). Preferred over the feed's. */
+  extractedHtml?: string | null;
+  /** Where the extraction landed, which is the base for ITS relative URLs. */
+  extractFinalUrl?: string | null;
   extractStatus: string;
   revisedAt: Date | null;
   revisionCount: number;
 };
+
+/**
+ * The body to show: the EXTRACTION when there is one, else what the feed sent.
+ *
+ * This preference is the entire payoff of "once per article, cached forever".
+ * Without it an extraction is fetched, sanitised, stored — and then never read:
+ * the pane keeps rendering the teaser, and the only visible effect of the whole
+ * feature is one outbound request per article. Found while wiring the pane,
+ * which is late; the write path's own tests all passed, because every one of
+ * them asserts on the COLUMN rather than on what a reader ends up seeing.
+ *
+ * Already sanitised in `extract.db.ts` before it was stored, and run through
+ * the sanitiser again here. That is not belt-and-braces for its own sake: it
+ * costs one DOM parse and it means this function's output is clean whatever is
+ * in the column — including rows written before the sanitiser existed, and
+ * including anything a future writer forgets. `corpus-round-trip.test.ts`
+ * asserts the second pass is a no-op on already-clean markup.
+ */
+function bodyOf(row: ArticleRow): string {
+  /*
+   * ONLY ON `ok`, and that qualifier is the whole reason the column is
+   * separate.
+   *
+   * A `thin` extraction is the gated snippet off the page, and §6.5 pairs it
+   * with the notice "the publisher likely gates the full text. This is what the
+   * feed sent." Preferring it would put the snippet under a sentence promising
+   * the feed's version — and a feed's teaser is often the LONGER of the two, so
+   * the reader would lose text as well as be told something false. `blocked`
+   * and `failed` store no HTML at all, so they fall through here anyway; naming
+   * the successful case is what makes `thin` deliberate rather than incidental.
+   */
+  const html =
+    row.extractStatus === "ok" ? (row.extractedHtml ?? row.contentHtml) : row.contentHtml;
+  if (html === null || html === undefined || html === "") return "";
+
+  /*
+   * Resolved against where the EXTRACTION landed where there is one, because
+   * that is what its relative URLs are relative to — the article's own address
+   * is the right base only for the feed's own body.
+   */
+  return sanitizeHtml(html, {
+    baseUrl: html === row.extractedHtml ? (row.extractFinalUrl ?? row.url) : row.url,
+  });
+}
 
 /**
  * One article, with this reader's state joined in.
@@ -256,10 +304,7 @@ export function toArticle(
      * Resolved against the ARTICLE's own address, which is where its relative
      * links and images are relative to.
      */
-    body:
-      options.withBody === true && row.contentHtml
-        ? sanitizeHtml(row.contentHtml, { baseUrl: row.url })
-        : "",
+    body: options.withBody === true ? bodyOf(row) : "",
     extractStatus: row.extractStatus as Article["extractStatus"],
     revisedAt: iso(row.revisedAt),
     revisionCount: row.revisionCount,

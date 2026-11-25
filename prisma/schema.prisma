@@ -256,6 +256,27 @@ model Article {
   enclosure     Json?
   extractStatus ExtractStatus @default(none) @map("extract_status")
 
+  /// The article body read off the page, sanitised (§6.5).
+  ///
+  /// SEPARATE FROM `contentHtml`, which is what the feed sent. Three reasons,
+  /// and all three bite: `thin`'s copy is "this is what the feed sent" and
+  /// needs the feed's version to still exist; `contentHash` is computed from
+  /// `contentHtml`, so overwriting it makes the next poll see a changed body
+  /// and call it an edit (§6.2 — an edit must not re-notify); and "what the
+  /// feed sent" versus "what we read off the page" are different claims a
+  /// reader is entitled to tell apart.
+  extractedHtml String? @map("extracted_html")
+
+  /// Where the extraction fetch actually landed, which closes the shortener
+  /// gap: ingestion never follows a redirect to canonicalise (§6.1), so the
+  /// first extraction is when we learn where a `t.co` link really goes.
+  extractFinalUrl String? @map("extract_final_url")
+
+  /// When extraction ran. `extract_status != 'none'` says whether it has been
+  /// tried; this says when, which is what makes "once per article, cached
+  /// forever" auditable rather than asserted.
+  extractedAt DateTime? @map("extracted_at")
+
   feed         Feed          @relation(fields: [feedId], references: [id], onDelete: Cascade)
   urls         ArticleUrl[]
   arrivals     ArticleFeed[]

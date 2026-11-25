@@ -2,7 +2,10 @@ import { ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
+import { needsExtraction } from "@/lib/extract/readability";
+
 import { ArticleActions } from "./article-actions";
+import { FullText } from "./full-text";
 import { NORM_VERSION } from "@/lib/ingest/canonical-url";
 import { joinSetAside, redlineUrl } from "@/lib/ingest/url-redline";
 import { otherFeedCount, type Article } from "@/lib/types";
@@ -164,19 +167,14 @@ function ExtractNote({ article }: { article: Article }) {
   const text = copy[article.extractStatus];
   if (!text) return null;
 
+  /*
+   * The "nothing was sent" half is GONE, because extraction landed at M13 and
+   * the sentence would now be false. `none` no longer means "this cannot
+   * happen yet" — it means nobody has opened this article before, and the copy
+   * above says so.
+   */
   return (
-    <div className="border-rule bg-paper-hi px-lg py-md text-ink-2 border text-sm">
-      {text}
-      {article.extractStatus === "none" && (
-        <>
-          {" "}
-          <span className="text-muted">
-            Nothing was sent: <code className="text-xs">POST /api/articles/:id/extract</code>{" "}
-            arrives in M13.
-          </span>
-        </>
-      )}
-    </div>
+    <div className="border-rule bg-paper-hi px-lg py-md text-ink-2 border text-sm">{text}</div>
   );
 }
 
@@ -271,6 +269,29 @@ export function ReaderPane({
             dangerouslySetInnerHTML={{ __html: article.body }}
           />
         )}
+
+        {/*
+         * The full text, fetched on open when the feed sent a teaser (§6.5).
+         *
+         * BELOW the feed's body rather than replacing it, because the feed's
+         * version is already on screen and swapping it out under the reader
+         * mid-read would move the text they are looking at. On the next load
+         * the server serves the stored extraction and this renders nothing.
+         */}
+        <FullText
+          /*
+           * KEYED, like `ArticleActions` above and for the same reason: this
+           * pane is reached by changing a search param, so React keeps the
+           * component mounted across articles. Unkeyed, the `started` ref
+           * stayed true and the previous article's state stayed on screen —
+           * the reader would see the LAST article's full text under the new
+           * one's headline, and the new one would never be extracted.
+           */
+          key={article.id}
+          articleId={article.id}
+          needed={needsExtraction(article.body)}
+          attempted={article.extractStatus !== "none"}
+        />
 
         <p className="pt-md border-rule text-muted border-t text-sm">
           From{" "}

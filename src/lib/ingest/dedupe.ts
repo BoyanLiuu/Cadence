@@ -201,6 +201,23 @@ export type Resolution = {
 const sha = (v: Uint8Array | Buffer): Uint8Array<ArrayBuffer> => new Uint8Array(v);
 
 /**
+ * Rung 2's key for an article address, or null for one that cannot be keyed.
+ *
+ * EXPORTED so there is ONE definition of this composition. It is
+ * `canonicalUrl` then `contentHash` then the byte narrowing, and getting any
+ * step wrong produces a hash that looks fine and matches nothing — a lookup
+ * that silently never hits, which is how a duplicate gets inserted. M13's
+ * extraction needs it to append the resolved final URL to `article_urls`, and
+ * the alternative was hand-copying three calls into a second file. That is the
+ * same shape as the seed computing `content_hash` its own way, which disagreed
+ * with the poller on 15 of 124 articles and was invisible until the next poll.
+ */
+export function articleUrlHash(url: string | null | undefined): Uint8Array<ArrayBuffer> | null {
+  const key = canonicalUrl(url);
+  return key === null ? null : sha(contentHash(key, ""));
+}
+
+/**
  * The hashes an item resolves on, or null if it cannot be keyed at all.
  *
  * `guid_hash` is scoped to the feed by the index, so the raw guid is hashed
@@ -230,7 +247,17 @@ function keysFor(item: RawItem): {
   }
   return {
     guidHash: item.guid ? sha(contentHash(item.guid, "")) : null,
-    urlHash: sha(contentHash(key, "")),
+    /*
+     * THE RAW URL, not `key`. The helper canonicalises what it is given, so
+     * handing it the already-canonical `key` canonicalises twice — and the
+     * canonical form has no scheme, so the second pass returns null and the
+     * non-null assertion made that a lie. 57 tests failed on a `urlHash` of
+     * null reaching `Buffer.from`.
+     *
+     * Equivalent by construction: `key` IS `canonicalUrl(item.url)`, and it
+     * has already been checked non-null above, so this cannot be null here.
+     */
+    urlHash: articleUrlHash(item.url)!,
     url: item.url ?? key,
   };
 }

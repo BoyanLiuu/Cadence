@@ -546,6 +546,9 @@ export async function getArticle(viewer: Viewer, id: number): Promise<Article | 
       arrivals: { orderBy: [{ firstSeenAt: "asc" }, { feedId: "asc" }] },
     },
   });
+  // `include` brings every scalar column, so `extracted_html` and
+  // `extract_final_url` arrive without being named — which is why this read
+  // uses `include` rather than a `select` it would have to remember to widen.
 
   // `withBody`, and ONLY here: this is the one read whose result reaches the
   // reading pane. The list reads above deliberately leave it `""`.

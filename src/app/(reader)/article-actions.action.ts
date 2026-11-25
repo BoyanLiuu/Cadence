@@ -1,7 +1,7 @@
 "use server";
 
 import { messageForActionError } from "@/lib/server/action-error";
-import { saveArticle, setReadState } from "@/lib/server/mutations";
+import { extractArticle, saveArticle, setReadState } from "@/lib/server/mutations";
 import { revalidateQuietly } from "@/lib/server/revalidate";
 import { getViewer } from "@/lib/server/viewer";
 
@@ -25,6 +25,8 @@ import { getViewer } from "@/lib/server/viewer";
  */
 
 export type ArticleActionState = { error: string } | { saved: boolean } | { read: boolean } | null;
+
+export type ExtractState = { error: string } | { status: string };
 
 export async function toggleSaved(articleId: number, saved: boolean): Promise<ArticleActionState> {
   try {
@@ -59,4 +61,45 @@ export async function toggleRead(articleId: number, read: boolean): Promise<Arti
 
   revalidateQuietly("/reader", "layout");
   return { read };
+}
+
+/**
+ * Reads the full text off the article's page, on open (§6.5).
+ *
+ * AN ACTION, NOT A ROUTE, by the same rule as the buttons above: a person
+ * opened an article. The route ARCHITECTURE's table names
+ * (`POST /api/articles/:id/extract`) has no machine caller — nothing polls
+ * this, nothing retries it in the background — so there is nothing for a route
+ * to be for. Recorded as documentation debt in `decisions.md`, alongside
+ * subscribe and mark-all-read.
+ *
+ * CALLED FROM THE CLIENT ON MOUNT rather than during the page's render, and
+ * that is forced rather than chosen: this WRITES, and a Server Component
+ * render may not. "On open" therefore means "when the pane has mounted for an
+ * article that needs it", which is the honest reading of §6.5 and also the one
+ * that keeps the page's first paint off a publisher's response time.
+ *
+ * `revalidateQuietly` IS THE DELIVERY MECHANISM. It refreshes this route, the
+ * server re-reads the article, and `db/map.ts` prefers the stored extraction —
+ * so the text appears in the body the server rendered. Returning the HTML from
+ * here as well put the whole article on screen twice.
+ */
+export async function extractFullText(articleId: number): Promise<ExtractState> {
+  let result;
+  try {
+    const viewer = await getViewer();
+    result = await extractArticle(viewer, articleId);
+  } catch (error) {
+    return { error: messageForActionError(error, "Could not read the full text.") };
+  }
+
+  /*
+   * THE REVALIDATION IS HOW THE READER GETS THE TEXT, not the return value.
+   * It refreshes this route, the server re-reads the article, and `bodyOf`
+   * prefers the stored extraction — so returning the HTML as well drew the
+   * whole article a second time. Only the status comes back, for the caller to
+   * say whether anything is still in flight.
+   */
+  revalidateQuietly("/reader", "layout");
+  return { status: result.status };
 }
