@@ -138,6 +138,36 @@ describe("sanitising third-party markup", () => {
     }
   });
 
+  it("drops a form's TEXT as well as its elements", () => {
+    /*
+     * An element DOPurify removes keeps its text by default, which feed bodies
+     * depend on — they are wrapped in `<div>`s and dropping their contents
+     * would delete the article. For form furniture that default is wrong
+     * twice: it renders "EmailSubscribe" as a paragraph in the middle of the
+     * piece, and an `<option>` list dumps two hundred country names into it.
+     *
+     * It also inflated the text measurement that decides `thin`, so a page
+     * whose bulk is a signup box read as a successful extraction. Fixed with
+     * `ADD_FORBID_CONTENTS` — the ADDITIVE form, since the non-additive one
+     * deletes DOMPurify's own 26 defaults, which is the bug recorded above.
+     */
+    const out = clean(`<p>The article.</p>
+      <form><label>Email</label><input name="email"><button>Subscribe</button></form>
+      <select><option>Scotland</option><option>Wales</option></select>`);
+
+    expect(out).toContain("The article.");
+    for (const chrome of ["Email", "Subscribe", "Scotland", "Wales"]) {
+      expect(out, chrome).not.toContain(chrome);
+    }
+  });
+
+  it("still keeps the text of a plain wrapper, which feed bodies need", () => {
+    // The other side of the rule above. Feed HTML is `<div>`-wrapped; dropping
+    // a wrapper's contents would delete the article rather than clean it.
+    expect(clean(`<div><p>Wrapped prose.</p></div>`)).toContain("Wrapped prose.");
+    expect(clean(`<section>Bare text in a section.</section>`)).toContain("Bare text");
+  });
+
   it("strips a `javascript:` href but keeps the link's text", () => {
     /*
      * The anchor SURVIVES without its href, rather than being removed. The

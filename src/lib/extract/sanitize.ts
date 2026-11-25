@@ -186,6 +186,21 @@ export function sanitizeHtml(html: string, options: SanitizeOptions): string {
      */
     RETURN_DOM: true,
     /*
+     * ADDITIVE, which is the whole point — see the note below on what the
+     * non-additive form did.
+     *
+     * A FORM'S TEXT IS CHROME, NOT PROSE. DOMPurify's defaults drop the
+     * contents of `iframe` (so a player's fallback text goes with it) but keep
+     * a `form`'s, because an element being removed keeps its text by default —
+     * the behaviour feed bodies depend on, since they are wrapped in `<div>`s.
+     * For a form that is wrong twice: it renders "EmailSubscribe" as a
+     * paragraph in the middle of the article, and an `<option>` list dumps two
+     * hundred country names into it. Both also inflate the text measurement
+     * that decides `thin`, so a page whose bulk is a signup box reads as a
+     * successful extraction.
+     */
+    ADD_FORBID_CONTENTS: ["form", "select", "option", "button", "textarea", "label"],
+    /*
      * NO `FORBID_CONTENTS` — and this is the review finding worth remembering,
      * because the option REPLACES DOMPurify's default list rather than adding
      * to it. It was set to `["script", "style"]`, both of which are already in
