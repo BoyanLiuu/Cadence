@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { getViewer } from "@/lib/server/viewer";
 import { discoverFeeds } from "@/lib/server/mutations";
@@ -122,10 +122,42 @@ describe("discoveryKey", () => {
   });
 });
 
+/** The viewer every case here uses; resolved once. */
+const VIEWER = await getViewer();
+
+/**
+ * `discoverFeeds` with the data source pinned to fixtures.
+ *
+ * `dataSource` is read when `article-service` is first imported, so the module
+ * registry is reset and the function RE-IMPORTED — the version captured at the
+ * top of this file closed over whatever mode the runner started in. An earlier
+ * attempt reset the registry and then called that stale import, which changed
+ * nothing at all.
+ */
+async function sampleMapDiscover(address: string) {
+  const before = process.env.CADENCE_DATA_SOURCE;
+  process.env.CADENCE_DATA_SOURCE = "fixtures";
+  vi.resetModules();
+  try {
+    const fresh = await import("@/lib/server/mutations");
+    return await fresh.discoverFeeds(VIEWER, address);
+  } finally {
+    if (before === undefined) delete process.env.CADENCE_DATA_SOURCE;
+    else process.env.CADENCE_DATA_SOURCE = before;
+    vi.resetModules();
+  }
+}
+
 describe("through the service layer", () => {
   it("resolves rather than throwing, because discovery is pure from M5", async () => {
-    const viewer = await getViewer();
-    const result = await discoverFeeds(viewer, "tidewaterletters.example");
+    /*
+     * FORCED TO FIXTURES, because this suite is about the SAMPLE MAP's four
+     * states and M12 made `discoverFeeds` branch on the data source: with a
+     * database it fetches the real web, where `.example` addresses correctly do
+     * not resolve. Without this the suite tested whichever mode the runner
+     * happened to be in.
+     */
+    const result = await sampleMapDiscover("tidewaterletters.example");
     expect(result.kind).toBe("found");
     if (result.kind !== "found") return;
     // The validated detail is what lets the screen describe a feed before

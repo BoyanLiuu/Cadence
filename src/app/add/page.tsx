@@ -8,7 +8,7 @@ import { subscribeToFeed } from "./subscribe.action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sampleAddresses } from "@/lib/fixtures/discover";
-import { listFolders, listSubscriptions } from "@/lib/server/article-service";
+import { dataSource, listFolders, listSubscriptions } from "@/lib/server/article-service";
 import { discoverFeeds } from "@/lib/server/mutations";
 import { requireViewer } from "@/lib/server/viewer";
 import { trimmedParam } from "@/lib/view-params";
@@ -25,8 +25,21 @@ import type { Candidate, DiscoveryResult } from "@/lib/types";
  * explains why it is not instant, and a first implementation always drops it.
  */
 
-const DATE = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+/*
+ * `null` for a date that is not one, rather than the string "Invalid Date".
+ *
+ * The fixtures always carried a date, so this was `new Date(iso).toLocale…`
+ * outright. A real feed need not: plenty of RSS omits `pubDate` entirely, and
+ * `Candidate.lastPost` is `""` when no item has a date — which rendered "Last
+ * post Invalid Date" under every candidate from such a feed. Callers omit the
+ * line instead.
+ */
+const DATE = (iso: string): string | null => {
+  const at = new Date(iso);
+  return Number.isNaN(at.getTime())
+    ? null
+    : at.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+};
 
 const FORMAT_NAME: Record<Candidate["format"], string> = {
   rss2: "RSS 2.0",
@@ -52,6 +65,8 @@ function CandidateCard({
   checked: boolean;
   address: string;
 }) {
+  const lastPost = DATE(candidate.lastPost);
+
   return (
     <Link
       href={`/add?address=${encodeURIComponent(address)}&feed=${encodeURIComponent(candidate.feedUrl)}`}
@@ -72,12 +87,21 @@ function CandidateCard({
         {checked && <span className="bg-ink size-2 rounded-full" />}
       </span>
       <span className="gap-2xs grid">
-        <span className="font-display text-lg">{candidate.title}</span>
+        <span className="gap-sm flex flex-wrap items-baseline">
+          <span className="font-display text-lg">{candidate.title}</span>
+          {/* One followed feed among several no longer collapses the whole
+              result into "you already follow this" — so it has to say which. */}
+          {candidate.following === true && (
+            <span className="border-rule text-muted px-xs border py-0.5 text-xs">
+              Already in your reader
+            </span>
+          )}
+        </span>
         <span className="text-ink-2 text-sm break-words">{candidate.feedUrl}</span>
         <span className="gap-md text-muted num flex flex-wrap text-xs">
           <span>{FORMAT_NAME[candidate.format]}</span>
           <span>{candidate.items} items</span>
-          <span>Last post {DATE(candidate.lastPost)}</span>
+          {lastPost !== null && <span>Last post {lastPost}</span>}
           <span>Checked {everyPhrase(candidate.intervalS)}</span>
         </span>
       </span>
@@ -98,7 +122,9 @@ function Preview({ candidate }: { candidate: Candidate }) {
             className="gap-sm border-rule py-xs flex items-baseline justify-between border-b text-sm last:border-b-0"
           >
             <span className="text-ink-2 min-w-0">{item.title}</span>
-            <span className="text-muted num whitespace-nowrap">{DATE(item.at)}</span>
+            {/* An undated item leaves the cell empty rather than printing
+                "Invalid Date" beside a perfectly good title. */}
+            <span className="text-muted num whitespace-nowrap">{DATE(item.at) ?? ""}</span>
           </li>
         ))}
       </ul>
@@ -219,12 +245,20 @@ export default async function AddFeedPage({
             <p className="text-muted text-sm">http or https. Without either, https is assumed.</p>
           </form>
 
-          {result === null && (
+          {/*
+           * ONLY IN FIXTURES MODE. These five `.example` addresses resolve
+           * against the sample map, and M12 made discovery real — so with a
+           * database they are five links that each fetch nothing and report
+           * "that address did not answer", under a heading promising they
+           * resolve and a line saying discovery is not networked yet. The
+           * copy outlived the milestone it described.
+           */}
+          {result === null && dataSource !== "db" && (
             <section className="gap-sm grid">
               <h2 className="font-display text-lg">Addresses that resolve in this build</h2>
               <p className="text-muted text-sm">
-                Discovery is not networked until M12, so these five sample addresses stand in — one
-                for each way the search can end.
+                This build has no database, so discovery answers from a sample map rather than the
+                web. These five addresses stand in — one for each way the search can end.
               </p>
               <ul className="gap-2xs m-0 grid list-none p-0">
                 {sampleAddresses.map(({ address: sample, branch }) => (

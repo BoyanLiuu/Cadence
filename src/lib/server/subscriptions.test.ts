@@ -2,11 +2,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/db/client";
 import { CAN_WRITE_DB } from "@/lib/db/guards";
+import type { Candidate } from "@/lib/types";
 import {
   NoSuchFolder,
   NotSubscribed,
   addSubscription,
   editSubscription,
+  markFollowed,
   removeSubscription,
 } from "./subscriptions.db";
 
@@ -266,5 +268,70 @@ describeDb("following a feed", () => {
 
     const after = await prisma.feed.findUniqueOrThrow({ where: { id: BigInt(created.feedId) } });
     expect(after.title).toBe(before.title);
+  });
+
+  /*
+   * "Already followed", which M12's add-feed screen branches on.
+   *
+   * THE DEAD END IS THE POINT. This was a `findFirst`, so one followed
+   * candidate among several answered `following` for the whole address — and
+   * the screen's `following` branch is a headline and an "Open it" button with
+   * no candidate list, so the other feeds at that address became unreachable.
+   * Nothing failed on a single-feed address, which is the only shape it was
+   * tried on.
+   */
+  const candidate = (feedUrl: string): Candidate => ({
+    title: feedUrl,
+    feedUrl,
+    format: "rss2",
+    items: 1,
+    lastPost: "2026-11-20T00:00:00.000Z",
+    intervalS: 3600,
+    preview: [],
+  });
+
+  it("marks ONE followed candidate without hiding the others", async () => {
+    const followed = address("marked-followed");
+    const other = address("marked-other");
+    await addSubscription(ONE, followed);
+
+    const result = await markFollowed(ONE, [candidate(followed), candidate(other)]);
+
+    expect(result.kind, "one followed feed must not swallow the address").toBe("found");
+    if (result.kind !== "found") return;
+    expect(result.candidates.map((c) => c.feedUrl)).toEqual([followed, other]);
+    expect(result.candidates[0]!.following).toBe(true);
+    expect(result.candidates[1]!.following).toBeUndefined();
+  });
+
+  it("answers `following` when EVERY candidate is already followed", async () => {
+    // §6.3's case, and the common one: a pasted feed address resolves to the
+    // single feed the reader already has.
+    const url = address("marked-only");
+    const created = await addSubscription(ONE, url);
+
+    const result = await markFollowed(ONE, [candidate(url)]);
+
+    expect(result).toEqual({ kind: "following", feedId: created.feedId });
+  });
+
+  it("matches on the canonical address, not the string the reader typed", async () => {
+    // The whole reason it compares `url_hash`: `addSubscription` upserts on it,
+    // so a reader who types the same feed differently must still be told they
+    // follow it rather than being handed a duplicate.
+    const url = `https://subs-marked-canon-${RUN}.example/feed`;
+    madeFeedUrls.push(url);
+    await addSubscription(ONE, url);
+
+    const typed = `http://www.subs-marked-canon-${RUN}.example/feed/`;
+    const result = await markFollowed(ONE, [candidate(typed)]);
+
+    expect(result.kind).toBe("following");
+  });
+
+  it("marks nothing for a reader who follows none of them", async () => {
+    const result = await markFollowed(TWO, [candidate(address("marked-none"))]);
+    expect(result.kind).toBe("found");
+    if (result.kind === "found") expect(result.candidates[0]!.following).toBeUndefined();
   });
 });

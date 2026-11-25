@@ -70,6 +70,18 @@ export type FetchOutcome =
       bodyHash: Uint8Array;
       /** Set when the redirect chain ended somewhere else, and is persisted. */
       finalUrl: string | null;
+      /**
+       * Where the body actually came from, after every hop. ALWAYS set.
+       *
+       * Distinct from `finalUrl`, which is the PERSISTENCE signal and is only
+       * set for a chain that was permanent all the way through — a 302 must not
+       * move `feeds.feed_url`. Discovery needs the other question answered:
+       * relative hrefs in a page resolve against where the page was served
+       * from, whatever the redirect's permanence. Reading `finalUrl` for that
+       * silently used the TYPED address after any temporary redirect, so a site
+       * that bounces `/` to `/blog/` had its feed looked for on the wrong path.
+       */
+      landedUrl: string;
       durationMs: number;
       bytes: number;
     }
@@ -376,6 +388,7 @@ export async function fetchFeed(
       // publisher should not have to serve twice. Null for a TEMPORARY
       // redirect, however many hops: see `permanentTarget`.
       finalUrl: permanentTarget,
+      landedUrl: target,
       durationMs: elapsed(),
       bytes: body.byteLength,
     };

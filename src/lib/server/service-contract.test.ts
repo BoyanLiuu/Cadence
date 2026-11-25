@@ -213,13 +213,33 @@ describe("mutations are declared but not implemented", () => {
     await expect(call()).rejects.not.toBeInstanceOf(NotImplementedInStaticPhase);
   });
 
-  it("resolves discoverFeeds, which is pure from M5 rather than throwing", async () => {
-    // The exception to the rule above, and it must be an explicit exception:
-    // if this function silently went back to throwing, the add-feed screen
-    // would show its receipt instead of its candidates.
+  it("resolves discoverFeeds rather than throwing, in either mode", async () => {
+    /*
+     * The exception to the rule above, and it must be an explicit exception: if
+     * this function silently went back to throwing, the add-feed screen would
+     * show its receipt instead of its candidates.
+     *
+     * THE ADDRESS IS PER MODE, so that neither branch touches the network.
+     * In fixtures mode the sample map answers `found`. With a database, M12
+     * made this go to the real web — and asking it for `tidewaterletters.example`
+     * sent a DNS query from a unit suite on every run, which is both slow and
+     * at the mercy of a resolver that answers NXDOMAIN with an address of its
+     * own. A literal link-local IP is refused by `guardUrl` BEFORE any lookup,
+     * so the answer is `invalid` deterministically and offline.
+     *
+     * The real discovery path, including what it refuses and never dials, is
+     * `ingest/discover.test.ts`; the sample map's states are
+     * `fixtures/discover-states.test.ts`. This asserts only that the function
+     * resolves rather than throwing its phase receipt.
+     */
     const viewer = await getViewer();
-    const result = await mutations.discoverFeeds(viewer, "tidewaterletters.example");
-    expect(result.kind).toBe("found");
+    const [address, kind] =
+      service.dataSource === "db"
+        ? ["http://169.254.169.254/", "invalid"]
+        : ["tidewaterletters.example", "found"];
+
+    const result = await mutations.discoverFeeds(viewer, address);
+    expect(result.kind).toBe(kind);
   });
 
   it("validates discoverFeeds' input rather than crashing on it", async () => {

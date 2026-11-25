@@ -11,8 +11,14 @@ import type {
 
 import { dataSource } from "./article-service";
 import { applyReadState, applyScopeRead, type ReadStateResult } from "./read-state.db";
+import { discoverAt } from "@/lib/ingest/discover";
 import { applySaved, type SavedResult } from "./saved.db";
-import { addSubscription, editSubscription, removeSubscription } from "./subscriptions.db";
+import {
+  addSubscription,
+  editSubscription,
+  markFollowed,
+  removeSubscription,
+} from "./subscriptions.db";
 import { assertCan, requireUser } from "./viewer";
 
 /*
@@ -87,7 +93,26 @@ export type UpdateSubscriptionInput = {
  */
 export async function discoverFeeds(viewer: Viewer, url: string): Promise<DiscoveryResult> {
   assertCan(viewer, "discover");
-  return resolveSample(url);
+
+  /*
+   * FIXTURES MODE KEEPS THE SAMPLE MAP, which is not a fallback but the point
+   * of it: a clone with no database still demonstrates every state this screen
+   * has, and 561 of this project's tests predate the schema. Appendix C's "M5
+   * pure, M12 networked" is this branch.
+   */
+  if (dataSource !== "db") return resolveSample(url);
+
+  const found = await discoverAt(url);
+  if (found.kind !== "found") return found;
+
+  /*
+   * ALREADY FOLLOWED is decided in `subscriptions.db`, beside the upsert whose
+   * key it compares on, and it is the only part of the answer that depends on
+   * WHO is asking — everything else is a fact about the address. §6.3 makes it
+   * one of the four distinct outcomes, and it is what lets `addSubscription` be
+   * idempotent without the screen pretending a duplicate press was new.
+   */
+  return markFollowed(requireUser(viewer).id, found.candidates);
 }
 
 /**

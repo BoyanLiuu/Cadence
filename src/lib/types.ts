@@ -269,9 +269,21 @@ export type Candidate = {
   feedUrl: string;
   format: FeedFormat;
   items: number;
+  /** ISO 8601, or `""` for a feed whose items carry no date at all. */
   lastPost: string;
   intervalS: number;
   preview: { title: string; at: string }[];
+  /**
+   * Set when this reader already follows this feed.
+   *
+   * PER CANDIDATE, because "already followed" is the only part of a discovery
+   * that depends on who is asking, and a page can advertise several feeds of
+   * which one is followed. The whole-result `following` kind below stays for
+   * the case it describes — every candidate already followed, which is what
+   * pasting a single feed address produces — and this marks the others without
+   * hiding them.
+   */
+  following?: boolean;
 };
 
 /**

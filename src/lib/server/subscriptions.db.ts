@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { prisma } from "@/lib/db/client";
 import { canonicalUrl } from "@/lib/ingest/canonical-url";
-import type { Subscription } from "@/lib/types";
+import type { Candidate, DiscoveryResult, Subscription } from "@/lib/types";
 
 /*
  * Subscribing, filing and unsubscribing (§6.1, Appendix D).
@@ -33,8 +33,15 @@ const sha256 = (value: string): Uint8Array<ArrayBuffer> => {
   return new Uint8Array(digest.buffer.slice(digest.byteOffset, digest.byteOffset + digest.length));
 };
 
-/** Rung 2's key for a feed address. */
-function urlHashOf(feedUrl: string): Uint8Array<ArrayBuffer> {
+/**
+ * Rung 2's key for a feed address.
+ *
+ * EXPORTED so "already followed" asks the same question `addSubscription`
+ * answers. Discovery compares on this hash rather than on the string, so a
+ * reader who pastes `http://www.x.example/feed/` is told they already follow
+ * `https://x.example/feed` — which they do.
+ */
+export function urlHashOf(feedUrl: string): Uint8Array<ArrayBuffer> {
   const key = canonicalUrl(feedUrl);
   // `canonicalUrl` refuses an address it cannot key. Hashing the raw string
   // keeps such a feed insertable and still unique, rather than dropping it.
@@ -91,6 +98,62 @@ async function checkFolder(userId: string, folderId: number | null | undefined) 
   if (folder === null) throw new NoSuchFolder(folderId);
 }
 
+/*
+ * Hashes compare as hex, not as bytes: two `Uint8Array`s with the same contents
+ * are never `===`, so a `Map` keyed on the arrays matches nothing and every
+ * candidate would read as unfollowed.
+ */
+const hex = (bytes: Uint8Array): string =>
+  Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+
+/**
+ * Marks which discovered candidates this reader already follows (§6.3).
+ *
+ * THE ONLY PART OF A DISCOVERY THAT DEPENDS ON WHO IS ASKING — everything else
+ * is a fact about the address — which is why it lives here and not in
+ * `discoverAt`. Matched on `url_hash`, the key `addSubscription` upserts on, so
+ * "already followed" means exactly "the row you would get already exists": a
+ * reader who pastes `http://www.x.example/feed/` is told they already follow
+ * `https://x.example/feed`, which they do.
+ *
+ * PER CANDIDATE, AND THE WHOLE RESULT ONLY WHEN EVERY ONE IS FOLLOWED. This
+ * was a `findFirst`, which answered `following` as soon as ANY candidate
+ * matched — so a site advertising a main feed and a comments feed became "you
+ * already follow this feed · Open it" the moment the main one was followed,
+ * with no way left to add the comments feed. The dead end was invisible on a
+ * single-feed address, which is the only shape it was tried on.
+ */
+export async function markFollowed(
+  userId: string,
+  candidates: Candidate[],
+): Promise<DiscoveryResult> {
+  if (candidates.length === 0) return { kind: "found", candidates };
+
+  const hashes = candidates.map((candidate) => urlHashOf(candidate.feedUrl));
+  const hashOf = new Map(candidates.map((candidate, i) => [candidate.feedUrl, hex(hashes[i]!)]));
+
+  const mine = await prisma.subscription.findMany({
+    where: { userId, feed: { urlHash: { in: hashes } } },
+    select: { feedId: true, feed: { select: { urlHash: true } } },
+  });
+  if (mine.length === 0) return { kind: "found", candidates };
+
+  const followed = new Map(mine.map((row) => [hex(row.feed.urlHash), Number(row.feedId)]));
+  const feedIdOf = (candidate: Candidate) => followed.get(hashOf.get(candidate.feedUrl)!);
+
+  const marked = candidates.map((candidate) =>
+    feedIdOf(candidate) === undefined ? candidate : { ...candidate, following: true },
+  );
+
+  // Every candidate followed is §6.3's case: one address, one feed, already in
+  // the reader. The id is the one to open.
+  if (marked.every((candidate) => candidate.following === true)) {
+    return { kind: "following", feedId: feedIdOf(candidates[0]!)! };
+  }
+
+  return { kind: "found", candidates: marked };
+}
+
 /**
  * Follows a feed, creating the shared `feeds` row only if nobody has it yet.
  *
@@ -114,14 +177,6 @@ export async function addSubscription(
 
   const urlHash = urlHashOf(feedUrl);
 
-  /*
-   * UPSERT ON `url_hash`, which is the sharing. `create` would fail the second
-   * reader with a unique violation; `upsert` gives both the same row.
-   *
-   * `update: {}` on purpose: the existing row belongs to everyone who follows
-   * it, and a new subscriber has no business rewriting its title, interval or
-   * failure state. The poller owns those.
-   */
   /*
    * UPSERT ON `url_hash`, which IS the sharing. `create` would fail the second
    * reader with a unique violation; `upsert` gives both the same row.
