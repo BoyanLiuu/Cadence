@@ -1,3 +1,4 @@
+import { signImageUrl } from "@/lib/extract/image-proxy";
 import { sanitizeHtml } from "@/lib/extract/sanitize";
 import { articles, BUDGET_MS, feeds, folders, subscriptions, ticks } from "@/lib/fixtures";
 import {
@@ -266,7 +267,10 @@ export async function getArticle(viewer: Viewer, id: number): Promise<Article | 
    * `corpus-round-trip.test.ts` asserts this is a no-op on today's corpus, so
    * it costs one DOM parse per article open and buys the invariant.
    */
-  return { ...article, body: sanitizeHtml(article.body, { baseUrl: article.url }) };
+  return {
+    ...article,
+    body: sanitizeHtml(article.body, { baseUrl: article.url, rewriteImage: signImageUrl }),
+  };
 }
 
 /**

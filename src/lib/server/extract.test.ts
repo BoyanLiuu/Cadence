@@ -516,6 +516,71 @@ describeDb("reading the full text off the page", () => {
     expect((await rowFor(owner.articleId)).extractStatus).toBe("none");
   }, 30_000);
 
+  it("serves an extracted article's images THROUGH THE PROXY", async () => {
+    /*
+     * The end-to-end property, and the one that spans the two decisions in
+     * this feature that could each look right alone.
+     *
+     * The extraction is stored with ABSOLUTE image addresses, not proxied
+     * ones: the signature depends on `CADENCE_IMG_SECRET`, and a stored
+     * signature stops verifying the moment that key is rotated — every image
+     * in every article broken until a backfill. So the rewrite happens on
+     * READ, in `db/map.ts`, which costs one HMAC per image and survives
+     * rotation.
+     *
+     * Those two halves are in different files and neither test covers the
+     * seam, so this asks the only question that matters: what is in the `src`
+     * the reader's browser will fetch.
+     */
+    /*
+     * SET AND UNSET AROUND THE WHOLE CASE. Assigned without a `finally` it
+     * leaked into every later test in this file whenever an assertion here
+     * failed — which is how a suite starts depending on its own run order.
+     */
+    process.env.CADENCE_IMG_SECRET = "test-secret-for-extraction-end-to-end";
+    try {
+      const withImage = await makeArticle("proxied");
+      const { fetcher } = recordingFetcher({
+        [withImage.url]: changed(page(`${LONG}<p><img src="/photo.jpg"></p>`), withImage.url),
+      });
+      await applyExtraction(READER, Number(withImage.articleId), fetcher);
+
+      // STORED ABSOLUTE, which is the half that survives key rotation.
+      const stored = await rowFor(withImage.articleId);
+      expect(stored.extractedHtml).toContain(`https://extract-proxied-${RUN}.example/photo.jpg`);
+      expect(stored.extractedHtml).not.toContain("/api/img");
+
+      const viewer = { kind: "user", user: { id: READER } } as unknown as Parameters<
+        typeof getArticle
+      >[0];
+      const article = await getArticle(viewer, Number(withImage.articleId));
+
+      /*
+       * SERVED PROXIED, so the publisher never sees the reader's IP or Referer.
+       *
+       * READ OFF THE PARSED ATTRIBUTE, not the markup string. In serialised HTML
+       * the separator is `&amp;s=`, which is correct and which a substring check
+       * for `&s=` fails on — asserting on the raw string tests the serialiser,
+       * not the behaviour. This is the value the browser will actually request.
+       */
+      const doc = new DOMParser().parseFromString(`<body>${article!.body}</body>`, "text/html");
+      const src = doc.body.querySelector("img")?.getAttribute("src") ?? "";
+
+      /*
+       * THE TEST IS WHERE THE BROWSER WILL GO, which is our own origin. The
+       * publisher's address IS in the query string — that is the design, and an
+       * earlier version of this assertion read its presence as a leak and
+       * failed. What would be a leak is the `src` pointing AT the publisher, so
+       * that is what is checked: a relative path to `/api/img`.
+       */
+      expect(src.startsWith("/api/img?")).toBe(true);
+      expect(src).toContain("&s=");
+      expect(src).toContain(encodeURIComponent(`https://extract-proxied-${RUN}.example/photo.jpg`));
+    } finally {
+      delete process.env.CADENCE_IMG_SECRET;
+    }
+  }, 30_000);
+
   it("refuses an id that is not an id, rather than reaching BigInt()", async () => {
     // These arrive from a client. `BigInt(1.5)` throws a RangeError, which
     // surfaces as a 500 on opening an article.

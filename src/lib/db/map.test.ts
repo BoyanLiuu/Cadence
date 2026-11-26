@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { articles, feeds, D } from "@/lib/fixtures";
 
-import { iso, isoRequired, num } from "./map";
+import { iso, isoRequired, num, toArticle } from "./map";
 
 /*
  * What this suite is for: the two implementations disagreeing over a format
@@ -68,5 +68,62 @@ describe("bigint ids become plain numbers", () => {
     expect(() => JSON.stringify({ id: num(BigInt(101)) })).not.toThrow();
     // The failure being prevented, stated directly.
     expect(() => JSON.stringify({ id: BigInt(101) })).toThrow();
+  });
+});
+
+describe("mapping a row to what a component renders", () => {
+  /** A minimal row, since only the two HTML fields are under test. */
+  const row = (over: Record<string, unknown> = {}) =>
+    ({
+      id: BigInt(1),
+      feedId: BigInt(1),
+      title: "A title",
+      author: null,
+      url: "https://harbourwire.example/a",
+      publishedAt: new Date("2026-11-12T09:00:00.000Z"),
+      fetchedAt: new Date("2026-11-12T09:01:00.000Z"),
+      textLen: 100,
+      summaryHtml: null,
+      contentHtml: null,
+      extractStatus: "none",
+      revisedAt: null,
+      revisionCount: 0,
+      ...over,
+    }) as unknown as Parameters<typeof toArticle>[0];
+
+  it("gives `summary` as PLAIN TEXT, because the list renders it as text", () => {
+    /*
+     * `article-list/index.tsx` prints `{article.summary}`, which React escapes
+     * — so the raw `summary_html` a feed sends reached the screen as literal
+     * `<p>` and `<a href="…">` tags in every teaser.
+     *
+     * The FIXTURES store plain prose, which is why only the Postgres path was
+     * wrong and no test saw it. Exactly the shape of the body bug one field
+     * along, and found by the same question: what does the reader see?
+     */
+    const article = toArticle(
+      row({ summaryHtml: '<p>The council <a href="/x">voted</a> last night.</p>' }),
+      null,
+    );
+
+    expect(article.summary).toBe("The council voted last night.");
+    expect(article.summary).not.toContain("<");
+  });
+
+  it("omits the body unless asked, and never returns the raw column", () => {
+    /*
+     * `withBody` is off by default because a 50-row list page would otherwise
+     * sanitise fifty bodies to discard them. The property that matters is not
+     * the saving: it is that the DEFAULT is empty rather than unsanitised, so
+     * the only way to get markup out of this function is to ask, and asking
+     * cleans it.
+     */
+    const hostile = "<p>Real</p><script>alert(1)</script>";
+
+    expect(toArticle(row({ contentHtml: hostile }), null).body).toBe("");
+
+    const asked = toArticle(row({ contentHtml: hostile }), null, undefined, { withBody: true });
+    expect(asked.body).toContain("Real");
+    expect(asked.body).not.toContain("script");
   });
 });

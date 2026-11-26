@@ -1,4 +1,5 @@
-import { sanitizeHtml } from "@/lib/extract/sanitize";
+import { signImageUrl } from "@/lib/extract/image-proxy";
+import { sanitizeHtml, textOf } from "@/lib/extract/sanitize";
 import type { Article, Feed, FetchLogEntry, Folder, Subscription } from "@/lib/types";
 
 /*
@@ -238,6 +239,18 @@ function bodyOf(row: ArticleRow): string {
    */
   return sanitizeHtml(html, {
     baseUrl: html === row.extractedHtml ? (row.extractFinalUrl ?? row.url) : row.url,
+    /*
+     * EVERY IMAGE A READER SEES GOES THROUGH THE PROXY, so a publisher never
+     * receives the reader's IP or `Referer` and an `http` image does not break
+     * mixed content on an `https` page (§6.5).
+     *
+     * Rewritten ON READ rather than stored rewritten, which matters for one
+     * reason: the signature depends on `CADENCE_IMG_SECRET`, and a stored URL
+     * would carry a signature that stops verifying the moment that key is
+     * rotated — every image in every article broken until a backfill. Signing
+     * at render costs one HMAC per image and survives rotation.
+     */
+    rewriteImage: signImageUrl,
   });
 }
 
@@ -287,7 +300,19 @@ export function toArticle(
     // Stored as a character count; the domain speaks in words, which is what
     // the reading-time estimate needs.
     words: row.textLen === null ? 0 : Math.max(1, Math.round(row.textLen / 6)),
-    summary: row.summaryHtml ?? "",
+    /*
+     * PLAIN TEXT, because the list renders this as text.
+     *
+     * `article-list/index.tsx` prints `{article.summary}`, which React
+     * escapes — so the raw `summary_html` a feed sends arrived on screen as
+     * literal `<p>` and `<a href="...">` tags in every teaser. The fixtures
+     * store plain prose, which is why only the Postgres path was wrong and no
+     * test saw it: the same shape as the body bug one field along.
+     *
+     * Text rather than sanitised markup because the teaser is one line in a
+     * dense list, where a link or a heading is not wanted even if it is safe.
+     */
+    summary: textOf(row.summaryHtml ?? ""),
     /*
      * SANITISED HERE, at the data boundary, and this is the only place the
      * column is read.
