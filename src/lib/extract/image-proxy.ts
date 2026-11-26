@@ -27,6 +27,23 @@ import { isBlockedAddress } from "@/lib/net/guard";
  * be configured before deploy" describes every secret that ever shipped unset.
  */
 
+/**
+ * The most we will proxy for one image. Deliberately NOT the feed cap.
+ *
+ * SMALLER, AND FOR DIFFERENT REASONS. `MAX_BODY_BYTES` is 8 MiB because the
+ * sweep runs six concurrent polls against a function's memory. This route is
+ * unauthenticated, has no concurrency bound of its own, and its response has
+ * to fit the serverless reply limit — Vercel's is 4.5 MB, so an 8 MiB image
+ * would be fetched and buffered in full only to fail at the edge.
+ *
+ * Raising the feed cap at M14 silently raised this one too, because the route
+ * simply called `fetchFeed` and inherited whatever it used. Found in review.
+ * 2 MiB is more than any article illustration needs and well inside the reply
+ * limit, so a refusal here is a photograph nobody will miss rather than an
+ * article nobody can read.
+ */
+export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
 /** Query parameter names, short because they appear in every `<img src>`. */
 export const IMAGE_URL_PARAM = "u";
 export const IMAGE_SIG_PARAM = "s";

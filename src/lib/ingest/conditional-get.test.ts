@@ -240,6 +240,66 @@ describe("conditional requests", () => {
     if (result.kind === "failed") expect(result.code).toBe("too_large");
   });
 
+  it("accepts a body that is large but UNDER the cap, compressed or not", async () => {
+    /*
+     * The other side of the cap, and the case M14's audit turned up.
+     *
+     * `danluu.com/atom.xml` is 2.0 MiB on the wire and 6.4 MiB DECOMPRESSED,
+     * because the author publishes full text of everything. Under the old
+     * 2 MiB cap it was permanently unfollowable — a real, popular,
+     * well-behaved feed that simply could not be subscribed to.
+     *
+     * 4 MiB here, so the test says something whether the cap is 8 or larger:
+     * what is pinned is that a multi-megabyte feed is ACCEPTED, not the
+     * constant.
+     */
+    const body = Buffer.concat([
+      Buffer.from('<?xml version="1.0"?><rss version="2.0"><channel><title>Big</title>'),
+      Buffer.from(
+        `<item><title>x</title><description>${"y".repeat(4 * 1024 * 1024)}</description></item>`,
+      ),
+      Buffer.from("</channel></rss>"),
+    ]);
+    expect(body.byteLength).toBeGreaterThan(4 * 1024 * 1024);
+    expect(body.byteLength).toBeLessThan(MAX_BODY_BYTES);
+
+    handler = (_req, res) => {
+      res.writeHead(200, { "content-type": "application/rss+xml" });
+      res.end(body);
+    };
+    const result = await fetchHttpForTest(`${base}/big.xml`, NO_VALIDATORS);
+
+    expect(result.kind, "a multi-megabyte feed was refused").toBe("changed");
+    if (result.kind === "changed") expect(result.bytes).toBe(body.byteLength);
+  }, 30_000);
+
+  it("counts DECOMPRESSED bytes, so a small gzip of a huge body is still refused", async () => {
+    /*
+     * The `Content-Length` pre-check reads the COMPRESSED size and the cap
+     * counts what we HOLD, which are different numbers — `danluu.com` declares
+     * 2.0 MiB and expands to 6.4. A cap enforced on the declared length would
+     * be trivially bypassed by any publisher who gzips, and highly repetitive
+     * XML compresses enormously.
+     */
+    const huge = Buffer.alloc(MAX_BODY_BYTES + 1024 * 1024, "x");
+    const { gzipSync } = await import("node:zlib");
+    const squeezed = gzipSync(huge);
+    expect(squeezed.byteLength, "the compressed body must look harmless").toBeLessThan(1024 * 1024);
+
+    handler = (_req, res) => {
+      res.writeHead(200, {
+        "content-type": "application/rss+xml",
+        "content-encoding": "gzip",
+        "content-length": String(squeezed.byteLength),
+      });
+      res.end(squeezed);
+    };
+    const result = await fetchHttpForTest(`${base}/squeezed.xml`, NO_VALIDATORS);
+
+    expect(result.kind).toBe("failed");
+    if (result.kind === "failed") expect(result.code).toBe("too_large");
+  }, 30_000);
+
   it("honours Retry-After on an error, in seconds and as a date", async () => {
     handler = (_req, res) => {
       res.writeHead(429, { "retry-after": "120" });

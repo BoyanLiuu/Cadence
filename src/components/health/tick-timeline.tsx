@@ -27,6 +27,7 @@ function outcomeOf(work: Tick["work"][number], feedTitleOf: (id: number) => stri
   if (work.code === "timeout") return `${title}, timed out`;
   if (work.code === "html") return `${title}, answered with a web page`;
   if (work.code === "parse") return `${title}, could not be parsed`;
+  if (work.code === "too_large") return `${title}, larger than Cadence will fetch`;
   if (typeof work.code === "number" && work.code >= 400) return `${title}, answered ${work.code}`;
   return work.note ? `${title}, read, ${work.note}` : `${title}, read`;
 }

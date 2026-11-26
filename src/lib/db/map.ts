@@ -100,11 +100,31 @@ export const EMPTY_TODAY: TodayCounters = {
  * transport failure has no HTTP status — a timeout is not a 0. The domain type
  * unions them, so `304` and `"timeout"` are both first-class.
  */
+const KNOWN_ERRORS = ["timeout", "html", "parse", "too_large"] as const;
+
 function codeOf(statusCode: number | null, errorCode: string | null): FetchLogEntry["code"] {
+  /*
+   * THE ERROR CODE WINS OVER THE STATUS, and the reverse order made this
+   * function report failures as successes.
+   *
+   * It read `if (statusCode !== null) return statusCode` first, on the premise
+   * quoted above — that a transport failure has no status. True of a timeout,
+   * and WRONG for every failure where we did get a response and then refused
+   * it: `too_large` carries `status: 200`, and so do `html` (a web page where a
+   * feed should be) and `parse`. All three were reported as plain 200s, so the
+   * health screen rendered a refused poll as a successful empty read.
+   *
+   * It made M14's whole `too_large` change unreachable — a first-class code
+   * with honest copy that no screen could ever receive. Found in review, after
+   * I had written the copy, the type and the test.
+   *
+   * A 304 still reports as 304: it is a success with no error code.
+   */
+  const known = KNOWN_ERRORS.find((code) => code === errorCode);
+  if (known !== undefined) return known;
   if (statusCode !== null) return statusCode;
-  if (errorCode === "timeout" || errorCode === "html" || errorCode === "parse") return errorCode;
-  // An unrecognised error code is reported as a parse failure rather than
-  // guessed at: it is the outcome that says "we could not read it".
+  // An unrecognised error code with no status is reported as a parse failure
+  // rather than guessed at: it is the outcome that says "we could not read it".
   return "parse";
 }
 

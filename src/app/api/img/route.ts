@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
+  MAX_IMAGE_BYTES,
   IMAGE_SIG_PARAM,
   IMAGE_URL_PARAM,
   imageProxyConfigured,
@@ -41,8 +42,10 @@ import { guardUrl } from "@/lib/net/guard";
  *     rather than a proxy. Without it `?u=<any page>` returns that page
  *     through our origin.
  *
- *  4. THE SIZE CAP, inherited from `fetchFeed` at 2 MB. An unbounded proxy is
- *     a memory exhaustion primitive anyone can fire.
+ *  4. THE SIZE CAP — `MAX_IMAGE_BYTES`, its OWN number rather than the feed
+ *     cap it used to inherit. An unbounded proxy is a memory exhaustion
+ *     primitive anyone can fire, and an endpoint with no concurrency bound
+ *     cannot borrow a limit sized for the sweep's six polls.
  *
  * FAILS CLOSED on an unconfigured secret: 503, not pass-through. An unsigned
  * proxy is an open proxy, and there is no `NODE_ENV` escape hatch — the same
@@ -121,7 +124,16 @@ export async function GET(request: Request) {
   const guard = await guardUrl(target);
   if (!guard.ok) return refuse(403);
 
-  const outcome = await fetchFeed(guard.url.href);
+  /*
+   * `MAX_IMAGE_BYTES`, NOT the feed cap, and the explicit argument is the
+   * point: this route used to inherit `MAX_BODY_BYTES` by saying nothing, so
+   * raising the feed cap to 8 MiB at M14 quietly raised the ceiling on an
+   * unauthenticated endpoint. The two numbers answer different questions.
+   *
+   * The guard is passed explicitly as well, because the parameter sits before
+   * this one — the default is the real `guardUrl` either way.
+   */
+  const outcome = await fetchFeed(guard.url.href, undefined, undefined, guardUrl, MAX_IMAGE_BYTES);
   if (outcome.kind !== "changed") return refuse(502);
 
   const contentType = outcome.contentType;

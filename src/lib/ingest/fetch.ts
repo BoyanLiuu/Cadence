@@ -22,7 +22,8 @@ import { guardUrl, type GuardFailure, type GuardResult } from "@/lib/net/guard";
  *                         block.
  *
  * Plus the limits that stop one bad response taking the sweep down: a 10-second
- * timeout and a 2 MB cap, both from §6.4.
+ * timeout and a body cap, both from §6.4. The cap moved to 8 MiB at M14; see
+ * `MAX_BODY_BYTES` for the arithmetic and for what it does NOT bound.
  */
 
 /** Named so it is greppable, and so the contact URL cannot drift silently. */
@@ -45,8 +46,36 @@ export const FETCH_TIMEOUT_MS = 10_000;
  * front of it.
  */
 export const FETCH_TOTAL_MS = 25_000;
-/** §6.4's cap. A feed over this is refused rather than truncated — see below. */
-export const MAX_BODY_BYTES = 2 * 1024 * 1024;
+/**
+ * The most DECOMPRESSED body we will read, and a feed over it is refused rather
+ * than truncated. Raised from 2 MiB to 8 MiB at M14.
+ *
+ * WHY IT MOVED. M14's etiquette audit found `danluu.com/atom.xml` permanently
+ * unfollowable: it is 2.0 MiB over the wire and **6.4 MiB decompressed**,
+ * because the author publishes full text of everything. That is a real,
+ * popular, well-behaved feed, and the old cap made it impossible to subscribe
+ * to — not failing with an explanation, just failing.
+ *
+ * WHY 8 AND NOT MORE. The cap bounds what one poll HOLDS IN MEMORY, and the
+ * sweep runs `HTTP_CONCURRENCY` of them at once:
+ *
+ *   6 concurrent × 8 MiB   = 48 MiB of body buffers
+ *   ×2 transiently          = 96 MiB, while `readCapped` copies its chunk list
+ *                             into one contiguous array
+ *
+ * against a Vercel function's 1 024 MiB. That leaves room, and the honest
+ * caveat is that the cap does NOT bound the expensive part: `parse` turns that
+ * XML into JS objects at roughly 3–5× the source, so six 8 MiB feeds parsing
+ * together is nearer 200 MiB than 48. Raising this further is a decision about
+ * the parser's peak, not about the buffer.
+ *
+ * A CAP MUST EXIST whatever its value — an unbounded read is a memory
+ * exhaustion primitive any publisher can fire — so there will always be feeds
+ * beyond it. `too_large` is a first-class `fetch_log` code for exactly that
+ * reason: the reader is told the feed is bigger than Cadence will fetch,
+ * rather than that it could not be read.
+ */
+export const MAX_BODY_BYTES = 8 * 1024 * 1024;
 /** Redirect hops followed. Each one is re-validated by the guard. */
 export const MAX_REDIRECTS = 5;
 
@@ -127,11 +156,33 @@ const sha256 = (bytes: Uint8Array): Uint8Array =>
  * truncated body hashes differently every time the cut lands mid-chunk, so the
  * soft 304 would report change on every poll forever.
  */
-async function readCapped(response: Response): Promise<Uint8Array | "too_large"> {
+async function readCapped(
+  response: Response,
+  /**
+   * The cap for THIS call, so a caller with a different budget can say so.
+   *
+   * Added at M14, when raising the feed cap to 8 MiB silently raised the IMAGE
+   * PROXY's too — a route that is unauthenticated, has no concurrency bound of
+   * its own, and whose response has to fit a serverless function's own reply
+   * limit. The feed cap is a decision about the sweep's six concurrent polls;
+   * the image cap is a decision about an open endpoint. They are not the same
+   * number and should not have been one.
+   */
+  maxBytes: number = MAX_BODY_BYTES,
+): Promise<Uint8Array | "too_large"> {
+  /*
+   * A CHEAP PRE-CHECK, AND IT COMPARES DIFFERENT UNITS. `Content-Length` is
+   * the bytes ON THE WIRE — compressed, for every feed that offers gzip —
+   * while the cap below counts DECOMPRESSED bytes, because that is what we
+   * hold. So this rejects early when a server is honest about a huge body, and
+   * it cannot be relied on: `danluu.com` declares 2.0 MiB and expands to 6.4.
+   * The streaming count is the real bound; this only saves reading a body we
+   * already know is too big.
+   */
   const declared = response.headers.get("content-length");
   if (declared !== null) {
     const length = Number(declared);
-    if (Number.isFinite(length) && length > MAX_BODY_BYTES) return "too_large";
+    if (Number.isFinite(length) && length > maxBytes) return "too_large";
   }
 
   if (response.body === null) return new Uint8Array(0);
@@ -143,7 +194,7 @@ async function readCapped(response: Response): Promise<Uint8Array | "too_large">
     const { done, value } = await reader.read();
     if (done) break;
     total += value.byteLength;
-    if (total > MAX_BODY_BYTES) {
+    if (total > maxBytes) {
       await reader.cancel();
       return "too_large";
     }
@@ -186,6 +237,8 @@ export async function fetchFeed(
    * There is no ambient way to turn this off.
    */
   validate: (url: string) => Promise<GuardResult> = guardUrl,
+  /** Overrides `MAX_BODY_BYTES` for this call; see `readCapped`. */
+  maxBytes: number = MAX_BODY_BYTES,
 ): Promise<FetchOutcome> {
   const started = Date.now();
   const elapsed = () => Date.now() - started;
@@ -354,7 +407,7 @@ export async function fetchFeed(
         kind: "failed",
         status: response.status,
         code: "too_large",
-        detail: `over ${MAX_BODY_BYTES} bytes`,
+        detail: `over ${maxBytes} bytes`,
         durationMs: elapsed(),
         retryAfterS: null,
       };

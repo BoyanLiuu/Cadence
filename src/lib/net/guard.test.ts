@@ -41,6 +41,53 @@ describe("addresses that must never be fetched", () => {
     expect(isBlockedAddress("100.64.0.1")).toBe(true);
   });
 
+  it("blocks the two reserved /24s in 192.0.0.0/16 and NOT the rest of it", () => {
+    /*
+     * FOUND BY M14'S ETIQUETTE AUDIT, against a real publisher, which is the
+     * only way this could have surfaced.
+     *
+     * The rule was `a === 192 && b === 0` — the whole `/16`, 65 536 addresses,
+     * where RFC 6890 reserves exactly two `/24`s. The comment beside it
+     * already said "192.0.0/24 and 192.0.2/24", so the code and its own
+     * documentation disagreed by a factor of 128.
+     *
+     * The cost was silent: legitimate public feeds refused as
+     * `private_address`, a message no reader could act on. `github.blog`
+     * resolves to `192.0.66.2` — Automattic's range — and was unfetchable.
+     *
+     * Every other address in this file is one somebody thought to write down,
+     * which is exactly why none of them covered this. The audit went and asked
+     * the internet instead.
+     */
+    // Still blocked: the two genuinely reserved ranges.
+    expect(isBlockedAddress("192.0.0.1")).toBe(true);
+    expect(isBlockedAddress("192.0.0.171")).toBe(true);
+    expect(isBlockedAddress("192.0.2.1")).toBe(true);
+    expect(isBlockedAddress("192.0.2.255")).toBe(true);
+    // And 6to4 relay anycast, which lives elsewhere in 192.
+    expect(isBlockedAddress("192.88.99.1")).toBe(true);
+
+    /*
+     * THE SAME BUG LIVED TWO LINES BELOW, in `198.51/16` and `203.0/16`, and
+     * the first fix missed both — the audit hit `192.0.66.2` and nothing
+     * pointed at the neighbours. RFC 5737 reserves one `/24` from each.
+     */
+    expect(isBlockedAddress("198.51.100.1")).toBe(true);
+    expect(isBlockedAddress("203.0.113.1")).toBe(true);
+    expect(isBlockedAddress("198.51.99.1"), "live public space").toBe(false);
+    expect(isBlockedAddress("203.0.100.5"), "live public space").toBe(false);
+    // RFC 2544 benchmarking genuinely IS a /15, so this one stays wide.
+    expect(isBlockedAddress("198.18.0.1")).toBe(true);
+    expect(isBlockedAddress("198.19.255.254")).toBe(true);
+
+    // NOT blocked: ordinary public space that happens to share two octets.
+    expect(isBlockedAddress("192.0.66.2"), "github.blog is a real public feed").toBe(false);
+    expect(isBlockedAddress("192.0.1.1")).toBe(false);
+    expect(isBlockedAddress("192.0.78.9")).toBe(false);
+    // The private range next door is untouched by the narrowing.
+    expect(isBlockedAddress("192.168.1.1")).toBe(true);
+  });
+
   it("blocks 0.0.0.0, which many stacks treat as 'this host'", () => {
     expect(isBlockedAddress("0.0.0.0")).toBe(true);
     expect(isBlockedAddress("0.1.2.3")).toBe(true);

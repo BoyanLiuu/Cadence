@@ -49,7 +49,7 @@ function isBlockedIPv4(ip: string): boolean {
     // address we cannot read is not.
     return true;
   }
-  const [a, b] = parts as [number, number, number, number];
+  const [a, b, c] = parts as [number, number, number, number];
 
   if (a === 0) return true; // 0.0.0.0/8 — "this host"
   if (a === 10) return true; // 10.0.0.0/8 — private
@@ -58,10 +58,46 @@ function isBlockedIPv4(ip: string): boolean {
   if (a === 169 && b === 254) return true; // 169.254/16 — LINK-LOCAL, incl. metadata
   if (a === 172 && b >= 16 && b <= 31) return true; // 172.16/12 — private
   if (a === 192 && b === 168) return true; // 192.168/16 — private
-  if (a === 192 && b === 0) return true; // 192.0.0/24 and 192.0.2/24 — special
+  /*
+   * TWO /24s, NOT THE WHOLE /16 — and this line used to be `b === 0` alone.
+   *
+   * RFC 6890 reserves exactly `192.0.0.0/24` (IETF protocol assignments) and
+   * `192.0.2.0/24` (TEST-NET-1). The comment said so; the code blocked all
+   * 65 536 addresses of `192.0.0.0/16`, which is 128 times too many.
+   *
+   * It silently made legitimate public feeds unfetchable. Found by M14's
+   * etiquette audit against real publishers: `github.blog` resolves to
+   * `192.0.66.2` — Automattic's range — and came back `private_address`, which
+   * is a refusal no reader could have explained and no unit test would have
+   * produced, because every address in `guard.test.ts` is one somebody chose
+   * to write down.
+   *
+   * NARROWING A BLOCK LIST IS LOOSENING A GUARD, so it is worth being exact:
+   * the sub-ranges inside `192.0.0.0/24` (the /29 for DS-Lite, and so on) are
+   * all contained in it, and `192.88.99.0/24` (deprecated 6to4 relay anycast)
+   * is handled separately below. Nothing else in `192.0.0.0/16` is special.
+   */
+  if (a === 192 && b === 0 && (c === 0 || c === 2)) return true; // RFC 6890
+  if (a === 192 && b === 88 && c === 99) return true; // 192.88.99/24 — 6to4 relay anycast
   if (a === 198 && (b === 18 || b === 19)) return true; // 198.18/15 — benchmarking
-  if (a === 198 && b === 51) return true; // 198.51.100/24 — documentation
-  if (a === 203 && b === 0) return true; // 203.0.113/24 — documentation
+  /*
+   * THE SAME MISTAKE AS THE `192.0` LINE ABOVE, and I fixed only that one
+   * because it was the one the etiquette audit happened to hit. Review found
+   * these two lines unchanged, each with a comment naming a `/24` and code
+   * blocking a `/16`: 65 536 addresses apiece instead of 256.
+   *
+   * RFC 5737 reserves `198.51.100.0/24` and `203.0.113.0/24` for
+   * documentation. The rest of `198.51.0.0/16` and `203.0.0.0/16` is live,
+   * allocated, public space — a feed at `203.0.100.5` was refused
+   * `private_address` exactly as `github.blog` was.
+   *
+   * Worth recording that one measurement found one instance and reading the
+   * neighbouring lines found the rest. The audit proved the CLASS of bug
+   * existed; it could only ever have caught the instances its 20 feeds landed
+   * on.
+   */
+  if (a === 198 && b === 51 && c === 100) return true; // 198.51.100/24 — RFC 5737
+  if (a === 203 && b === 0 && c === 113) return true; // 203.0.113/24 — RFC 5737
   if (a >= 224) return true; // 224/4 multicast, 240/4 reserved, 255.255.255.255
   return false;
 }

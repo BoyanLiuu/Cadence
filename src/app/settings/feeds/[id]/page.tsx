@@ -32,6 +32,10 @@ function outcome(entry: FetchLogEntry): string {
   if (entry.code === "timeout") return "Timed out";
   if (entry.code === "html") return "Answered with a web page";
   if (entry.code === "parse") return "Could not be parsed";
+  // OUR limit, not the publisher's fault — so it does not read as a failure on
+  // their side. Without this case the fallthrough below said "Read, nothing in
+  // it", which is the opposite of what happened.
+  if (entry.code === "too_large") return "Larger than Cadence will fetch";
   if (typeof entry.code === "number" && entry.code >= 400) return `Answered ${entry.code}`;
 
   const merged = entry.mergedByGuid + entry.mergedByUrl + entry.mergedByContent;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { articles, feeds, D } from "@/lib/fixtures";
 
-import { iso, isoRequired, num, toArticle } from "./map";
+import { iso, isoRequired, num, toArticle, toFetchLogEntry } from "./map";
 
 /*
  * What this suite is for: the two implementations disagreeing over a format
@@ -125,5 +125,59 @@ describe("mapping a row to what a component renders", () => {
     const asked = toArticle(row({ contentHtml: hostile }), null, undefined, { withBody: true });
     expect(asked.body).toContain("Real");
     expect(asked.body).not.toContain("script");
+  });
+});
+
+describe("one fetch_log row's code, as a screen sees it", () => {
+  /** A log row reduced to the two columns `codeOf` reads. */
+  const entry = (statusCode: number | null, errorCode: string | null) =>
+    toFetchLogEntry({
+      at: new Date("2026-11-25T09:00:00.000Z"),
+      statusCode,
+      errorCode,
+      durationMs: 10,
+      itemsSeen: 0,
+      itemsNew: 0,
+      mergedByGuid: 0,
+      mergedByUrl: 0,
+      mergedByContent: 0,
+      revised: 0,
+      guidAgreed: 0,
+      guidChurned: 0,
+    } as unknown as Parameters<typeof toFetchLogEntry>[0]).code;
+
+  it("reports a REFUSED poll by its error, not by the 200 that carried it", () => {
+    /*
+     * THE BUG THAT MADE M14'S `too_large` WORK UNREACHABLE.
+     *
+     * `codeOf` returned the HTTP status whenever one existed, on the premise
+     * that "a transport failure has no HTTP status — a timeout is not a 0".
+     * True of a timeout. Wrong for every failure where we DID get a response
+     * and then refused it: `too_large` carries `status: 200`, and so do `html`
+     * (a web page where a feed should be) and `parse`.
+     *
+     * So all three rendered as plain 200s and every screen showed a refused
+     * poll as a successful empty read. I added the code to the union, wrote
+     * the copy for three screens and a test for the cap — and none of it could
+     * ever be reached. Found in review.
+     */
+    expect(entry(200, "too_large")).toBe("too_large");
+    expect(entry(200, "html")).toBe("html");
+    expect(entry(200, "parse")).toBe("parse");
+  });
+
+  it("still reports a status when there is no error", () => {
+    // The case the old order got right, which is why it survived: a 304 is a
+    // success with no error code and must stay a 304.
+    expect(entry(304, null)).toBe(304);
+    expect(entry(200, null)).toBe(200);
+    expect(entry(404, null)).toBe(404);
+  });
+
+  it("reports a transport failure that has no status at all", () => {
+    expect(entry(null, "timeout")).toBe("timeout");
+    // An unrecognised code with no status says "we could not read it" rather
+    // than inventing a meaning.
+    expect(entry(null, "something_new")).toBe("parse");
   });
 });

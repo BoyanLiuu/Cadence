@@ -1,7 +1,7 @@
 import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
-import type { Folder, SubscriptionWithUnread } from "@/lib/types";
+import type { FetchLogEntry, Folder, SubscriptionWithUnread } from "@/lib/types";
 
 /*
  * The feed-health table: the evidence screen.
@@ -53,6 +53,21 @@ function everyPhrase(seconds: number): string {
 type State = { label: string; warn: boolean; detail: string };
 
 /**
+ * What a failing feed's error says, in the reader's words.
+ *
+ * `too_large` is OUR limit rather than the publisher's fault, so the copy says
+ * so. It used to reach here as `parse` and render "Failing", which sends
+ * somebody looking for a problem at the far end of a feed that is working
+ * perfectly and is simply bigger than Cadence will fetch (§6.3).
+ */
+function detailFor(code: FetchLogEntry["code"] | undefined): string {
+  if (code === "timeout") return "Timed out";
+  if (code === "too_large") return "Too large to fetch";
+  if (code === "html") return "A web page";
+  return "Failing";
+}
+
+/**
  * The five states a feed can be in, and the one-line reason for each.
  *
  * `new` is not a `feeds.status` value — it is `cleanPolls` still under 3,
@@ -65,19 +80,27 @@ function stateOf(sub: SubscriptionWithUnread): State {
     case "not_a_feed":
       return { label: "Not a feed", warn: true, detail: "A web page" };
     case "dead":
+      /*
+       * `detailFor` HERE TOO, which the first version of this change missed.
+       *
+       * An over-cap feed fails EVERY poll, so it reaches 20 consecutive
+       * failures and is marked `dead` — at which point this branch took over
+       * and said "Stopped — No answer". That is the exact message the change
+       * set out to remove, arriving by a different route a few days later.
+       */
       return {
         label: "Stopped",
         warn: true,
         detail:
           typeof feed.lastError?.code === "number"
             ? `${feed.lastError.code} not found`
-            : "No answer",
+            : detailFor(feed.lastError?.code),
       };
     case "backoff":
       return {
         label: "Retrying",
         warn: true,
-        detail: feed.lastError?.code === "timeout" ? "Timed out" : "Failing",
+        detail: detailFor(feed.lastError?.code),
       };
     default:
       /*

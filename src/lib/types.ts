@@ -37,15 +37,25 @@ export type MergeRung = "guid" | "url" | "content";
 
 export type FeedError = {
   at: string;
-  /** An HTTP status, or a transport outcome a status code cannot express. */
-  code: number | "timeout" | "html" | "parse";
+  /**
+   * An HTTP status, or a transport outcome a status code cannot express.
+   *
+   * `too_large` is DISTINCT FROM `parse`, which it used to collapse into.
+   *
+   * "We could not read it" and "it is bigger than we will fetch" are different
+   * facts with different remedies — the second is our limit, not the
+   * publisher's fault, and a reader told the wrong one goes looking for a
+   * problem at the far end. M14's audit found a real feed in this state.
+   */
+  code: number | "timeout" | "html" | "parse" | "too_large";
   text: string;
 };
 
 /** One poll attempt. The only evidence that dedup works (§6.2, Appendix D). */
 export type FetchLogEntry = {
   at: string;
-  code: number | "timeout" | "html" | "parse";
+  /** See `FeedError.code`; the same union, from the same column. */
+  code: number | "timeout" | "html" | "parse" | "too_large";
   ms: number;
   itemsSeen: number;
   itemsNew: number;

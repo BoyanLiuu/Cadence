@@ -21,7 +21,9 @@
     "db:status": "prisma migrate status",
     "db:new-migration": "prisma migrate dev --create-only",
     "db:reset-cadence-schema": "tsx prisma/reset-schema.ts",
-    "test:db": "CADENCE_DB_WRITE_TESTS=1 vitest run"
+    "test:db": "CADENCE_DB_WRITE_TESTS=1 vitest run",
+    "audit:etiquette": "tsx scripts/etiquette-audit.ts",
+    "gate": "CADENCE_GATE=1 CADENCE_DB_WRITE_TESTS=1 vitest run src/lib/db/gate-preconditions.test.ts src/lib/ingest/parse-twice.test.ts src/lib/extract/sanitize.test.ts src/lib/extract/corpus-round-trip.test.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.10.7",

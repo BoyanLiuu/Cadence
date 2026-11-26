@@ -108,11 +108,18 @@ describe("the service layer keeps Appendix C's contract", () => {
 /**
  * Writes that no longer throw, with the milestone that landed each.
  *
- * THIS SET IS THE SHRINKING HALF OF THE PROJECT. The suite below asserts the
- * rest still answer with their receipt, which is what keeps the prototype's
- * "nothing was sent" screens honest — and this list is how a write stops being
- * covered by that assertion. Adding a name here is a deliberate step, so a
- * mutation cannot quietly start persisting.
+ * THE LIST REACHED EVERY MUTATION AT M13, so it is now history rather than a
+ * mechanism. It was the shrinking half of the project: the suite asserted that
+ * everything NOT named here still answered with its "nothing was sent"
+ * receipt, and adding a name was the deliberate step that let a write start
+ * persisting. With nothing left unimplemented there is no complement to
+ * assert, and the `Set` that held these names is gone — the inverted
+ * assertion above ("nothing throws the receipt") covers it, and covers it
+ * better, because it cannot pass by having no cases.
+ *
+ * KEPT, ALL OF IT, for the warning at the bottom. That warning is why this
+ * file does not call mutations to find out what they throw, and it is the
+ * reason the replacement reads source instead.
  *
  *   discoverFeeds        M5 — Appendix C: "M5 pure, M12 networked"
  *   setReadState         M11 — the first durable write, PATCH /api/read-state
@@ -137,23 +144,16 @@ describe("the service layer keeps Appendix C's contract", () => {
  *   feed 1 — so the call deletes a real subscription, correctly, having been
  *   asked to. There is no shape of input check that makes "delete feed 1" safe.
  *
- * So the protection is this list, and it has to be updated in the same commit
- * that implements a mutation. The argument checks added alongside are worth
- * having for real callers; they are not a substitute for this.
+ * THAT HARNESS NO LONGER EXISTS, and the warning outlived it on purpose.
+ * Once every mutation is implemented there is no safe version of "call it and
+ * see what it throws" — nothing is left that throws before acting — so the
+ * check became a source read. I wrote the dynamic version first anyway, having
+ * read this paragraph while editing this file, because "just to see what it
+ * throws" did not feel like calling it. A rule in a comment is not a check,
+ * which this project has now found twice.
  */
 /** Resolved once; these calls must not depend on a database being present. */
 const VIEWER_PLACEHOLDER = await getViewer();
-
-const IMPLEMENTED = new Set([
-  "discoverFeeds",
-  "setReadState",
-  "markScopeRead",
-  "subscribe",
-  "updateSubscription",
-  "unsubscribe",
-  "saveArticle",
-  "extractArticle",
-]);
 
 describe("every declared mutation is implemented", () => {
   it("leaves NOTHING throwing the phase receipt", async () => {
@@ -203,10 +203,11 @@ describe("every declared mutation is implemented", () => {
 
   it("setReadState no longer answers with the phase receipt, now that M11 landed", async () => {
     /*
-     * The other half of adding a name to `IMPLEMENTED`: the exemption has to be
-     * earned. Without this, listing a mutation there exempts it from the receipt
-     * assertion and proves nothing in its place — the reader's screen would
-     * still say "nothing was sent" with no test to contradict it.
+     * The earned half. While `IMPLEMENTED` existed, naming a mutation there
+     * exempted it from the receipt assertion and proved nothing in its place —
+     * so each exemption needed a case like this one. That set is gone (M13,
+     * see above), and these cases stay: they assert the write is reachable,
+     * which no source read can.
      *
      * BRANCHES ON THE DATA SOURCE, because 561 of this project's tests predate
      * the schema and must keep passing on a clone with no Supabase project
@@ -236,9 +237,11 @@ describe("every declared mutation is implemented", () => {
     ["extractArticle", () => mutations.extractArticle(VIEWER_PLACEHOLDER, 1.5)],
   ])("%s no longer answers with the phase receipt, now that M11 landed", async (_name, call) => {
     /*
-     * THE EARNED EXEMPTION for the three subscription writes. Adding a name to
-     * `IMPLEMENTED` removes it from the receipt assertion above and proves
-     * nothing in its place, so each one is checked here.
+     * THE EARNED EXEMPTION for the subscription writes, from when
+     * `IMPLEMENTED` existed: a name added there left the receipt assertion
+     * with nothing to say about it, so each needed its own case. The set is
+     * gone; these remain, because "the stub is gone" is a claim about
+     * behaviour and the source guard above cannot make it.
      *
      * CALLED WITH INPUT THAT CANNOT SUCCEED — an unparseable address, a
      * fractional feed id — precisely because these DO write now. `unsubscribe`
