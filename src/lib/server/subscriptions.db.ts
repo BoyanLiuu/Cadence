@@ -321,3 +321,116 @@ export async function removeSubscription(userId: string, feedId: number): Promis
   });
   if (count === 0) throw new NotSubscribed(feedId);
 }
+
+/**
+ * The shortest gap between two MANUAL checks of one feed.
+ *
+ * The button is a person's hand on the fetch path, so it needs a floor the
+ * scheduler's own politeness does not provide: `releaseFeed` pushes
+ * `next_fetch_at` hours out after every poll, which stops the CRON from being
+ * impolite but does nothing about a reader pressing a button sixty times. One
+ * minute is low enough that a real retry never feels blocked and high enough
+ * that a held-down button cannot become a load generator pointed at a
+ * publisher who sees our `User-Agent` (§6.4's etiquette, Appendix G).
+ */
+export const MANUAL_FETCH_FLOOR_S = 60;
+
+/** What asking for a check right now did to the feed row. */
+export type MadeDue =
+  | { kind: "due" }
+  /** Checked too recently; nothing was changed. `waitS` is what is left. */
+  | { kind: "too-soon"; waitS: number };
+
+/**
+ * Makes one feed due right now, so the next sweep claims it.
+ *
+ * THE ONLY WRITE IN THIS FILE THAT TOUCHES THE SHARED `feeds` ROW, and that is
+ * a deliberate exception rather than an oversight — `updateSubscription`
+ * refuses to forward `guidTrustOverride` for exactly the reason this has to
+ * justify itself. What makes it safe is the DIRECTION: the only effect on
+ * another subscriber is that their feed is read sooner, which is the thing all
+ * of them subscribed for. Nothing here is a preference, so there is no setting
+ * for one reader to impose on another.
+ *
+ * ---------------------------------------------------------------------------
+ * REVIVING A STOPPED FEED
+ * ---------------------------------------------------------------------------
+ * `dead` and `not_a_feed` are TERMINAL by design: the claim predicate is
+ * `status IN ('active','backoff')`, so nothing in the scheduler ever brings
+ * one back (§6.4, and `releaseFeed`'s own comment warns against widening the
+ * claim to do it). But a stopped feed is the case this button is MOST wanted
+ * for — the publisher moved their feed, fixed their XML, or came back from an
+ * outage — and without this clause the button would do nothing at all on
+ * precisely the rows the health table sorts to the top.
+ *
+ * So the revival is here, where a READER ASKED, and not in the claim. That is
+ * the distinction `releaseFeed` is protecting: automatic promotion with nobody
+ * asking is the bug; a person pressing "Fetch now" on a feed they follow is
+ * consent.
+ *
+ * `consecutive_failures` IS LEFT ALONE, which is what keeps this to a single
+ * retry. A dead feed is at 20 or more, and `statusAfterFailure` returns `dead`
+ * on the first failure at that count — so a revived feed that fails again is
+ * stopped again immediately, and one that succeeds has its counter cleared by
+ * `recordChanged`. Zeroing it here would hand a reader twenty fresh attempts
+ * at a feed that has already proved it is gone.
+ */
+export async function makeFeedDue(userId: string, feedId: number): Promise<MadeDue> {
+  /*
+   * OWNERSHIP FIRST, as its own question. The `UPDATE` below could carry an
+   * `EXISTS` on the subscription and be one statement, but then a zero-row
+   * result would mean "not yours" OR "too soon" and the reader would be told
+   * the wrong one. The gate is still a gate: this throws before anything is
+   * written, and the window between the two statements can only cost one
+   * polite fetch of a feed the reader followed a moment ago.
+   */
+  const sub = await prisma.subscription.findFirst({
+    where: { userId, feedId: BigInt(feedId) },
+    select: { feed: { select: { lastSuccessAt: true, lastErrorAt: true } } },
+  });
+  if (sub === null) throw new NotSubscribed(feedId);
+
+  /*
+   * THE FLOOR IS IN THE `WHERE`, not in the JavaScript above.
+   *
+   * Two readers of one feed pressing the button in the same second both read
+   * the same "last checked" above; only the `UPDATE` can decide between them,
+   * and it does — the second one matches zero rows because the first moved the
+   * timestamp. Deciding in JS would make the floor advisory.
+   *
+   * `GREATEST(last_success_at, last_error_at)` and not `last_success_at`
+   * alone: a feed that has been failing for a week has a stale success and a
+   * fresh error, and the floor must count the FETCH, not the outcome.
+   * Otherwise the one case where a reader is most likely to press repeatedly —
+   * a feed that is failing — is the one case with no floor at all.
+   */
+  const rows = await prisma.$executeRaw`
+    UPDATE cadence.feeds SET
+      next_fetch_at = now(),
+      status = CASE WHEN status IN ('dead','not_a_feed') THEN 'active'::cadence.feed_status
+                    ELSE status END,
+      -- Cleared with the revival, so the health table stops reporting a
+      -- verdict the row no longer carries while the retry is in flight.
+      dead_at = CASE WHEN status IN ('dead','not_a_feed') THEN NULL ELSE dead_at END,
+      not_feed_at = CASE WHEN status IN ('dead','not_a_feed') THEN NULL ELSE not_feed_at END
+    WHERE id = ${BigInt(feedId)}
+      AND GREATEST(COALESCE(last_success_at, 'epoch'::timestamp),
+                   COALESCE(last_error_at, 'epoch'::timestamp))
+          < now() - make_interval(secs => ${MANUAL_FETCH_FLOOR_S})
+  `;
+
+  if (rows > 0) return { kind: "due" };
+
+  /*
+   * The seconds left, for the message only — the refusal itself was the
+   * database's. Computed from the row read above, so a clock skew between this
+   * host and the database can make it a second or two out; it is a sentence to
+   * a person, not a gate.
+   */
+  const lastAt = Math.max(
+    sub.feed.lastSuccessAt?.getTime() ?? 0,
+    sub.feed.lastErrorAt?.getTime() ?? 0,
+  );
+  const elapsedS = Math.floor((Date.now() - lastAt) / 1000);
+  return { kind: "too-soon", waitS: Math.max(1, MANUAL_FETCH_FLOOR_S - elapsedS) };
+}

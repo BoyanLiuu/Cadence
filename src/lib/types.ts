@@ -319,6 +319,19 @@ export type DiscoveryResult =
   | { kind: "invalid"; reason: string };
 
 /** The result of one on-open extraction (§6.5). */
+/** What one check, asked for by hand, turned out to be. */
+export type FetchNowResult =
+  /** It answered with something new. */
+  | { kind: "changed"; itemsNew: number }
+  /** 304, or the same bytes as last time. Nothing was written. */
+  | { kind: "unchanged" }
+  /** It did not answer, or did not answer with a feed. The row says why. */
+  | { kind: "failed" }
+  /** A check of this feed was already running, so this one did nothing. */
+  | { kind: "busy" }
+  /** Checked within the last minute; nothing was done. */
+  | { kind: "too-soon"; waitS: number };
+
 export type Extraction = {
   articleId: number;
   status: ExtractStatus;
@@ -365,6 +378,7 @@ export const CAPABILITIES = [
   "save",
   "extract",
   "discover",
+  "fetch-now",
 ] as const satisfies readonly string[];
 
 export type Capability = (typeof CAPABILITIES)[number];

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signOut } from "@/app/sign-out.action";
 import { READER_PATH } from "@/lib/routes";
 
+import { AddFeedDialog } from "@/components/add-feed/dialog";
 import { Button } from "@/components/ui/button";
 
 /*
@@ -62,11 +63,20 @@ export function AppBar({
         </nav>
 
         <div className="gap-md ml-auto flex items-center">
-          <Button asChild size="sm">
-            {/* `/add` — this pointed at `/feeds/new`, which does not exist,
-                so the only entry point to the add-feed screen was a 404. */}
-            <Link href="/add">Add feed</Link>
-          </Button>
+          {/*
+           * A DIALOG, NOT A LINK TO `/add`.
+           *
+           * Adding a feed is an interruption of reading rather than a
+           * destination: you are in the reader, you want one more feed, and
+           * you want to be back where you were. The page took the whole
+           * window and returned you somewhere else.
+           *
+           * `/add` is still a real route — it survives a reload, it can be
+           * shared, and it works with no client JavaScript, which this cannot.
+           * (It also used to point at `/feeds/new`, which does not exist, so
+           * the only entry point to the screen was a 404.)
+           */}
+          <AddFeedDialog />
           <span className="gap-xs text-ink-2 inline-flex items-center text-sm font-medium whitespace-nowrap">
             <span
               aria-hidden="true"

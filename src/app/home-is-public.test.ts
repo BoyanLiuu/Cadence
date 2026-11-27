@@ -130,10 +130,30 @@ const rel = (path: string) => path.replace(`${SRC}/`, "");
 describe("the home page reads nothing", () => {
   const { files, packages } = importClosure(ENTRY);
 
-  it("walks the page's imports, so the rule cannot pass by reading nothing", () => {
-    // `page.tsx` reaches `home-scene.tsx`; if the walk ever stops finding even
-    // that, every assertion below is vacuous.
-    expect([...files.keys()].map(rel)).toContain("app/home-scene.tsx");
+  it("walks imports at all, so the rule cannot pass by reading nothing", () => {
+    /*
+     * THE ANTI-VACUITY CHECK, and it no longer names a file that can be
+     * deleted.
+     *
+     * It asserted the closure contained `app/home-scene.tsx` — the drawing the
+     * home page used to lead with. M15 replaced that with screenshots of the
+     * real product and deleted the component, so the home page now imports
+     * nothing local at all: its closure is one file, correctly, and this
+     * assertion failed on a change that made the page SAFER.
+     *
+     * The same hazard the contract suite hit by naming an example from a
+     * shrinking list. So the walker is proved against a page that definitely
+     * does have local imports, and the home page's empty closure is then a
+     * real result rather than a broken walk.
+     */
+    const reader = importClosure(join(SRC, "app/(reader)/reader/page.tsx"));
+    const reached = [...reader.files.keys()].map(rel);
+
+    expect(reached.length, "the walker followed no local import at all").toBeGreaterThan(3);
+    expect(reached.some((f) => f.startsWith("lib/"))).toBe(true);
+
+    // And the home page's own closure was read, even though it is just itself.
+    expect([...files.keys()].map(rel)).toContain("app/page.tsx");
   });
 
   it("reaches no data access, however indirectly", () => {

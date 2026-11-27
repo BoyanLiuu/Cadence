@@ -1,6 +1,8 @@
 import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
+import { FetchNow } from "@/components/health/fetch-now";
+import { effectiveIntervalSeconds } from "@/lib/schedule/interval";
 import type { FetchLogEntry, Folder, SubscriptionWithUnread } from "@/lib/types";
 
 /*
@@ -249,7 +251,7 @@ export function HealthTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[60rem] border-collapse text-sm">
+      <table className="w-full min-w-[70rem] border-collapse text-sm">
         <thead>
           <tr className="border-ink text-ink border-b text-left">
             {[
@@ -262,12 +264,18 @@ export function HealthTable({
               "Collapsed",
               "Checked every",
               "Next check",
+              "",
             ].map((head, i) => (
               <th
-                key={head}
+                key={head || "actions"}
                 scope="col"
                 className={`py-xs pr-md font-medium ${i >= 3 && i <= 5 ? "text-right" : ""}`}
               >
+                {/* The actions column has no heading to give: "Fetch now" is on
+                    the button in every row, and a header reading "Actions"
+                    would be a word that describes the table rather than the
+                    column. Announced to a screen reader as an empty column
+                    header, which is what it is. */}
                 {head}
               </th>
             ))}
@@ -335,10 +343,21 @@ export function HealthTable({
                   </span>
                 </td>
                 <td className="py-sm pr-md text-ink-2 num">
-                  {stopped ? "Not checked" : everyPhrase(feed.intervalS)}
+                  {stopped ? "Not checked" : everyPhrase(effectiveIntervalSeconds(feed.intervalS))}
                 </td>
-                <td className="py-sm text-ink-2 num">
+                <td className="py-sm pr-md text-ink-2 num">
                   {feed.nextFetchAt === null ? "None" : DAY_HHMM(feed.nextFetchAt)}
+                </td>
+                {/*
+                 * ON EVERY ROW, STOPPED ONES INCLUDED — they are the rows this
+                 * is most wanted on. `makeFeedDue` revives a `dead` or
+                 * `not_a_feed` feed so the claim can see it, which is the only
+                 * way back from a verdict §6.4 makes terminal; hiding the
+                 * button there would leave a reader whose publisher has fixed
+                 * their feed with nothing to press.
+                 */}
+                <td className="py-sm">
+                  <FetchNow feedId={sub.feedId} feedTitle={sub.customTitle ?? feed.title} />
                 </td>
               </tr>
             );

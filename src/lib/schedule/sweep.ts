@@ -328,7 +328,12 @@ export async function runSweep(
     now?: Date;
     /** Overrides `SETTLE_MS`. Tests use it to reach the tail in milliseconds. */
     settleMs?: number;
-    /** Tests only — see `claimDueFeeds`. Production passes nothing. */
+    /**
+     * Sweeps only these feeds. Undefined sweeps everything due.
+     *
+     * The suites and "Fetch now" — see `claimDueFeeds`, which documents why
+     * narrowing the claim is not the same as exempting a feed from it.
+     */
     onlyFeedIds?: bigint[];
   } = {},
 ): Promise<SweepOutcome> {

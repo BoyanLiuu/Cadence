@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { ArticleList, decodeCursor } from "@/components/article-list";
+import { ArticleListSkeleton } from "@/components/article-list/skeleton";
 import { AppBar } from "@/components/app-bar";
 import { ReaderPane } from "@/components/reader-pane";
 
@@ -17,7 +19,7 @@ import {
 import { requireViewer } from "@/lib/server/viewer";
 import { displayFeedId } from "@/lib/article-feed";
 import type { Article, Scope } from "@/lib/types";
-import { strictId } from "@/lib/view-params";
+import { strictId, type ReaderParams } from "@/lib/view-params";
 
 /*
  * The three-pane shell, shared by `/reader` and `/feed/[id]`.
@@ -77,16 +79,68 @@ export async function ReaderView({
   // An unknown folder is also a 404, for the same reason an unknown feed is.
   if (folderId != null && !folders.some((f) => f.id === folderId)) notFound();
 
+  const openId = strictId(params.article);
+
+  /*
+   * `saved` IS A READING CONTEXT, NOT A SURFACE — and the distinction is the
+   * whole reason for `openId !== null` below.
+   *
+   * `{ kind: "saved" }` has been in the `Scope` union and supported by
+   * `listArticles` and `countUnread` since M7 — the parity suite covers it —
+   * and nothing ever produced one. So `/saved` linked a row to `?article=<id>`
+   * and opened that article in the ALL UNREAD list: everything on the saved
+   * shelf is read, so the row being opened was not in the list beside it. The
+   * reading pane was right and its context was somebody else's.
+   *
+   * WHY IT NEEDS AN ARTICLE. `saved/page.tsx` records a decision this would
+   * otherwise contradict: the saved SURFACE is its own full-width table, "not
+   * a filter on the unread river", because the reader's frame is about what is
+   * NEW and nothing in Saved is. Honouring `?scope=saved` on its own would
+   * make exactly that rejected product reachable at `/reader?scope=saved`.
+   *
+   * With an article it is a different claim: you came from the shelf to read
+   * one piece, and the list beside it should be the set you came from, so the
+   * next and previous rows are the other things you saved. The surface stays
+   * at `/saved`; only the reading context follows you.
+   */
   const scope: Scope =
     feedId !== undefined
       ? { kind: "feed", feedId, unreadOnly }
       : folderId != null
         ? { kind: "folder", folderId, unreadOnly }
-        : unreadOnly
-          ? { kind: "unread" }
-          : { kind: "all" };
+        : params.scope === "saved" && openId !== null
+          ? { kind: "saved" }
+          : unreadOnly
+            ? { kind: "unread" }
+            : { kind: "all" };
 
-  const page = await listArticles(viewer, scope, cursor, { query });
+  /*
+   * THREE INDEPENDENT READS, ONE ROUND TRIP OF WAITING.
+   *
+   * These were three separate `await`s spread down the file — the list here,
+   * the unread count a dozen lines below it, the open article at the bottom —
+   * and nothing between them used the one before. Against a REMOTE Postgres
+   * that is three sequential round trips where one would do, and it is most of
+   * why clicking a folder in the sidebar felt like a click that had not
+   * registered: ~350 ms, of which two thirds was waiting in a queue of our own
+   * making.
+   *
+   * They are genuinely independent. `scope` comes from the search params and
+   * the folder list; `cursor` and `query` from the params; `openId` from
+   * `?article=`. None of them is derived from another's result, which is
+   * exactly why the sequence was invisible — each `await` read naturally where
+   * it sat.
+   *
+   * `getArticle` RESOLVES TO NULL WITHOUT A QUERY when nothing is open, so the
+   * common case still issues two.
+   */
+  /*
+   * THE OPEN ARTICLE ONLY. The list and its count moved into `ListPane` below
+   * so a keyed `<Suspense>` can show a skeleton while they load — see the note
+   * there. This one stays here because both the list and the reading pane need
+   * its id, and because the reading pane is not what a sidebar click changes.
+   */
+  const openArticle = openId === null ? null : await getArticle(viewer, openId);
 
   const subOf = (id: number) => subs.find((s) => s.feedId === id);
   const feedTitleOf = (id: number) => {
@@ -114,7 +168,7 @@ export async function ReaderView({
       ? subs.filter((s) => s.folderId === folder.id)
       : subs;
   /*
-   * ASKED, not summed.
+   * ASKED, not summed — and asked in the `Promise.all` above.
    *
    * Summing the sidebar's per-feed badges was correct only while an article
    * belonged to exactly one feed. Rung 2 is global, so a story carried by two
@@ -122,29 +176,16 @@ export async function ReaderView({
    * correctly and the sum counts it twice, so the header read "2 unread" above
    * a list holding one row.
    */
-  const unreadCount = await countUnread(viewer, scope);
-
-  const state = chooseListState({
-    page,
-    cursor,
-    query,
-    unreadOnly,
-    currentSub,
-    folder,
-    scopedSubs,
-    feedTitleOf,
-  });
-
-  const openId = strictId(params.article);
-  const openArticle = openId === null ? null : await getArticle(viewer, openId);
 
   const title = currentSub
     ? feedTitleOf(currentSub.feedId)
     : folder
       ? folder.name
-      : unreadOnly
-        ? "All unread"
-        : "All articles";
+      : scope.kind === "saved"
+        ? "Saved for later"
+        : unreadOnly
+          ? "All unread"
+          : "All articles";
 
   return (
     <>
@@ -158,16 +199,42 @@ export async function ReaderView({
           scope={unreadOnly ? "unread" : "all"}
           params={params}
         />
-        <ArticleList
-          title={title}
-          unreadCount={unreadCount}
-          state={state}
-          scope={scope}
-          query={query}
-          openArticleId={openArticle?.id ?? null}
-          articleFeedTitle={articleFeedTitle}
-          params={params}
-        />
+        {/*
+         * KEYED ON THE SCOPE, which is what makes the skeleton appear at all.
+         *
+         * A folder navigates by SEARCH PARAM — `/reader?folder=2` — and Next
+         * does not remount a route segment for that, so `loading.tsx` never
+         * fires and an unkeyed `<Suspense>` has nothing to re-suspend: React
+         * keeps the resolved children on screen while the new ones load,
+         * which is exactly the "nothing happened" this is fixing.
+         *
+         * Changing the key throws the old subtree away, so the fallback shows
+         * immediately and the new pane streams in behind it. The sidebar and
+         * the reading pane are outside the boundary and do not move.
+         *
+         * The cursor and the query are in the key as well as the scope: paging
+         * and searching are the same wait for the same reason.
+         */}
+        <Suspense
+          key={`${JSON.stringify(scope)}|${params.before ?? ""}|${query}`}
+          fallback={<ArticleListSkeleton />}
+        >
+          <ListPane
+            viewer={viewer}
+            scope={scope}
+            cursor={cursor}
+            query={query}
+            title={title}
+            unreadOnly={unreadOnly}
+            currentSub={currentSub}
+            folder={folder}
+            scopedSubs={scopedSubs}
+            feedTitleOf={feedTitleOf}
+            articleFeedTitle={articleFeedTitle}
+            openArticleId={openArticle?.id ?? null}
+            params={params}
+          />
+        </Suspense>
         <ReaderPane
           article={openArticle}
           feedTitleOf={feedTitleOf}
@@ -175,5 +242,88 @@ export async function ReaderView({
         />
       </div>
     </>
+  );
+}
+
+/*
+ * The list pane, fetching its own rows so the boundary above has something to
+ * wait on.
+ *
+ * THIS IS THE WHOLE REASON IT IS A SEPARATE COMPONENT. A `<Suspense>` only
+ * shows its fallback while a CHILD is suspended — and a child suspends by
+ * awaiting. While the list's data was awaited in the parent, nothing inside the
+ * boundary ever suspended: the parent simply took 220 ms longer to render and
+ * the reader watched an unchanged screen.
+ *
+ * ITS TWO READS STILL RUN TOGETHER. They were parallelised earlier for the same
+ * latency — the rows and the count are independent, and the count is what the
+ * header prints — so the `Promise.all` moved here with them rather than being
+ * unpicked.
+ */
+async function ListPane({
+  viewer,
+  scope,
+  cursor,
+  query,
+  title,
+  unreadOnly,
+  currentSub,
+  folder,
+  scopedSubs,
+  feedTitleOf,
+  articleFeedTitle,
+  openArticleId,
+  params,
+}: {
+  viewer: Awaited<ReturnType<typeof requireViewer>>;
+  scope: Scope;
+  cursor: ReturnType<typeof decodeCursor>;
+  query: string;
+  title: string;
+  unreadOnly: boolean;
+  currentSub: Parameters<typeof chooseListState>[0]["currentSub"];
+  folder: Parameters<typeof chooseListState>[0]["folder"];
+  scopedSubs: Parameters<typeof chooseListState>[0]["scopedSubs"];
+  feedTitleOf: (id: number) => string;
+  articleFeedTitle: (a: Pick<Article, "feedId" | "arrivals">) => string;
+  openArticleId: number | null;
+  params: ReaderParams;
+}) {
+  const [page, unreadCount] = await Promise.all([
+    listArticles(viewer, scope, cursor, { query }),
+    /*
+     * ASKED, not summed.
+     *
+     * Summing the sidebar's per-feed badges was correct only while an article
+     * belonged to exactly one feed. Rung 2 is global, so a story carried by two
+     * subscribed feeds is ONE article with TWO arrivals: each badge counts it
+     * correctly and the sum counts it twice, so the header read "2 unread"
+     * above a list holding one row.
+     */
+    countUnread(viewer, scope),
+  ]);
+
+  const state = chooseListState({
+    page,
+    cursor,
+    query,
+    unreadOnly,
+    currentSub,
+    folder,
+    scopedSubs,
+    feedTitleOf,
+  });
+
+  return (
+    <ArticleList
+      title={title}
+      unreadCount={unreadCount}
+      state={state}
+      scope={scope}
+      query={query}
+      openArticleId={openArticleId}
+      articleFeedTitle={articleFeedTitle}
+      params={params}
+    />
   );
 }

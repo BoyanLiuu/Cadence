@@ -1,9 +1,6 @@
-import Link from "next/link";
-
 import { AppBar } from "@/components/app-bar";
 import { HealthTable } from "@/components/health/health-table";
 import { TickTimeline } from "@/components/health/tick-timeline";
-import { Button } from "@/components/ui/button";
 import { feedsNeedingAttention } from "@/components/sidebar";
 import { listFolders, listSubscriptions, listTicks } from "@/lib/server/article-service";
 import { requireViewer } from "@/lib/server/viewer";
@@ -39,17 +36,15 @@ export default async function FeedHealthPage() {
       <AppBar accountName={account.name} initials={account.initials} current="feeds" />
 
       <main className="px-lg py-xl gap-2xl mx-auto grid max-w-[1400px]">
-        <header className="gap-sm flex flex-wrap items-start justify-between">
-          <div className="gap-xs grid">
-            <h1>Feeds</h1>
-            <p className="text-muted num text-sm">
-              {subs.length} feeds, {attention.length} needing attention. {checksToday} checks since
-              00:00 UTC.
-            </p>
-          </div>
-          <Button asChild variant="outline">
-            <Link href="/add">Add feed</Link>
-          </Button>
+        {/* A plain grid now the "Add feed" link is gone: the dialog in the app
+            bar adds feeds from every screen, so a second entry point here was
+            a page a reader had to come back from. */}
+        <header className="gap-xs grid">
+          <h1>Feeds</h1>
+          <p className="text-muted num text-sm">
+            {subs.length} feeds, {attention.length} needing attention. {checksToday} checks since
+            00:00 UTC.
+          </p>
         </header>
 
         <section className="gap-md grid">
@@ -67,11 +62,24 @@ export default async function FeedHealthPage() {
             {[
               {
                 title: "A tick",
-                body: "One run of POST /api/cron/poll, every minute. It claims the feeds that are due and stops claiming at 240 seconds.",
+                body:
+                  "One run of the poll route. Vercel's cron starts one a day — its plan allows no " +
+                  "more — and Fetch now starts one for a single feed. A tick claims whatever is " +
+                  "due and stops claiming at 240 seconds, so a long queue finishes on the next one.",
+              },
+              {
+                title: "Checked every",
+                body:
+                  "How often this feed is actually read, which is the daily tick for every feed " +
+                  "here. Cadence works out a rhythm from how often each one posts, and cannot " +
+                  "read anything more often than a tick runs.",
               },
               {
                 title: "Not modified",
-                body: "The share of checks answered 304: nothing new, nothing written.",
+                body:
+                  "The share of checks answered 304: nothing new, and nothing transferred. High " +
+                  "is good — it means we asked politely and the publisher paid almost nothing " +
+                  "to answer.",
               },
               {
                 title: "Collapsed",

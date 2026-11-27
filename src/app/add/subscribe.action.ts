@@ -43,11 +43,19 @@ export async function subscribeToFeed(
     const customTitle = String(form.get("customTitle") ?? "").trim();
 
     /*
-     * The select's "No folder" option has an empty value, which is not the same
-     * as a missing field and not a number. `Number("")` is 0, which would name
-     * folder zero.
+     * "NO FOLDER" ARRIVES TWO WAYS, and neither is a number.
+     *
+     * The `/add` page's native select sends `""`, which is not the same as a
+     * missing field and not a number — `Number("")` is 0, which would name
+     * folder zero. The dialog's Radix select sends `"none"`, because Radix
+     * treats `value=""` as a cleared selection and refuses it as an item
+     * value; `Number("none")` is NaN, which `subscribe` correctly rejects as
+     * "not a folder id" — so a reader adding a feed to no folder from the
+     * dialog would have been told their folder was invalid.
+     *
+     * Both map to `null`, which is what "no folder" means in the schema.
      */
-    const folderId = folderValue === "" ? null : Number(folderValue);
+    const folderId = folderValue === "" || folderValue === "none" ? null : Number(folderValue);
 
     const subscription = await subscribe(viewer, { feedUrl, folderId });
     feedId = subscription.feedId;

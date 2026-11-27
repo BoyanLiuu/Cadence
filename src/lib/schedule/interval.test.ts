@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  intervalSeconds,
-  jitterFor,
-  medianGapSeconds,
-  nextIntervalSeconds,
   DEFAULT_INTERVAL_S,
   JITTER_SPREAD_S,
   MAX_INTERVAL_S,
   MIN_INTERVAL_S,
+  SWEEP_INTERVAL_S,
   UNCHANGED_BEFORE_WIDENING,
+  effectiveIntervalSeconds,
+  intervalSeconds,
+  jitterFor,
+  medianGapSeconds,
+  nextIntervalSeconds,
 } from "./interval";
 
 /*
@@ -200,5 +202,53 @@ describe("jitter", () => {
       });
       expect(next).toBeGreaterThanOrEqual(MIN_INTERVAL_S);
     }
+  });
+});
+
+describe("the cadence a reader is actually promised", () => {
+  /*
+   * M15: the sweep runs once a day, because Vercel's Hobby plan caps cron
+   * there and fails the deployment for anything more frequent.
+   *
+   * A FEED CANNOT BE POLLED MORE OFTEN THAN THE TICK THAT POLLS IT, and until
+   * M15 nothing in the code knew the tick's rate — the curve computed
+   * intervals from 15 minutes upward and `/add` printed them, which was a
+   * promise the deployment could not keep.
+   */
+
+  it("is the SWEEP's cadence for any feed that would be polled more often", () => {
+    // A wire service earning the 15-minute floor is still read once a day.
+    expect(effectiveIntervalSeconds(MIN_INTERVAL_S)).toBe(SWEEP_INTERVAL_S);
+    expect(effectiveIntervalSeconds(4 * 60 * 60)).toBe(SWEEP_INTERVAL_S);
+  });
+
+  it("is the FEED's own interval when that is slower than the sweep", () => {
+    // A dormant feed on the 24-hour ceiling is unaffected, and one beyond it
+    // keeps its own number — this is a floor, not a clamp.
+    expect(effectiveIntervalSeconds(MAX_INTERVAL_S)).toBe(MAX_INTERVAL_S);
+    expect(effectiveIntervalSeconds(MAX_INTERVAL_S * 3)).toBe(MAX_INTERVAL_S * 3);
+  });
+
+  it("DOES NOT change what the scheduler computes, only what is shown", () => {
+    /*
+     * The distinction worth keeping. `nextIntervalSeconds` still produces the
+     * adaptive value, `next_fetch_at` still carries it, and the sweep still
+     * claims in that order — so raising the tick rate later (a Pro plan, or a
+     * pinger added back) makes every per-feed interval meaningful again with
+     * no change beyond `SWEEP_INTERVAL_S`.
+     *
+     * Had the curve itself been clamped to daily instead, that information
+     * would have been destroyed at write time and could not be recovered.
+     */
+    const frequent = nextIntervalSeconds(1, {
+      publishedAts: Array.from({ length: 20 }, (_, i) =>
+        new Date(Date.UTC(2026, 10, 20, 0, i * 5)).toISOString(),
+      ),
+      declaredTtlS: null,
+      unchangedPolls: 0,
+    });
+
+    expect(frequent).toBeLessThan(SWEEP_INTERVAL_S);
+    expect(effectiveIntervalSeconds(frequent)).toBe(SWEEP_INTERVAL_S);
   });
 });

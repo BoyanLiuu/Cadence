@@ -247,6 +247,42 @@
     outline-offset: 2px;
   }
 
+  /*
+   * A HAND CURSOR ON ANYTHING THAT ACTS WHEN PRESSED.
+   *
+   * `<button>` defaults to `cursor: default` — the arrow — in every browser,
+   * while `<a>` gets the hand for free. So "Mark all read" and "Search" looked
+   * inert to the pointer while a link beside them did not, which is the kind of
+   * inconsistency a reader feels without being able to name.
+   *
+   * ON THE ELEMENTS RATHER THAN A CLASS. Every button in the app goes through
+   * the shadcn `Button` component today, so adding `cursor-pointer` there would
+   * have covered all of them — and the first native `<button>` anybody writes
+   * afterwards would silently be the exception. `select` and `summary` are here
+   * for the same reason: they act on a press.
+   *
+   * DISABLED IS EXCLUDED, and gets `not-allowed` instead. A hand on a control
+   * that will not do anything is a promise the control cannot keep. The
+   * `Button` component also sets `disabled:pointer-events-none`, so this is
+   * belt and braces — and the braces are what holds if that ever changes.
+   */
+  button,
+  summary,
+  select,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
   a {
     color: inherit;
     text-decoration-thickness: 1px;

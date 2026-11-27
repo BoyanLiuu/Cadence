@@ -23,6 +23,17 @@ import { SavedEmpty, SavedFilterEmpty } from "./empty";
  * Building it as `?scope=saved` on the reader would have been less code and
  * the wrong product: the reader's whole frame is about what is NEW, and
  * nothing in Saved is.
+ *
+ * THAT HOLDS FOR THE SURFACE AND NOT FOR READING ONE PIECE. A row here links
+ * to `?scope=saved&article=<id>`, which does put the reader's list in the
+ * saved set — because clicking a saved article means "read this", and the list
+ * beside it should then be the shelf you came from rather than a river of
+ * unread news the piece is not in. Everything saved is typically read, so
+ * without the scope the opened row was not in the list at all.
+ *
+ * `reader-view.tsx` honours `scope=saved` ONLY alongside an article, so
+ * `/reader?scope=saved` on its own is still not a thing — the surface this
+ * note is about stays here.
  */
 
 const DATE = (iso: string) =>
@@ -137,7 +148,16 @@ export default async function SavedPage({
                 {shown.map((article) => (
                   <li key={article.id} className="border-rule border-b">
                     <Link
-                      href={`${READER_PATH}?article=${article.id}`}
+                      /*
+                       * CARRIES THE SAVED SCOPE, not just the article.
+                       *
+                       * Without `scope=saved` this landed in All unread with a
+                       * READ article open — and every saved article here is
+                       * read, so the row being opened was not in the list
+                       * beside it. The pane showed the right piece in the
+                       * wrong company.
+                       */
+                      href={`${READER_PATH}?scope=saved&article=${article.id}`}
                       className="gap-sm px-sm py-md hover:bg-paper-2 grid items-baseline no-underline transition-colors md:grid-cols-[minmax(0,1fr)_14rem_7rem_5rem_5rem]"
                     >
                       <span className="font-display text-ink text-xl text-pretty">

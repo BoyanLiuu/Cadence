@@ -22,6 +22,41 @@ export const DEFAULT_INTERVAL_S = 6 * 60 * 60;
 export const HISTORY_WINDOW = 20;
 /** Unchanged polls before the interval starts widening. */
 export const UNCHANGED_BEFORE_WIDENING = 10;
+/**
+ * How often the sweep ACTUALLY runs. Daily, at M15.
+ *
+ * A FEED CANNOT BE POLLED MORE OFTEN THAN THE TICK THAT POLLS IT, and until
+ * M15 nothing in the code knew what that cadence was — §6.4's curve computed
+ * intervals from 15 minutes upward and the screens printed them, on the
+ * assumption of a minute-ish pinger.
+ *
+ * Vercel's Hobby plan caps cron at ONCE PER DAY and fails the deployment for
+ * any expression more frequent than that — not at runtime, at deploy. The
+ * alternative was a GitHub Actions schedule, and Boyan's call at M15 was to
+ * drop it rather than depend on a second system (`decisions.md`), which
+ * reverses Appendix G question 4.
+ *
+ * So this is the floor on every real cadence, and `effectiveIntervalSeconds`
+ * is what the screens must show. The adaptive curve is NOT removed: it still
+ * computes, `next_fetch_at` still carries it, and the moment this constant
+ * changes — a Pro plan, or a pinger added back — every per-feed interval
+ * becomes meaningful again with no other edit. What would have been wrong is
+ * leaving the screens promising a cadence the deployment cannot deliver.
+ */
+export const SWEEP_INTERVAL_S = 24 * 60 * 60;
+
+/**
+ * The cadence a feed will actually be checked at, which is what a reader is
+ * told.
+ *
+ * `max` of the computed interval and the sweep's own, because a feed due every
+ * 15 minutes against a daily tick is checked daily. Deriving it rather than
+ * hard-coding "daily" means the screens stay correct if the tick rate changes.
+ */
+export function effectiveIntervalSeconds(intervalS: number): number {
+  return Math.max(intervalS, SWEEP_INTERVAL_S);
+}
+
 /** Total jitter spread: ±5 minutes. */
 export const JITTER_SPREAD_S = 600;
 

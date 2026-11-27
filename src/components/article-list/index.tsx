@@ -8,6 +8,7 @@ import { hrefForNewResultSet, hrefWith, type ReaderParams } from "@/lib/view-par
 
 import { MarkAllRead } from "./mark-all-read";
 import { MarkReadOnScroll } from "./mark-read-on-scroll";
+import { ScrollOpenIntoView } from "./scroll-open-into-view";
 import { ArticleBadges } from "./revised-badge";
 
 /*
@@ -348,6 +349,14 @@ export function ArticleList({
              * costs the list no layout.
              */}
             <MarkReadOnScroll enabled={state.page.items.some((a) => a.readAt === null)} />
+            {/*
+             * Brings the open row into view when the list ARRIVES with one
+             * open — from `/saved`, a shared link, or a reload. Rows link with
+             * `scroll={false}` so a click never moves the list; this fires
+             * once per article id and skips a row already fully visible, so
+             * the two do not fight. See the note in the component.
+             */}
+            <ScrollOpenIntoView articleId={openArticleId} />
             <ul className="m-0 list-none p-0">
               {state.page.items.map((a) => (
                 <Row

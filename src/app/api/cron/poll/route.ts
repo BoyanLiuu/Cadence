@@ -9,13 +9,27 @@ import { runSweep } from "@/lib/schedule/sweep";
  * budget sits inside. Node runtime, not Edge: the sweep uses `node:crypto`, the
  * `pg` driver and a streaming body reader.
  *
- * WHY AN EXTERNAL PINGER AND NOT VERCEL CRON (Appendix G question 4, settled):
- * Vercel Cron on the Hobby plan fires once a DAY and rejects a minute
- * expression at deploy time. A frequent cadence is what makes §6.4's budget and
- * lease meaningful, so the schedule lives in `.github/workflows/ping.yml` and
- * this route is what it calls — every FIVE minutes, because GitHub coalesces
- * runs more frequent than that and the adaptive interval's floor is 15 minutes
- * anyway. Nothing here depends on punctuality: the sweep claims what is DUE. The architecture is candid that one small
+ * WHO CALLS THIS, and it changed at M15 (Appendix G question 4, REVERSED):
+ * Vercel Cron on the Hobby plan, once a day — `vercel.json`. The plan is
+ * emphatic that anything more frequent FAILS THE DEPLOYMENT rather than
+ * degrading at runtime — an hourly expression and a half-hourly one are both
+ * rejected at build time — and even the daily job has ±59 minutes of slop.
+ *
+ * (Those expressions are described rather than written, because a cron
+ * expression for "every 30 minutes" contains the two characters that END a
+ * block comment. Writing one here truncated this comment mid-sentence and
+ * took the file's syntax with it.)
+ *
+ * It used to be a GitHub Actions schedule every five minutes, which is what
+ * made §6.4's 240-second budget and 120-second lease meaningful. Boyan's call
+ * at M15 was to drop that rather than depend on a second system for the
+ * cadence — so the budget and the lease are now headroom rather than
+ * constraints, and `SWEEP_INTERVAL_S` is what the screens derive a feed's real
+ * cadence from. See `decisions.md` and `DEPLOY.md`.
+ *
+ * NOTHING HERE DEPENDS ON PUNCTUALITY, which is why the change is cheap: the
+ * sweep claims whatever is DUE rather than assuming it ran on time. A late
+ * tick polls a longer list. The architecture is candid that one small
  * always-on VM with `node-cron` would delete this whole problem — and would
  * also delete one of the project's three stated learning goals, which is why
  * Vercel stays.
@@ -30,8 +44,8 @@ import { runSweep } from "@/lib/schedule/sweep";
  *
  * The caller is a machine, so the mechanism is a shared secret in a header,
  * which is the pattern native to this target context: it is what Vercel's own
- * cron documentation prescribes (`CRON_SECRET`), and GitHub Actions supplies it
- * from a repository secret. This is a public repository, so the code names no
+ * cron documentation prescribes (`CRON_SECRET`), which Vercel's own scheduler
+ * sends as a bearer token. This is a public repository, so the code names no
  * internal system and nothing here is specific to any employer's paved path.
  *
  * FAIL CLOSED. With `CRON_SECRET` unset, every request is refused — including

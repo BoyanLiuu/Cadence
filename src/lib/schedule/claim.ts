@@ -127,19 +127,28 @@ type Row = {
 export async function claimDueFeeds(
   limit: number = CLAIM_BATCH,
   /**
-   * Restricts the claim to these feeds. Undefined in production.
+   * Restricts the claim to these feeds. Undefined claims everything due.
    *
-   * A testability seam, and it exists because the alternative is a flaky suite
-   * rather than because the sweep wants it. The database is shared, `due` is a
-   * global condition, and several suites create due feeds and claim them — so
-   * run in parallel they steal each other's rows, and a test asserting "my
-   * eight feeds were polled" saw one. That failure appeared only in the full
-   * run, never in isolation, which is the worst kind.
+   * TWO CALLERS, and it was written for the first of them.
    *
-   * Narrowing the claim is the honest fix: each suite claims its OWN feeds and
-   * asserts on them. The alternative was serialising every database suite,
-   * which would have cost minutes on every run to work around a test problem.
-   * Production passes nothing and gets the unrestricted query.
+   *  1. THE SUITES, because the alternative is a flaky one. The database is
+   *     shared, `due` is a global condition, and several suites create due
+   *     feeds and claim them — so run in parallel they steal each other's
+   *     rows, and a test asserting "my eight feeds were polled" saw one. That
+   *     failure appeared only in the full run, never in isolation, which is
+   *     the worst kind. Narrowing is the honest fix: each suite claims its OWN
+   *     feeds. The alternative was serialising every database suite.
+   *
+   *  2. "FETCH NOW" (M15), which is a reader asking for ONE feed and waiting
+   *     for the answer. It cannot run the whole sweep: the daily tick's queue
+   *     is every due feed, and a person pressing a button would wait behind
+   *     all of them for an answer about one.
+   *
+   * NARROWING IS NOT A BYPASS, which is what makes the second caller safe. The
+   * whole predicate below still applies — the status filter, `next_fetch_at <=
+   * now()` and the lease — so a feed that is not due is not claimed however
+   * loudly it is named. "Fetch now" makes its feed due FIRST, in
+   * `makeFeedDue`, and then asks; it does not ask for an exemption.
    */
   onlyFeedIds?: bigint[],
 ): Promise<ClaimedFeed[]> {

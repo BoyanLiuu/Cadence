@@ -44,8 +44,7 @@ export function TickTimeline({
   if (ticks.length === 0) {
     return (
       <p className="text-ink-2 border-rule bg-paper-hi px-lg py-md border text-sm">
-        No tick has fetched anything yet. The pinger drives them every minute once it is wired up at
-        M15 — until then this table fills from fixtures.
+        No tick has fetched anything today. Fetch a feed below to run one now.
       </p>
     );
   }

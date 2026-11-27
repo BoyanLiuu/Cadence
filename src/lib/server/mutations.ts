@@ -2,6 +2,7 @@ import { resolveSample } from "@/lib/fixtures/discover";
 import type {
   DiscoveryResult,
   Extraction,
+  FetchNowResult,
   FullTextMode,
   ListFilter,
   Scope,
@@ -14,9 +15,12 @@ import { applyReadState, applyScopeRead, type ReadStateResult } from "./read-sta
 import { discoverAt } from "@/lib/ingest/discover";
 import { applyExtraction } from "./extract.db";
 import { applySaved, type SavedResult } from "./saved.db";
+import { runSweep } from "@/lib/schedule/sweep";
+
 import {
   addSubscription,
   editSubscription,
+  makeFeedDue,
   markFollowed,
   removeSubscription,
 } from "./subscriptions.db";
@@ -347,4 +351,79 @@ export async function extractArticle(viewer: Viewer, id: number): Promise<Extrac
   if (dataSource !== "db") throw new NoDatabase("POST /api/articles/:id/extract");
 
   return applyExtraction(user.id, id);
+}
+
+/**
+ * Checks one feed now, because a reader asked (M15).
+ *
+ * WHY THIS EXISTS. The cron runs once a day — Vercel's Hobby plan allows no
+ * more, and that is a deliberate M15 trade (`decisions.md`) — so between ticks
+ * there was no way to see a feed work. That hurts two moments in particular:
+ * following a feed and then waiting a day for its first article, and a feed
+ * the publisher has just fixed sitting `dead` with nothing able to retry it.
+ *
+ * AN ACTION AND NOT A ROUTE, by the rule this project settled at M11: a route
+ * is for a machine caller, an action for something a person pressed. `POST
+ * /api/cron/poll` is the machine's door and keeps its shared secret; this one
+ * is a person's, and its gate is their session.
+ *
+ * ---------------------------------------------------------------------------
+ * WHAT STOPS THIS BEING AN AMPLIFIER
+ * ---------------------------------------------------------------------------
+ * It makes this server fetch a third-party address on a reader's keystroke, so
+ * it is the same class of thing as extraction (§6.5) and gets the same
+ * treatment — four limits, none of which is new code:
+ *
+ *   WHO     `assertCan` refuses an anon, and `makeFeedDue` refuses a feed this
+ *           reader does not follow. There is no shape here where a feed id
+ *           alone reaches a row.
+ *   HOW OFTEN  `MANUAL_FETCH_FLOOR_S` — one check a minute per feed, enforced
+ *           in the `UPDATE`'s `WHERE` so two readers cannot race past it.
+ *   HOW MANY  the 120-second lease. A feed already being polled is not
+ *           claimed, so pressing the button during a tick adds no request.
+ *   WHERE   `guardUrl` in the fetch path, unchanged. The address being polled
+ *           is the one already in the row; this chooses WHEN, never WHAT.
+ *
+ * So the worst a signed-in reader can do is one polite conditional request a
+ * minute to a publisher they already subscribe to — which is less than the
+ * five-minute pinger this project ran until M15.
+ */
+export async function fetchFeedNow(viewer: Viewer, feedId: number): Promise<FetchNowResult> {
+  assertCan(viewer, "fetch-now");
+  const user = requireUser(viewer);
+  if (dataSource !== "db") throw new NoDatabase("fetching a feed now");
+  if (!Number.isSafeInteger(feedId)) throw new Error(`Not a feed id: ${JSON.stringify(feedId)}`);
+
+  const due = await makeFeedDue(user.id, feedId);
+  if (due.kind === "too-soon") return { kind: "too-soon", waitS: due.waitS };
+
+  /*
+   * THE REAL SWEEP, narrowed to one feed, rather than a second poll path.
+   *
+   * Everything that makes a poll correct lives in `runSweep` — the lease, the
+   * conditional request, the dedup ladder, the interval and backoff maths, the
+   * `fetch_log` row the health table is read from. A bespoke "just fetch this
+   * one" would reimplement some of that and quietly diverge on the rest, and
+   * the first thing to rot would be the evidence: a check that wrote no
+   * `fetch_log` row would make the screen under this very button wrong.
+   *
+   * `budgetMs` is small because a PERSON IS WAITING. The budget governs how
+   * long the sweep keeps CLAIMING, which for a single feed is one round — so
+   * this mostly documents the intent. The real ceiling is
+   * `FETCH_TIMEOUT_MS` (10 s) plus parse and merge.
+   */
+  const outcome = await runSweep({ onlyFeedIds: [BigInt(feedId)], budgetMs: 15_000 });
+
+  if (outcome.changed > 0) return { kind: "changed", itemsNew: outcome.itemsNew };
+  if (outcome.unchanged > 0) return { kind: "unchanged" };
+  if (outcome.failed > 0) return { kind: "failed" };
+
+  /*
+   * NOTHING WAS CLAIMED, and after `makeFeedDue` there is only one way that
+   * happens: another check holds the lease. `skipped` lands here too — claimed
+   * but reached after the deadline — and means the same thing to a reader,
+   * which is "not now, and nothing was lost": the lease is released and the
+   * feed is still due, so the next tick takes it.
+   */
+  return { kind: "busy" };
 }

@@ -7,7 +7,15 @@ import { SubscribeForm } from "./subscribe-form";
 import { subscribeToFeed } from "./subscribe.action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { sampleAddresses } from "@/lib/fixtures/discover";
+import { effectiveIntervalSeconds } from "@/lib/schedule/interval";
 import { dataSource, listFolders, listSubscriptions } from "@/lib/server/article-service";
 import { discoverFeeds } from "@/lib/server/mutations";
 import { requireViewer } from "@/lib/server/viewer";
@@ -102,7 +110,11 @@ function CandidateCard({
           <span>{FORMAT_NAME[candidate.format]}</span>
           <span>{candidate.items} items</span>
           {lastPost !== null && <span>Last post {lastPost}</span>}
-          <span>Checked {everyPhrase(candidate.intervalS)}</span>
+          {/* The EFFECTIVE cadence, not the computed one. A feed whose rhythm
+              earns a 4-hour interval is still checked daily, because that is
+              how often the sweep runs (§6.4, M15). Printing the computed
+              number promised something the deployment cannot do. */}
+          <span>Checked {everyPhrase(effectiveIntervalSeconds(candidate.intervalS))}</span>
         </span>
       </span>
     </Link>
@@ -242,7 +254,6 @@ export default async function AddFeedPage({
                 Find feeds
               </Button>
             </div>
-            <p className="text-muted text-sm">http or https. Without either, https is assumed.</p>
           </form>
 
           {/*
@@ -307,28 +318,44 @@ export default async function AddFeedPage({
               </section>
 
               <div className="gap-lg grid sm:grid-cols-2 lg:max-w-[46rem]">
-                <div className="gap-2xs grid">
+                <div className="gap-2xs grid content-start">
                   <label htmlFor="folder" className="text-sm font-medium">
                     Folder
                   </label>
-                  <select
-                    id="folder"
-                    name="folderId"
-                    className="border-rule bg-paper-hi px-sm text-ink h-10 rounded-[2px] border"
-                  >
-                    {/* FIRST, so it is the default. It was last, which made
-                        the reader's first folder the default — and now that
-                        this form writes, subscribing without touching the
-                        select filed the feed somewhere nobody chose. */}
-                    <option value="">No folder</option>
-                    {folders.map((folder) => (
-                      <option key={folder.id} value={folder.id}>
-                        {folder.name}
-                      </option>
-                    ))}
-                  </select>
+                  {/*
+                   * THE SAME CONTROL AS THE DIALOG'S, for the same reason: a
+                   * native select's popup is drawn by the operating system,
+                   * which on macOS put a blue system menu over its own field
+                   * in the middle of a square, paper-and-ink page.
+                   *
+                   * THE COST IT CARRIES HERE is worth being honest about:
+                   * this page works with no client JavaScript, and a Radix
+                   * select does not. With JavaScript off the trigger renders
+                   * and will not open, where the native element would have
+                   * worked — so the page keeps its no-JS form and loses its
+                   * no-JS FOLDER. "No folder" remains the default and the
+                   * subscription still succeeds, which is the part that
+                   * matters; filing it is one click away on the feed's page.
+                   */}
+                  <Select name="folderId" defaultValue="none">
+                    <SelectTrigger id="folder">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* FIRST, so it is the default. It was last, which made
+                          the reader's first folder the default — and now that
+                          this form writes, subscribing without touching the
+                          select filed the feed somewhere nobody chose. */}
+                      <SelectItem value="none">No folder</SelectItem>
+                      {folders.map((folder) => (
+                        <SelectItem key={folder.id} value={String(folder.id)}>
+                          {folder.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="gap-2xs grid">
+                <div className="gap-2xs grid content-start">
                   <label htmlFor="customTitle" className="text-sm font-medium">
                     Name in your sidebar <span className="text-muted">(optional)</span>
                   </label>
@@ -338,10 +365,6 @@ export default async function AddFeedPage({
                   </p>
                 </div>
               </div>
-
-              <p className="border-rule bg-paper-hi text-ink-2 px-sm py-xs max-w-[46rem] border text-xs leading-[1.45]">
-                Discovery reads the sample map rather than the web until M12 — subscribing is real.
-              </p>
             </SubscribeForm>
           )}
 
@@ -361,7 +384,11 @@ export default async function AddFeedPage({
           {[
             {
               title: "Its own schedule",
-              body: "Checked about half as often as it posts, never more than every 15 minutes or less than daily.",
+              // Was "about half as often as it posts, never more than every
+              // 15 minutes" — true of the curve and false of the deployment,
+              // which ticks once a day (M15). The rhythm still decides the
+              // ORDER work is claimed in; it no longer decides the cadence.
+              body: "Checked once a day. Feeds that post more often are read in order, oldest first.",
             },
             {
               title: "Each article once",

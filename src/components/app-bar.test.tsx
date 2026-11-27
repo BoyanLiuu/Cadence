@@ -47,11 +47,27 @@ describe("the current nav item", () => {
 });
 
 describe("the Add feed button", () => {
-  it("points at the screen that exists", () => {
-    // It pointed at `/feeds/new`, which does not exist, so the only entry
-    // point to the add-feed screen was a 404.
+  it("is a real control, and no longer a link to a page that moved", () => {
+    /*
+     * WHAT THIS HAS ALWAYS GUARDED is that an entry point to adding a feed
+     * EXISTS. It once pointed at `/feeds/new`, which does not exist, so the
+     * only way in was a 404 — that is the bug it was written for.
+     *
+     * It asserted `href="/add"` until M15, when the control became a dialog
+     * trigger: adding a feed is an interruption of reading rather than a
+     * destination, so it opens over the screen you are on. `/add` is still a
+     * real route for a reload, a shared link, or no JavaScript.
+     *
+     * NOT OPENED HERE. The dialog fetches the reader's folders through a
+     * server action on open, and calling one in jsdom runs `getViewer()` and
+     * `auth()` — a server round trip this suite has no business making. So
+     * this asserts the trigger and the browser suite would assert the opening;
+     * the limit is stated rather than papered over.
+     */
     render(<AppBar accountName="Elif Brandt" initials="EB" />);
-    expect(screen.getByRole("link", { name: /add feed/i })).toHaveAttribute("href", "/add");
+
+    expect(screen.getByRole("button", { name: /add feed/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /add feed/i })).not.toBeInTheDocument();
   });
 });
 
