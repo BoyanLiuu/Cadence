@@ -1,6 +1,6 @@
 import { signImageUrl } from "@/lib/extract/image-proxy";
 import { sanitizeHtml } from "@/lib/extract/sanitize";
-import { articles, BUDGET_MS, feeds, folders, subscriptions, ticks } from "@/lib/fixtures";
+import { articles, feeds, folders, subscriptions, ticks } from "@/lib/fixtures";
 import {
   PAGE_SIZE,
   type Article,
@@ -282,10 +282,10 @@ export async function getArticle(viewer: Viewer, id: number): Promise<Article | 
  * `service-contract.test.ts` exists to hold, and which M10 has to replace with
  * a `fetch_log` query. A page that imports fixtures cannot be swapped.
  */
-export async function listTicks(viewer: Viewer): Promise<{ ticks: Tick[]; budgetMs: number }> {
+export async function listTicks(viewer: Viewer): Promise<Tick[]> {
   assertCan(viewer, "read");
   requireUser(viewer);
-  return { ticks: [...ticks], budgetMs: BUDGET_MS };
+  return [...ticks];
 }
 
 /**

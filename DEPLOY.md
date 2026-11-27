@@ -94,7 +94,6 @@ hand, because the answer changes over time and the question is not a one-liner:
 select
   date_trunc('minute', at) as tick,
   count(*)                 as feeds_polled,
-  round(avg(duration_ms))  as avg_ms,
   date_trunc('minute', at)
     - lag(date_trunc('minute', at)) over (order by date_trunc('minute', at))
                            as since_previous

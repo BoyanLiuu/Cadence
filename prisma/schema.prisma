@@ -441,7 +441,6 @@ model FetchLog {
   feedId     BigInt   @map("feed_id")
   at         DateTime @default(now())
   statusCode Int?     @db.SmallInt @map("status_code")
-  durationMs Int      @map("duration_ms")
   bytes      Int?
   itemsSeen  Int      @default(0) @map("items_seen")
   itemsNew   Int      @default(0) @map("items_new")

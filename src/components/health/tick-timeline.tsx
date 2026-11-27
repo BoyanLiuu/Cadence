@@ -1,16 +1,26 @@
 import type { Tick } from "@/lib/types";
 
 /*
- * The last six ticks, as bars against the 240 s budget.
+ * The last six ticks, and what each of them fetched.
  *
- * §6.4's budget made visible. One `POST /api/cron/poll` run claims the feeds
- * that are due and STOPS CLAIMING at 240 seconds; the whole shape of the sweep
- * follows from that number, so the screen that reports on it shows the number
- * rather than describing it.
+ * WHAT THIS USED TO BE, because the change is the interesting part. It drew a
+ * bar per tick against the 240-second claiming budget, with a duration beside
+ * it — and that duration was `max(duration_ms)` over the feeds in the tick:
+ * the longest single HTTP request. So the bar compared ONE FEED'S REQUEST to
+ * the budget for claiming ALL OF THEM, and the number beside it was headed
+ * "Took", which everybody read as the tick's duration.
  *
- * At M5 these are fixture ticks. M10 fills them from `fetch_log`, and the
- * column is where a budget overrun becomes visible instead of being inferred
- * from a timeout somewhere else.
+ * Relabelling it "Slowest fetch" made it true and left it useless. It was not
+ * the tick's wall-clock (polls run six at a time, so a tick is longer than any
+ * one of them and shorter than their sum), not what "Fetch now" takes
+ * (measured: ~800 ms making the feed due and ~900 ms redrawing the page, on
+ * top of the fetch), and not a figure any question on this screen needed. So
+ * the column went, and `fetch_log.duration_ms` went with it.
+ *
+ * WHAT IS LEFT IS THE CLAIM APPENDIX E ASKS FOR: which feeds a tick touched
+ * and what each one answered. The 304s, the collapse rates and the ids-held
+ * line are all still here — they are the evidence that deduplication works,
+ * and a response time never was.
  */
 
 const HHMM = (iso: string) =>
@@ -34,11 +44,9 @@ function outcomeOf(work: Tick["work"][number], feedTitleOf: (id: number) => stri
 
 export function TickTimeline({
   ticks,
-  budgetMs,
   feedTitleOf,
 }: {
   ticks: readonly Tick[];
-  budgetMs: number;
   feedTitleOf: (feedId: number) => string;
 }) {
   if (ticks.length === 0) {
@@ -59,56 +67,21 @@ export function TickTimeline({
           <th scope="col" className="py-xs pr-md text-ink font-medium">
             Fetched
           </th>
-          <th scope="col" className="py-xs pr-md text-muted font-medium">
-            {Math.round(budgetMs / 1000)} s, where a tick stops claiming
-          </th>
-          <th scope="col" className="py-xs text-ink text-right font-medium">
-            Took
-          </th>
         </tr>
       </thead>
       <tbody>
-        {ticks.map((tick) => {
-          // Clamped, so a tick that OVERRAN still renders as a full bar rather
-          // than overflowing its track — the number beside it tells the truth.
-          const share = Math.min(1, tick.ms / budgetMs);
-          const over = tick.ms > budgetMs;
-          return (
-            <tr key={tick.at} className="border-rule border-b align-top">
-              <td className="py-sm pr-md num text-ink-2 whitespace-nowrap">{HHMM(tick.at)}</td>
-              <td className="py-sm pr-md text-ink-2">
-                <span className="gap-3xs grid">
-                  {tick.work.map((work) => (
-                    <span key={`${work.feedId}-${work.code}`}>{outcomeOf(work, feedTitleOf)}</span>
-                  ))}
-                </span>
-              </td>
-              <td className="py-sm pr-md">
-                {/* The track IS the budget, so the bar's width is readable as
-                    a fraction of it without reading the number. */}
-                <span
-                  role="img"
-                  aria-label={`${(tick.ms / 1000).toFixed(1)} seconds of a ${Math.round(
-                    budgetMs / 1000,
-                  )} second budget`}
-                  className="bg-rule relative block h-px w-full min-w-[8rem]"
-                >
-                  <span
-                    className={`absolute top-1/2 left-0 h-[3px] -translate-y-1/2 ${
-                      over ? "bg-error" : "bg-ink"
-                    }`}
-                    style={{ width: `${Math.max(share * 100, 0.6)}%` }}
-                  />
-                  {/* The budget line itself, in the accent. */}
-                  <span className="bg-accent absolute top-1/2 right-0 h-2.5 w-px -translate-y-1/2" />
-                </span>
-              </td>
-              <td className="py-sm num text-ink-2 text-right whitespace-nowrap">
-                {(tick.ms / 1000).toFixed(1)} s
-              </td>
-            </tr>
-          );
-        })}
+        {ticks.map((tick) => (
+          <tr key={tick.at} className="border-rule border-b align-top">
+            <td className="py-sm pr-md num text-ink-2 whitespace-nowrap">{HHMM(tick.at)}</td>
+            <td className="py-sm pr-md text-ink-2">
+              <span className="gap-3xs grid">
+                {tick.work.map((work) => (
+                  <span key={`${work.feedId}-${work.code}`}>{outcomeOf(work, feedTitleOf)}</span>
+                ))}
+              </span>
+            </td>
+          </tr>
+        ))}
       </tbody>
     </table>
   );

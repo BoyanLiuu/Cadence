@@ -135,7 +135,6 @@ describe("one fetch_log row's code, as a screen sees it", () => {
       at: new Date("2026-11-25T09:00:00.000Z"),
       statusCode,
       errorCode,
-      durationMs: 10,
       itemsSeen: 0,
       itemsNew: 0,
       mergedByGuid: 0,

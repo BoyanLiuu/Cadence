@@ -37,7 +37,7 @@ const made: bigint[] = [];
 function respondUnchanged(afterMs = 0) {
   fetchFeed.mockImplementation(async () => {
     if (afterMs > 0) await new Promise((r) => setTimeout(r, afterMs));
-    return { kind: "unchanged", status: 304, soft: false, durationMs: afterMs };
+    return { kind: "unchanged", status: 304, soft: false };
   });
 }
 
@@ -176,7 +176,6 @@ describeDb("a tick under a budget", { timeout: 180_000 }, () => {
       lastModified: null,
       bodyHash: new Uint8Array(32),
       finalUrl: null,
-      durationMs: 5,
       bytes: body.length,
     }));
 
@@ -221,7 +220,7 @@ describeDb("a tick under a budget", { timeout: 180_000 }, () => {
     let call = 0;
     fetchFeed.mockImplementation(async () => {
       if (call++ === 0) throw new Error("something unexpected");
-      return { kind: "unchanged", status: 304, soft: false, durationMs: 1 };
+      return { kind: "unchanged", status: 304, soft: false };
     });
 
     const out = await runSweep({ batch: 4, onlyFeedIds: ids });
@@ -255,7 +254,7 @@ describeDb("a tick under a budget", { timeout: 180_000 }, () => {
       const isSlow = String(url).includes("slow-host");
       await new Promise((r) => setTimeout(r, isSlow ? 120 : 5));
       finished.push(isSlow ? "slow" : "fast");
-      return { kind: "unchanged", status: 304, soft: false, durationMs: 1 };
+      return { kind: "unchanged", status: 304, soft: false };
     });
 
     await runSweep({ batch: 7, onlyFeedIds: [...slow, ...fast] });
@@ -307,7 +306,7 @@ describeDb("a tick under a budget", { timeout: 180_000 }, () => {
       peak = Math.max(peak, concurrent);
       await new Promise((r) => setTimeout(r, 25));
       concurrent -= 1;
-      return { kind: "unchanged", status: 304, soft: false, durationMs: 25 };
+      return { kind: "unchanged", status: 304, soft: false };
     });
 
     await runSweep({ batch: 6, onlyFeedIds: ids });

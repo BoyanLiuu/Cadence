@@ -49,7 +49,6 @@ const imageResponse = (contentType: string | null, size = 128): FetchOutcome => 
   bodyHash: new Uint8Array(32),
   finalUrl: null,
   landedUrl: PUBLIC_IMAGE,
-  durationMs: 1,
   bytes: size,
 });
 
@@ -225,7 +224,6 @@ describe("the image proxy", () => {
       code: "timeout",
       detail: null,
       retryAfterS: null,
-      durationMs: 1,
     };
     const response = await get(`https://cadence.test${signImageUrl(PUBLIC_IMAGE)!}`);
 

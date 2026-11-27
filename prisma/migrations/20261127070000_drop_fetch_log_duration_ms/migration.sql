@@ -1,0 +1,22 @@
+-- Drops `fetch_log.duration_ms`.
+--
+-- WHY. It recorded one HTTP request's wall-clock, and the only thing that ever
+-- read it was the health screen's last column — which rendered the LONGEST
+-- fetch in each tick under the heading "Took", beside a bar drawn against the
+-- 240-second claiming budget. Both readings were wrong: the number is neither
+-- the tick's duration (polls run six at a time, so a tick is longer than any
+-- one of them and shorter than their sum) nor how long "Fetch now" takes
+-- (measured: ~800 ms making the feed due and ~900 ms redrawing the page, on top
+-- of the fetch). Relabelling it "Slowest fetch" made it accurate and no more
+-- useful: a per-tick maximum of a per-feed timing, answering a question nobody
+-- on that screen was asking.
+--
+-- So the column goes rather than the label. Appendix E asks this table to let a
+-- reader VERIFY the deduplication; a response time is not part of that claim,
+-- and every figure the screen does make — checks, the 304 ratio, the collapse
+-- rate by rung, ids held — is untouched.
+--
+-- NOT RECOVERABLE, and that is accepted: it is telemetry about requests already
+-- made, nothing derives from it, and no screen or query reads it after this
+-- change.
+ALTER TABLE "cadence"."fetch_log" DROP COLUMN "duration_ms";

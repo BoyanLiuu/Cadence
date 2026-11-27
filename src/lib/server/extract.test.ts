@@ -61,7 +61,6 @@ const changed = (html: string, landedUrl: string): FetchOutcome => ({
   bodyHash: new Uint8Array(32),
   finalUrl: null,
   landedUrl,
-  durationMs: 1,
   bytes: html.length,
 });
 
@@ -71,7 +70,6 @@ const failedWith = (status: number | null): FetchOutcome => ({
   code: status === null ? "timeout" : "http_error",
   detail: null,
   retryAfterS: null,
-  durationMs: 1,
 });
 
 /** A fetcher that answers from a map and records every address it was asked for. */
@@ -433,7 +431,6 @@ describeDb("reading the full text off the page", () => {
         bodyHash: new Uint8Array(32),
         finalUrl: null,
         landedUrl: latin.url,
-        durationMs: 1,
         bytes: bytes.length,
       },
     });

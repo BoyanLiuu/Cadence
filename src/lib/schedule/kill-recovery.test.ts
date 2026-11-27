@@ -199,7 +199,7 @@ describeDb("a sweep that is killed mid-flight", { timeout: 180_000 }, () => {
     expect(Number(rows[0].n)).toBe(0);
 
     // And once a tick DOES complete, there is a row.
-    await recordPoll(id, emptyCounters(), { statusCode: 304, durationMs: 42, bytes: null });
+    await recordPoll(id, emptyCounters(), { statusCode: 304, bytes: null });
     const after = await prisma.$queryRaw<{ n: bigint }[]>`
       SELECT count(*) AS n FROM cadence.fetch_log WHERE feed_id = ${id}`;
     expect(Number(after[0].n)).toBe(1);

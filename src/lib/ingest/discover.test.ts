@@ -46,7 +46,6 @@ const changed = (body: string, contentType: string, at = `${PUBLIC}/`): FetchOut
   bodyHash: new Uint8Array(32),
   finalUrl: null,
   landedUrl: at,
-  durationMs: 1,
   bytes: body.length,
 });
 
@@ -68,7 +67,6 @@ const temporarilyRedirectedTo = (body: string, landedUrl: string): FetchOutcome 
   bodyHash: new Uint8Array(32),
   finalUrl: null,
   landedUrl,
-  durationMs: 1,
   bytes: body.length,
 });
 
@@ -78,7 +76,6 @@ const failed = (): FetchOutcome => ({
   code: "timeout",
   detail: null,
   retryAfterS: null,
-  durationMs: 1,
 });
 
 /** A fetcher that answers from a map and records every address it was asked for. */

@@ -181,7 +181,6 @@ async function pollOne(feed: ClaimedFeed, now: Date, deadline: number): Promise<
       status = "active";
       await recordPoll(feed.id, emptyCounters(), {
         statusCode: result.status,
-        durationMs: result.durationMs,
         bytes: null,
         note: result.soft ? "unchanged by body hash; server sent no validator" : null,
       });
@@ -192,7 +191,6 @@ async function pollOne(feed: ClaimedFeed, now: Date, deadline: number): Promise<
       await recordFailure(feed.id, result.code, result.detail);
       await recordPoll(feed.id, emptyCounters(), {
         statusCode: result.status,
-        durationMs: result.durationMs,
         bytes: null,
         errorCode: result.code,
         note: result.detail,
@@ -231,7 +229,6 @@ async function pollOne(feed: ClaimedFeed, now: Date, deadline: number): Promise<
       await recordFailure(feed.id, parsed.reason, null);
       await recordPoll(feed.id, emptyCounters(), {
         statusCode: result.status,
-        durationMs: result.durationMs,
         bytes: result.bytes,
         errorCode: parsed.reason,
       });
@@ -276,7 +273,7 @@ async function pollOne(feed: ClaimedFeed, now: Date, deadline: number): Promise<
     const { counters } = await runPoll(
       feed,
       items,
-      { statusCode: result.status, durationMs: result.durationMs, bytes: result.bytes },
+      { statusCode: result.status, bytes: result.bytes },
       now,
     );
     /*

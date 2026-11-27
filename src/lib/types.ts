@@ -56,7 +56,6 @@ export type FetchLogEntry = {
   at: string;
   /** See `FeedError.code`; the same union, from the same column. */
   code: number | "timeout" | "html" | "parse" | "too_large";
-  ms: number;
   itemsSeen: number;
   itemsNew: number;
   /** Collapses by rung, split so the health screen can show which rung worked. */
@@ -271,9 +270,17 @@ export type RawItem = {
 };
 
 /** One `POST /api/cron/poll` run, grouped from `fetch_log` (§6.4). */
+/**
+ * One run of the poll route, as the health screen shows it.
+ *
+ * NO DURATION, and that is deliberate rather than missing: `fetch_log` stopped
+ * storing one (see the migration that dropped `duration_ms`). A tick's own
+ * wall-clock was never in the table — what was there was the longest single
+ * HTTP request in it, which is not the tick's duration and not what the button
+ * that starts one takes either.
+ */
 export type Tick = {
   at: string;
-  ms: number;
   work: { feedId: number; code: FetchLogEntry["code"]; note?: string }[];
 };
 

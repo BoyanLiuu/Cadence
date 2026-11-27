@@ -2,7 +2,10 @@ import Link from "next/link";
 
 import { READER_PATH } from "@/lib/routes";
 
+import { Suspense } from "react";
+
 import { AppBar } from "@/components/app-bar";
+import { SavedSkeleton } from "./skeleton";
 import { listArticles, listSubscriptions } from "@/lib/server/article-service";
 import { requireViewer } from "@/lib/server/viewer";
 import { displayFeedId } from "@/lib/article-feed";
@@ -58,6 +61,45 @@ export default async function SavedPage({
   // `requireViewer()` redirected an anon away, so this is always a reader.
   const account = viewer.user;
 
+  const { show } = await searchParams;
+  const requested = firstParam(show);
+  const filter: Filter = requested === "unread" || requested === "read" ? requested : "all";
+
+  /*
+   * THE BAR FIRST, THE SHELF BEHIND A BOUNDARY.
+   *
+   * This page used to await its reads before rendering anything, and they are
+   * not cheap: `listSubscriptions` is ~600 ms against the remote pooler and the
+   * loop below fetches EVERY saved page. So clicking "Saved" in the nav left
+   * the previous screen on display for over a second — React keeps a resolved
+   * tree until the next one has something to show.
+   *
+   * NOT A `loading.tsx`, which was tried and reverted. It renders in the same
+   * frame as the click — faster than this — but it begins the response BEFORE
+   * `requireViewer()`, so an anonymous visitor got 200 and a skeleton with
+   * "Add feed" and "Sign out" in it for a second before a meta-refresh
+   * redirect, where they had been getting an immediate 307. `smoke.spec.ts`
+   * caught it. The gate runs first here, which costs the one round trip
+   * `requireViewer()` takes and keeps the redirect exactly as it was.
+   */
+  return (
+    <>
+      <AppBar accountName={account.name} initials={account.initials} current="saved" />
+      <Suspense fallback={<SavedSkeleton />}>
+        <SavedShelf viewer={viewer} filter={filter} />
+      </Suspense>
+    </>
+  );
+}
+
+/** The shelf itself, awaiting its own reads so the boundary can wait on them. */
+async function SavedShelf({
+  viewer,
+  filter,
+}: {
+  viewer: Awaited<ReturnType<typeof requireViewer>>;
+  filter: Filter;
+}) {
   /*
    * EVERY saved article, not one page of them.
    *
@@ -75,10 +117,6 @@ export default async function SavedPage({
     all.push(...page.items);
     cursor = page.next ?? undefined;
   } while (cursor);
-
-  const { show } = await searchParams;
-  const requested = firstParam(show);
-  const filter: Filter = requested === "unread" || requested === "read" ? requested : "all";
 
   // Newest save first. The reader's own ordering is by publication, which is
   // the wrong axis here: you want what you put aside most recently.
@@ -107,81 +145,74 @@ export default async function SavedPage({
   ];
 
   return (
-    <>
-      <AppBar accountName={account.name} initials={account.initials} current="saved" />
+    <main className="px-lg py-xl gap-lg mx-auto grid max-w-[1180px]">
+      <header className="gap-xs grid">
+        <h1>Saved for later</h1>
+        <p className="text-muted num text-sm">
+          {saved.length} {saved.length === 1 ? "article" : "articles"}
+          {saved.length > 0 ? `, ${unreadCount} unread` : ""}
+        </p>
+      </header>
 
-      <main className="px-lg py-xl gap-lg mx-auto grid max-w-[1180px]">
-        <header className="gap-xs grid">
-          <h1>Saved for later</h1>
-          <p className="text-muted num text-sm">
-            {saved.length} {saved.length === 1 ? "article" : "articles"}
-            {saved.length > 0 ? `, ${unreadCount} unread` : ""}
-          </p>
-        </header>
+      {saved.length === 0 ? (
+        <SavedEmpty />
+      ) : (
+        <>
+          <div className="inline-flex justify-self-start">
+            {tabs.map((tab, i) => (
+              <Link
+                key={tab.key}
+                href={tab.key === "all" ? "/saved" : `/saved?show=${tab.key}`}
+                aria-current={filter === tab.key ? "true" : undefined}
+                className={`border-muted bg-paper-hi text-ink-2 px-sm gap-2xs aria-[current]:border-ink aria-[current]:bg-ink aria-[current]:text-paper hover:bg-paper-2 inline-flex min-h-8 items-center border font-medium no-underline transition-colors ${
+                  i === 0 ? "rounded-l-[2px]" : "-ml-px"
+                } ${i === tabs.length - 1 ? "rounded-r-[2px]" : ""}`}
+              >
+                {tab.label} <span className="num">{tab.count}</span>
+              </Link>
+            ))}
+          </div>
 
-        {saved.length === 0 ? (
-          <SavedEmpty />
-        ) : (
-          <>
-            <div className="inline-flex justify-self-start">
-              {tabs.map((tab, i) => (
-                <Link
-                  key={tab.key}
-                  href={tab.key === "all" ? "/saved" : `/saved?show=${tab.key}`}
-                  aria-current={filter === tab.key ? "true" : undefined}
-                  className={`border-muted bg-paper-hi text-ink-2 px-sm gap-2xs aria-[current]:border-ink aria-[current]:bg-ink aria-[current]:text-paper hover:bg-paper-2 inline-flex min-h-8 items-center border font-medium no-underline transition-colors ${
-                    i === 0 ? "rounded-l-[2px]" : "-ml-px"
-                  } ${i === tabs.length - 1 ? "rounded-r-[2px]" : ""}`}
-                >
-                  {tab.label} <span className="num">{tab.count}</span>
-                </Link>
+          {shown.length === 0 ? (
+            <SavedFilterEmpty filter={filter === "read" ? "read" : "unread"} total={saved.length} />
+          ) : (
+            <ul className="border-ink m-0 grid list-none border-t p-0">
+              {shown.map((article) => (
+                <li key={article.id} className="border-rule border-b">
+                  <Link
+                    /*
+                     * CARRIES THE SAVED SCOPE, not just the article.
+                     *
+                     * Without `scope=saved` this landed in All unread with a
+                     * READ article open — and every saved article here is
+                     * read, so the row being opened was not in the list
+                     * beside it. The pane showed the right piece in the
+                     * wrong company.
+                     */
+                    href={`${READER_PATH}?scope=saved&article=${article.id}`}
+                    className="gap-sm px-sm py-md hover:bg-paper-2 grid items-baseline no-underline transition-colors md:grid-cols-[minmax(0,1fr)_14rem_7rem_5rem_5rem]"
+                  >
+                    <span className="font-display text-ink text-xl text-pretty">
+                      {article.title}
+                    </span>
+                    <span className="text-ink-2 text-sm">
+                      {articleFeedTitle(article)}
+                      {article.author ? `, ${article.author}` : ""}
+                    </span>
+                    <span className="text-ink-2 num text-sm">Saved {DATE(article.savedAt!)}</span>
+                    <span className="text-ink-2 num text-sm">
+                      {readingMinutes(article.words)} min
+                    </span>
+                    <span className="text-ink-2 text-sm">
+                      {article.readAt === null ? "Unread" : "Read"}
+                    </span>
+                  </Link>
+                </li>
               ))}
-            </div>
-
-            {shown.length === 0 ? (
-              <SavedFilterEmpty
-                filter={filter === "read" ? "read" : "unread"}
-                total={saved.length}
-              />
-            ) : (
-              <ul className="border-ink m-0 grid list-none border-t p-0">
-                {shown.map((article) => (
-                  <li key={article.id} className="border-rule border-b">
-                    <Link
-                      /*
-                       * CARRIES THE SAVED SCOPE, not just the article.
-                       *
-                       * Without `scope=saved` this landed in All unread with a
-                       * READ article open — and every saved article here is
-                       * read, so the row being opened was not in the list
-                       * beside it. The pane showed the right piece in the
-                       * wrong company.
-                       */
-                      href={`${READER_PATH}?scope=saved&article=${article.id}`}
-                      className="gap-sm px-sm py-md hover:bg-paper-2 grid items-baseline no-underline transition-colors md:grid-cols-[minmax(0,1fr)_14rem_7rem_5rem_5rem]"
-                    >
-                      <span className="font-display text-ink text-xl text-pretty">
-                        {article.title}
-                      </span>
-                      <span className="text-ink-2 text-sm">
-                        {articleFeedTitle(article)}
-                        {article.author ? `, ${article.author}` : ""}
-                      </span>
-                      <span className="text-ink-2 num text-sm">Saved {DATE(article.savedAt!)}</span>
-                      <span className="text-ink-2 num text-sm">
-                        {readingMinutes(article.words)} min
-                      </span>
-                      <span className="text-ink-2 text-sm">
-                        {article.readAt === null ? "Unread" : "Read"}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </main>
-    </>
+            </ul>
+          )}
+        </>
+      )}
+    </main>
   );
 }

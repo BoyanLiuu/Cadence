@@ -21,7 +21,6 @@ import type { LadderCounters } from "./dedupe";
 export type PollTransport = {
   /** Null for a poll that never got a response — a timeout, a DNS failure. */
   statusCode: number | null;
-  durationMs: number;
   bytes: number | null;
   /** A stable short code, not a message. `ETIMEDOUT`, `28P01`, `not_a_feed`. */
   errorCode?: string | null;
@@ -45,13 +44,13 @@ export async function recordPoll(
 ): Promise<bigint> {
   const rows = await prisma.$queryRaw<{ id: bigint }[]>`
     INSERT INTO cadence.fetch_log
-      (feed_id, at, status_code, duration_ms, bytes,
+      (feed_id, at, status_code, bytes,
        items_seen, items_new,
        merged_by_guid, merged_by_url, merged_by_content,
        guid_agreed, guid_churned,
        revised, error_code, note)
     VALUES
-      (${feedId}, now(), ${transport.statusCode}, ${transport.durationMs}, ${transport.bytes},
+      (${feedId}, now(), ${transport.statusCode}, ${transport.bytes},
        ${counters.itemsSeen}, ${counters.itemsNew},
        ${counters.mergedByGuid}, ${counters.mergedByUrl}, ${counters.mergedByContent},
        ${counters.guidAgreed}, ${counters.guidChurned},

@@ -377,7 +377,6 @@ async function main() {
           at: rebase(entry.at),
           statusCode: numericCode,
           errorCode: numericCode === null ? String(entry.code) : null,
-          durationMs: entry.ms,
           itemsSeen: entry.itemsSeen,
           itemsNew: entry.itemsNew,
           mergedByGuid: entry.mergedByGuid,
@@ -547,7 +546,6 @@ async function main() {
           feedId: BigInt(feed.id),
           at: at(i),
           statusCode: 200,
-          durationMs: 180,
           ...(first ? sums : {}),
         },
       });
@@ -559,13 +557,12 @@ async function main() {
           at: at(i),
           statusCode: null,
           errorCode: "timeout",
-          durationMs: 10_000,
         },
       });
     }
     for (let n = 0; n < missing304; n++, i++) {
       await prisma.fetchLog.create({
-        data: { feedId: BigInt(feed.id), at: at(i), statusCode: 304, durationMs: 40 },
+        data: { feedId: BigInt(feed.id), at: at(i), statusCode: 304 },
       });
     }
   }

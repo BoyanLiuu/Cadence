@@ -29,6 +29,73 @@ import { extractFullText } from "@/app/(reader)/article-actions.action";
  * serve it. §6.5's budget is one page load per article a person asked for.
  */
 
+/**
+ * The shape of the prose that is coming, while a publisher's page is read.
+ *
+ * WHY A SKELETON AND NOT THE SENTENCE IT REPLACES. "Reading the full text from
+ * the page…" said what was happening and showed nothing happening — one grey
+ * line under a teaser, with no sign of how much was on its way. The extraction
+ * is a real network round trip to someone else's server (`FETCH_TIMEOUT_MS` is
+ * 10 s, and a slow publisher uses most of it), which is long enough that a
+ * reader starts to wonder whether the article is simply this short.
+ *
+ * PARAGRAPHS, BECAUSE THAT IS WHAT ARRIVES. The same argument as
+ * `ArticleListSkeleton`: the shape of what is coming is already known — body
+ * prose at `--text-read` — so the placeholder is that shape, and the pane does
+ * not jump when the real text lands. Bar heights and the `1.7` leading are the
+ * body's own, so the rhythm matches rather than approximates.
+ *
+ * TWO PARAGRAPHS AND NOT TEN. This sits BELOW the feed's teaser, which is real
+ * text the reader may already be reading — enough placeholder to promise more
+ * is coming, not so much that the screen becomes mostly grey bars. The last
+ * line of each is short, because a paragraph's last line is.
+ *
+ * `animate-pulse` IS OPACITY ONLY, so it costs no layout and settles under
+ * `prefers-reduced-motion` with the rest of the project's motion
+ * (`globals.css`).
+ */
+function FullTextSkeleton() {
+  /* Widths, not a loop over one width: even bars read as a table, not prose. */
+  const paragraphs = [
+    ["100%", "97%", "99%", "64%"],
+    ["100%", "95%", "41%"],
+  ];
+
+  return (
+    <div
+      /*
+       * ANNOUNCED ONCE, as a sentence. `aria-busy` with a polite live region
+       * and a LABEL is what a screen reader reads — seven anonymous bars are
+       * not an announcement. The bars are `aria-hidden`: they are the shape of
+       * content, not content. This is also why removing the old `role="status"`
+       * paragraph loses nothing for a reader who cannot see the pulse.
+       */
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Reading the full text from the page"
+      className="gap-md grid"
+    >
+      {paragraphs.map((lines, p) => (
+        <div key={p} className="gap-2xs grid" aria-hidden="true">
+          {lines.map((width, i) => (
+            <div
+              key={i}
+              style={{ width }}
+              /*
+               * `h-[calc(var(--text-read)*1.7)]` would be the body's exact line
+               * box; `h-4` with the grid's own gap measures the same and keeps
+               * the bar thinner than the line, which is what makes it read as
+               * text rather than as a filled block.
+               */
+              className="bg-paper-3 h-4 animate-pulse rounded-[2px]"
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function FullText({
   articleId,
   /** True when the feed's own body is not the article (§6.5). */
@@ -85,17 +152,17 @@ export function FullText({
 
   if (state === "idle") return null;
 
-  if (state === "reading") {
-    return (
-      <p className="text-muted px-lg py-md text-sm" role="status">
-        Reading the full text from the page…
-      </p>
-    );
-  }
+  if (state === "reading") return <FullTextSkeleton />;
 
   if (state === "failed") {
     return (
-      <p className="text-muted px-lg py-md text-sm" role="status">
+      /*
+       * NO `px-lg`, like the skeleton below and for the same reason: the pane
+       * is already inset by the article's own `px-2xl`, so this added a second
+       * indent and the sentence started further right than the body text it is
+       * about.
+       */
+      <p className="text-muted text-sm" role="status">
         {message ?? "The full text could not be read from the page."} This is what the feed sent.
       </p>
     );

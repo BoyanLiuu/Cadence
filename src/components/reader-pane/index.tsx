@@ -6,6 +6,7 @@ import { needsExtraction } from "@/lib/extract/readability";
 
 import { ArticleActions } from "./article-actions";
 import { FullText } from "./full-text";
+import { readingMinutes, stamp } from "./format";
 import { NORM_VERSION } from "@/lib/ingest/canonical-url";
 import { joinSetAside, redlineUrl } from "@/lib/ingest/url-redline";
 import { otherFeedCount, type Article } from "@/lib/types";
@@ -18,18 +19,9 @@ import { otherFeedCount, type Article } from "@/lib/types";
  * imports belong in this file.
  */
 
-const stamp = (iso: string) =>
-  new Date(iso).toLocaleString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "UTC",
-  });
-
-/** Roughly 200 words a minute, floored at one. */
-const readingMinutes = (words: number) => Math.max(1, Math.round(words / 200));
+// `stamp` and `readingMinutes` live in `./format` so the client component that
+// paints this header on click can use the SAME two functions — see the note
+// there, and `pane-swap.tsx`.
 
 /**
  * The arrivals proof: every address this article came in under, collapsing to

@@ -5,6 +5,9 @@ import { ArticleList, decodeCursor } from "@/components/article-list";
 import { ArticleListSkeleton } from "@/components/article-list/skeleton";
 import { AppBar } from "@/components/app-bar";
 import { ReaderPane } from "@/components/reader-pane";
+import { PaneSwap } from "@/components/reader-pane/pane-swap";
+import { ReaderPaneSkeleton } from "@/components/reader-pane/skeleton";
+import { SidebarSkeleton } from "@/components/sidebar/skeleton";
 
 import { chooseListState } from "./choose-list-state";
 import { normaliseParams, type RawReaderParams } from "./normalise-params";
@@ -53,19 +56,6 @@ export async function ReaderView({
   // `requireViewer()` redirected an anon away, so this is always a reader.
   const account = viewer.user;
 
-  const [subs, folders] = await Promise.all([listSubscriptions(viewer), listFolders(viewer)]);
-
-  /*
-   * An id nobody is subscribed to is a 404, not an empty reader.
-   *
-   * Falling through used to render the global `all-read` state with the
-   * ACCOUNT-WIDE unread total under a feed heading — `/feed/9999` showed
-   * "All unread / 81 unread" above "Nothing unread in any feed". That is not
-   * an empty view, it is a wrong one, and it is indistinguishable from an
-   * unsubscribe having silently emptied a real feed.
-   */
-  if (feedId !== undefined && !subs.some((s) => s.feedId === feedId)) notFound();
-
   // Normalised once, in a pure function that tests can reach. See
   // `normalise-params.ts` for the two bugs that justify it being separate.
   const params = normaliseParams(searchParams);
@@ -75,9 +65,14 @@ export async function ReaderView({
   const cursor = decodeCursor(params.before);
   // Strict, like the feed id: `?folder=2abc` is a wrong URL, not folder 2.
   const folderId = params.folder !== undefined ? strictId(params.folder) : undefined;
+  /*
+   * THE MALFORMED-URL 404s STAY HERE, where they cost nothing: `?folder=2abc`
+   * is answerable from the string alone. The EXISTENCE checks — a feed or
+   * folder that parses but is nobody's — moved into `readerShell` below,
+   * because they need the subscription list and nothing else on this screen
+   * should wait on it. See the note on that function.
+   */
   if (params.folder !== undefined && folderId === null) notFound();
-  // An unknown folder is also a 404, for the same reason an unknown feed is.
-  if (folderId != null && !folders.some((f) => f.id === folderId)) notFound();
 
   const openId = strictId(params.article);
 
@@ -115,32 +110,167 @@ export async function ReaderView({
             : { kind: "all" };
 
   /*
-   * THREE INDEPENDENT READS, ONE ROUND TRIP OF WAITING.
+   * STARTED, NOT AWAITED — and that one word is what this whole screen's
+   * responsiveness turns on.
    *
-   * These were three separate `await`s spread down the file — the list here,
-   * the unread count a dozen lines below it, the open article at the bottom —
-   * and nothing between them used the one before. Against a REMOTE Postgres
-   * that is three sequential round trips where one would do, and it is most of
-   * why clicking a folder in the sidebar felt like a click that had not
-   * registered: ~350 ms, of which two thirds was waiting in a queue of our own
-   * making.
+   * `readerShell` is the expensive read: `listSubscriptions` alone is ~600 ms
+   * against the remote pooler, the slowest query in the project, because it
+   * carries every feed's unread count and today's counters. It used to be
+   * awaited HERE, before anything rendered — so every click in the reader,
+   * including opening an article, blocked the entire tree on it. React holds a
+   * resolved tree on screen while the next one renders, so what a reader saw
+   * was ~900 ms of the PREVIOUS article under their click, then a swap.
    *
-   * They are genuinely independent. `scope` comes from the search params and
-   * the folder list; `cursor` and `query` from the params; `openId` from
-   * `?article=`. None of them is derived from another's result, which is
-   * exactly why the sequence was invisible — each `await` read naturally where
-   * it sat.
+   * Holding the promise instead lets this function return immediately. The
+   * three panes below each `await` it inside their OWN `<Suspense>`, so each
+   * one decides for itself whether to show a placeholder or hold still:
    *
-   * `getArticle` RESOLVES TO NULL WITHOUT A QUERY when nothing is open, so the
-   * common case still issues two.
+   *   the sidebar     unkeyed — holds its old content, never flickers
+   *   the list        keyed on the scope — skeleton when the scope changes
+   *   the reading pane keyed on the article — skeleton on every open
+   *
+   * ONE PROMISE, AWAITED THREE TIMES. A promise can be awaited by any number
+   * of consumers and runs once, so this is still one set of queries per
+   * request — which is why it is passed down rather than each pane calling
+   * `readerShell` itself. `cache()` would also dedupe, but only on argument
+   * identity, and these arguments are rebuilt on every render.
    */
+  const shell = readerShell(viewer, { feedId, folderId });
+
+  return (
+    <>
+      <AppBar accountName={account.name} initials={account.initials} current="reader" />
+      <div className="grid min-h-[calc(100dvh-var(--bar-height))] items-start md:grid-cols-[var(--side-w)_minmax(0,1fr)] lg:grid-cols-[var(--side-w)_var(--list-w)_minmax(0,1fr)]">
+        {/*
+         * UNKEYED, DELIBERATELY — the opposite of the two boundaries below.
+         *
+         * With no key there is nothing to re-suspend on, so React keeps the
+         * resolved sidebar on screen while the new one loads and the reader
+         * never sees it blink. That is the point: the sidebar is identical on
+         * every screen in the reader, and the list skeleton's own note says
+         * the sidebar staying still is what makes the rest read as a pane
+         * loading rather than the page jumping. `SidebarSkeleton` is therefore
+         * only ever seen on a first paint.
+         */}
+        <Suspense fallback={<SidebarSkeleton />}>
+          <SidebarPane shell={shell} params={params} unreadOnly={unreadOnly} feedId={feedId} />
+        </Suspense>
+        {/*
+         * KEYED ON THE SCOPE — and the key does LESS than this comment used to
+         * claim, which is worth correcting in place rather than quietly.
+         *
+         * It said: "a folder navigates by search param, `loading.tsx` never
+         * fires, so changing the key throws the old subtree away and the
+         * fallback shows immediately". The first half is true. The last clause
+         * is not, and it was never measured. Recorded here from a browser,
+         * with a `MutationObserver` watching every change:
+         *
+         *   /reader -> /feed/1   a ROUTE change    skeleton at 86-133 ms  ✓
+         *   ?folder=2            a SEARCH PARAM    no skeleton, 926 ms
+         *
+         * React will not replace content that is already on screen with a
+         * fallback during a transition, and Next wraps a search-param
+         * navigation in one. A new key remounts the boundary but buys no
+         * exception: React waits for the content instead.
+         *
+         * SO WHAT THIS BOUNDARY IS ACTUALLY FOR is the first paint and route
+         * changes — `/reader` <-> `/feed/1`, which is how a feed is opened from
+         * the sidebar — and there it is worth having and now fires in ~100 ms
+         * rather than ~1080 ms, because nothing upstream blocks it any more.
+         *
+         * A FOLDER CLICK STILL HAS NO PLACEHOLDER. The reading pane solved the
+         * same problem with client-owned state in `pane-swap.tsx`; the list has
+         * not been given the equivalent. Named rather than left as a surprise.
+         *
+         * The cursor and the query are in the key as well as the scope: paging
+         * and searching are the same wait for the same reason.
+         */}
+        <Suspense
+          key={`${JSON.stringify(scope)}|${params.before ?? ""}|${query}`}
+          fallback={<ArticleListSkeleton />}
+        >
+          <ListPane
+            shell={shell}
+            viewer={viewer}
+            scope={scope}
+            cursor={cursor}
+            query={query}
+            unreadOnly={unreadOnly}
+            /*
+             * THE ID FROM THE URL, not from the loaded article — which it was,
+             * and could no longer be once the article moved behind its own
+             * boundary. The two agree whenever the article exists; when it
+             * does not, this is an id matching no row, so the list highlights
+             * nothing and `ScrollOpenIntoView` finds nothing to scroll to.
+             * That is what it did before as well, by a longer route.
+             */
+            openArticleId={openId}
+            params={params}
+          />
+        </Suspense>
+        {/*
+         * KEYED ON THE OPEN ARTICLE, which is the fix for "I clicked and it
+         * showed me the last one for a second".
+         *
+         * Same mechanism as the list: `?article=123` is a search-param
+         * navigation, so the route segment is not remounted, `loading.tsx`
+         * never fires, and an unkeyed boundary would keep the previous
+         * article's text on screen for the whole round trip. A new key throws
+         * that subtree away, so the skeleton is on screen in the same frame as
+         * the click and the article streams in behind it.
+         *
+         * `"none"` for nothing open, so closing an article also re-suspends
+         * rather than holding the piece that was just closed.
+         */}
+        <Suspense key={openId ?? "none"} fallback={<ReaderPaneSkeleton />}>
+          <ReadingPane shell={shell} viewer={viewer} openId={openId} />
+        </Suspense>
+      </div>
+    </>
+  );
+}
+
+type Viewer = Awaited<ReturnType<typeof requireViewer>>;
+
+/**
+ * Everything on this screen that needs the subscription list, read once.
+ *
+ * WHY IT IS ONE FUNCTION AND NOT THREE READS. The sidebar, the list's empty
+ * states and the reading pane's byline all need `subs`, and all three now live
+ * behind separate `<Suspense>` boundaries — so without a single shared promise
+ * each boundary would issue its own copy of the project's most expensive query.
+ * The parent starts this once and hands the same promise to all three.
+ *
+ * THE DERIVATIONS COME WITH THE DATA, for the same reason: `feedTitleOf`,
+ * `articleFeedTitle`, the title and `scopedSubs` were computed in the parent
+ * from `subs`, and three panes each deriving their own copy is three places for
+ * the rung-2 labelling rule to drift. They are returned here so there is still
+ * exactly one definition of each.
+ */
+async function readerShell(
+  viewer: Viewer,
+  { feedId, folderId }: { feedId?: number; folderId?: number | null },
+) {
+  const [subs, folders] = await Promise.all([listSubscriptions(viewer), listFolders(viewer)]);
+
   /*
-   * THE OPEN ARTICLE ONLY. The list and its count moved into `ListPane` below
-   * so a keyed `<Suspense>` can show a skeleton while they load — see the note
-   * there. This one stays here because both the list and the reading pane need
-   * its id, and because the reading pane is not what a sidebar click changes.
+   * An id nobody is subscribed to is a 404, not an empty reader.
+   *
+   * Falling through used to render the global `all-read` state with the
+   * ACCOUNT-WIDE unread total under a feed heading — `/feed/9999` showed
+   * "All unread / 81 unread" above "Nothing unread in any feed". That is not
+   * an empty view, it is a wrong one, and it is indistinguishable from an
+   * unsubscribe having silently emptied a real feed.
+   *
+   * CALLED IN HERE NOW, which is a real consequence of moving the read behind
+   * a boundary: the shell paints before this runs, so a bad id shows the
+   * reader's frame for a moment and then the 404 page. That is the cost of not
+   * blocking every good URL on this check, and a URL nobody can reach by
+   * clicking is the right place to pay it.
    */
-  const openArticle = openId === null ? null : await getArticle(viewer, openId);
+  if (feedId !== undefined && !subs.some((s) => s.feedId === feedId)) notFound();
+  // An unknown folder is also a 404, for the same reason an unknown feed is.
+  if (folderId != null && !folders.some((f) => f.id === folderId)) notFound();
 
   const subOf = (id: number) => subs.find((s) => s.feedId === id);
   const feedTitleOf = (id: number) => {
@@ -167,81 +297,34 @@ export async function ReaderView({
     : folder
       ? subs.filter((s) => s.folderId === folder.id)
       : subs;
-  /*
-   * ASKED, not summed — and asked in the `Promise.all` above.
-   *
-   * Summing the sidebar's per-feed badges was correct only while an article
-   * belonged to exactly one feed. Rung 2 is global, so a story carried by two
-   * subscribed feeds is ONE article with TWO arrivals: each badge counts it
-   * correctly and the sum counts it twice, so the header read "2 unread" above
-   * a list holding one row.
-   */
 
-  const title = currentSub
-    ? feedTitleOf(currentSub.feedId)
-    : folder
-      ? folder.name
-      : scope.kind === "saved"
-        ? "Saved for later"
-        : unreadOnly
-          ? "All unread"
-          : "All articles";
+  return { subs, folders, feedTitleOf, articleFeedTitle, currentSub, folder, scopedSubs };
+}
 
+type Shell = Promise<Awaited<ReturnType<typeof readerShell>>>;
+
+/** The sidebar, awaiting the shell so its boundary has something to wait on. */
+async function SidebarPane({
+  shell,
+  params,
+  unreadOnly,
+  feedId,
+}: {
+  shell: Shell;
+  params: ReaderParams;
+  unreadOnly: boolean;
+  feedId?: number;
+}) {
+  const { subs, folders, folder } = await shell;
   return (
-    <>
-      <AppBar accountName={account.name} initials={account.initials} current="reader" />
-      <div className="grid min-h-[calc(100dvh-var(--bar-height))] items-start md:grid-cols-[var(--side-w)_minmax(0,1fr)] lg:grid-cols-[var(--side-w)_var(--list-w)_minmax(0,1fr)]">
-        <Sidebar
-          folders={folders}
-          subs={subs}
-          currentFeedId={feedId}
-          currentFolderId={folder?.id}
-          scope={unreadOnly ? "unread" : "all"}
-          params={params}
-        />
-        {/*
-         * KEYED ON THE SCOPE, which is what makes the skeleton appear at all.
-         *
-         * A folder navigates by SEARCH PARAM — `/reader?folder=2` — and Next
-         * does not remount a route segment for that, so `loading.tsx` never
-         * fires and an unkeyed `<Suspense>` has nothing to re-suspend: React
-         * keeps the resolved children on screen while the new ones load,
-         * which is exactly the "nothing happened" this is fixing.
-         *
-         * Changing the key throws the old subtree away, so the fallback shows
-         * immediately and the new pane streams in behind it. The sidebar and
-         * the reading pane are outside the boundary and do not move.
-         *
-         * The cursor and the query are in the key as well as the scope: paging
-         * and searching are the same wait for the same reason.
-         */}
-        <Suspense
-          key={`${JSON.stringify(scope)}|${params.before ?? ""}|${query}`}
-          fallback={<ArticleListSkeleton />}
-        >
-          <ListPane
-            viewer={viewer}
-            scope={scope}
-            cursor={cursor}
-            query={query}
-            title={title}
-            unreadOnly={unreadOnly}
-            currentSub={currentSub}
-            folder={folder}
-            scopedSubs={scopedSubs}
-            feedTitleOf={feedTitleOf}
-            articleFeedTitle={articleFeedTitle}
-            openArticleId={openArticle?.id ?? null}
-            params={params}
-          />
-        </Suspense>
-        <ReaderPane
-          article={openArticle}
-          feedTitleOf={feedTitleOf}
-          articleFeedTitle={articleFeedTitle}
-        />
-      </div>
-    </>
+    <Sidebar
+      folders={folders}
+      subs={subs}
+      currentFeedId={feedId}
+      currentFolderId={folder?.id}
+      scope={unreadOnly ? "unread" : "all"}
+      params={params}
+    />
   );
 }
 
@@ -255,53 +338,59 @@ export async function ReaderView({
  * boundary ever suspended: the parent simply took 220 ms longer to render and
  * the reader watched an unchanged screen.
  *
- * ITS TWO READS STILL RUN TOGETHER. They were parallelised earlier for the same
- * latency — the rows and the count are independent, and the count is what the
- * header prints — so the `Promise.all` moved here with them rather than being
- * unpicked.
+ * ITS READS STILL RUN TOGETHER, and now the shell runs with them. The rows, the
+ * count and the subscription list are mutually independent — the first two come
+ * from `scope`, which the parent derives from the URL alone — so all three are
+ * in one `Promise.all` rather than the list waiting on the sidebar's query.
  */
 async function ListPane({
+  shell,
   viewer,
   scope,
   cursor,
   query,
-  title,
   unreadOnly,
-  currentSub,
-  folder,
-  scopedSubs,
-  feedTitleOf,
-  articleFeedTitle,
   openArticleId,
   params,
 }: {
-  viewer: Awaited<ReturnType<typeof requireViewer>>;
+  shell: Shell;
+  viewer: Viewer;
   scope: Scope;
   cursor: ReturnType<typeof decodeCursor>;
   query: string;
-  title: string;
   unreadOnly: boolean;
-  currentSub: Parameters<typeof chooseListState>[0]["currentSub"];
-  folder: Parameters<typeof chooseListState>[0]["folder"];
-  scopedSubs: Parameters<typeof chooseListState>[0]["scopedSubs"];
-  feedTitleOf: (id: number) => string;
-  articleFeedTitle: (a: Pick<Article, "feedId" | "arrivals">) => string;
   openArticleId: number | null;
   params: ReaderParams;
 }) {
-  const [page, unreadCount] = await Promise.all([
-    listArticles(viewer, scope, cursor, { query }),
-    /*
-     * ASKED, not summed.
-     *
-     * Summing the sidebar's per-feed badges was correct only while an article
-     * belonged to exactly one feed. Rung 2 is global, so a story carried by two
-     * subscribed feeds is ONE article with TWO arrivals: each badge counts it
-     * correctly and the sum counts it twice, so the header read "2 unread"
-     * above a list holding one row.
-     */
-    countUnread(viewer, scope),
-  ]);
+  const [{ feedTitleOf, articleFeedTitle, currentSub, folder, scopedSubs }, page, unreadCount] =
+    await Promise.all([
+      shell,
+      listArticles(viewer, scope, cursor, { query }),
+      /*
+       * ASKED, not summed.
+       *
+       * Summing the sidebar's per-feed badges was correct only while an article
+       * belonged to exactly one feed. Rung 2 is global, so a story carried by
+       * two subscribed feeds is ONE article with TWO arrivals: each badge
+       * counts it correctly and the sum counts it twice, so the header read
+       * "2 unread" above a list holding one row.
+       */
+      countUnread(viewer, scope),
+    ]);
+
+  /*
+   * THE HEADING, derived here because it needs both halves: the scope comes
+   * from the URL and the feed's or folder's NAME comes from the shell.
+   */
+  const title = currentSub
+    ? feedTitleOf(currentSub.feedId)
+    : folder
+      ? folder.name
+      : scope.kind === "saved"
+        ? "Saved for later"
+        : unreadOnly
+          ? "All unread"
+          : "All articles";
 
   const state = chooseListState({
     page,
@@ -325,5 +414,45 @@ async function ListPane({
       articleFeedTitle={articleFeedTitle}
       params={params}
     />
+  );
+}
+
+/*
+ * The reading pane, fetching its own article.
+ *
+ * THE ARTICLE AND THE SHELL IN PARALLEL. `getArticle` needs only the id from
+ * the URL and the pane's byline needs only the shell, so waiting for one before
+ * starting the other would add a round trip to the thing this whole change
+ * exists to make feel immediate.
+ *
+ * `getArticle` RESOLVES TO NULL WITHOUT A QUERY when nothing is open, so the
+ * empty pane costs nothing — but it still awaits the shell, which is why
+ * closing an article shows the skeleton briefly rather than nothing at all.
+ */
+async function ReadingPane({
+  shell,
+  viewer,
+  openId,
+}: {
+  shell: Shell;
+  viewer: Viewer;
+  openId: number | null;
+}) {
+  const [{ feedTitleOf, articleFeedTitle }, article] = await Promise.all([
+    shell,
+    openId === null ? null : getArticle(viewer, openId),
+  ]);
+
+  return (
+    /*
+     * WRAPPED, because the `<Suspense>` above only fires on a ROUTE change.
+     * `PaneSwap` owns the pending state for a `?article=` click, which React
+     * refuses to show a fallback for — measured, and written down in that
+     * file. The boundary above still earns its place for `/reader` <->
+     * `/feed/1` and for the first paint.
+     */
+    <PaneSwap articleId={article?.id ?? null}>
+      <ReaderPane article={article} feedTitleOf={feedTitleOf} articleFeedTitle={articleFeedTitle} />
+    </PaneSwap>
   );
 }

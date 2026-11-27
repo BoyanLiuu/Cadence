@@ -111,18 +111,16 @@ export type FetchOutcome =
        * that bounces `/` to `/blog/` had its feed looked for on the wrong path.
        */
       landedUrl: string;
-      durationMs: number;
       bytes: number;
     }
   /** Nothing to do. `soft` means the server did not say so; we noticed. */
-  | { kind: "unchanged"; status: number; soft: boolean; durationMs: number }
+  | { kind: "unchanged"; status: number; soft: boolean }
   /** A real failure, with a stable code for `fetch_log.error_code`. */
   | {
       kind: "failed";
       status: number | null;
       code: FetchFailure;
       detail: string | null;
-      durationMs: number;
       /** `Retry-After`, in seconds, when the server sent one. */
       retryAfterS: number | null;
     };
@@ -267,7 +265,6 @@ export async function fetchFeed(
         status: null,
         code: guard.reason,
         detail: target === feedUrl ? null : `after redirect to ${target}`,
-        durationMs: elapsed(),
         retryAfterS: null,
       };
     }
@@ -293,7 +290,6 @@ export async function fetchFeed(
         status: null,
         code: "timeout",
         detail: `poll exceeded ${FETCH_TOTAL_MS} ms`,
-        durationMs: elapsed(),
         retryAfterS: null,
       };
     }
@@ -317,14 +313,13 @@ export async function fetchFeed(
         status: null,
         code: timedOut ? "timeout" : "network",
         detail: error instanceof Error ? error.name : null,
-        durationMs: elapsed(),
         retryAfterS: null,
       };
     }
 
     // ---- 304: the cheap, common, correct case. Write NOTHING.
     if (response.status === 304) {
-      return { kind: "unchanged", status: 304, soft: false, durationMs: elapsed() };
+      return { kind: "unchanged", status: 304, soft: false };
     }
 
     // ---- A redirect. Validate the next hop rather than trusting it.
@@ -336,7 +331,6 @@ export async function fetchFeed(
           status: response.status,
           code: "http_error",
           detail: "redirect with no Location",
-          durationMs: elapsed(),
           retryAfterS: null,
         };
       }
@@ -346,7 +340,6 @@ export async function fetchFeed(
           status: response.status,
           code: "too_many_redirects",
           detail: null,
-          durationMs: elapsed(),
           retryAfterS: null,
         };
       }
@@ -370,7 +363,6 @@ export async function fetchFeed(
         status: response.status,
         code: "http_error",
         detail: null,
-        durationMs: elapsed(),
         retryAfterS: parseRetryAfter(response.headers.get("retry-after"), now.getTime()),
       };
     }
@@ -397,7 +389,6 @@ export async function fetchFeed(
         status: response.status,
         code: timedOut ? "timeout" : "network",
         detail: error instanceof Error ? `body: ${error.name}` : "body read failed",
-        durationMs: elapsed(),
         retryAfterS: null,
       };
     }
@@ -408,7 +399,6 @@ export async function fetchFeed(
         status: response.status,
         code: "too_large",
         detail: `over ${maxBytes} bytes`,
-        durationMs: elapsed(),
         retryAfterS: null,
       };
     }
@@ -425,7 +415,7 @@ export async function fetchFeed(
      * guid-trust detector.
      */
     if (validators.bodyHash !== null && equalBytes(bodyHash, validators.bodyHash)) {
-      return { kind: "unchanged", status: response.status, soft: true, durationMs: elapsed() };
+      return { kind: "unchanged", status: response.status, soft: true };
     }
 
     return {
@@ -442,7 +432,6 @@ export async function fetchFeed(
       // redirect, however many hops: see `permanentTarget`.
       finalUrl: permanentTarget,
       landedUrl: target,
-      durationMs: elapsed(),
       bytes: body.byteLength,
     };
   }

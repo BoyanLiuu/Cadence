@@ -271,6 +271,14 @@ function bodyOf(row: ArticleRow): string {
      * at render costs one HMAC per image and survives rotation.
      */
     rewriteImage: signImageUrl,
+    /*
+     * ONLY FOR THE FEED'S OWN BODY, which is why this is inside the ternary's
+     * shape rather than set unconditionally. A teaser ends with the
+     * publisher's "Keep reading" link pointing at the article; an EXTRACTED
+     * page ends with its own last paragraph, and a page that links to itself
+     * at the end is not a truncated teaser. See `dropTrailingSelfLink`.
+     */
+    selfUrl: html === row.extractedHtml ? undefined : row.url,
   });
 }
 
@@ -382,7 +390,6 @@ export function toFetchLogEntry(row: {
   at: Date;
   statusCode: number | null;
   errorCode: string | null;
-  durationMs: number;
   itemsSeen: number;
   itemsNew: number;
   mergedByGuid: number;
@@ -394,7 +401,6 @@ export function toFetchLogEntry(row: {
   return {
     at: isoRequired(row.at),
     code: codeOf(row.statusCode, row.errorCode),
-    ms: row.durationMs,
     itemsSeen: row.itemsSeen,
     itemsNew: row.itemsNew,
     mergedByGuid: row.mergedByGuid,

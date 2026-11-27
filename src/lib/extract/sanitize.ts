@@ -1,6 +1,8 @@
 import createDOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
 
+import { canonicalUrl } from "@/lib/ingest/canonical-url";
+
 /*
  * Turning third-party markup into something safe to render (§6.5, N9).
  *
@@ -164,6 +166,15 @@ export type SanitizeOptions = {
    * — correct and less private, which is the state before the proxy lands.
    */
   rewriteImage?: (absolute: string) => string | null;
+  /**
+   * The article's OWN address. Given it, a trailing "read more" block whose
+   * links all point back here is dropped — see `dropTrailingSelfLink`.
+   *
+   * Omitted for an EXTRACTED body, deliberately. A real page's last block is
+   * its last paragraph, and a page that happens to end by linking to itself
+   * (a canonical note, a permalink) is not a truncated teaser.
+   */
+  selfUrl?: string;
 };
 
 /** Third-party markup, cleaned and made absolute. Returns `""` for nothing usable. */
@@ -228,7 +239,7 @@ export function sanitizeHtml(html: string, options: SanitizeOptions): string {
  * the library mid-clean; this walks a document that is already safe, so the
  * worst a bug here can do is produce a broken link.
  */
-function rewriteUrls(root: Element, { baseUrl, rewriteImage }: SanitizeOptions): string {
+function rewriteUrls(root: Element, { baseUrl, rewriteImage, selfUrl }: SanitizeOptions): string {
   for (const anchor of root.querySelectorAll("a[href]")) {
     const absolute = absoluteHttpUrl(anchor.getAttribute("href") ?? "", baseUrl);
     if (absolute === null) {
@@ -269,7 +280,95 @@ function rewriteUrls(root: Element, { baseUrl, rewriteImage }: SanitizeOptions):
     image.setAttribute("decoding", "async");
   }
 
+  // AFTER the anchor loop, which is what makes the comparison possible: every
+  // surviving href is absolute by now, so a relative "read more" is matched
+  // the same as an absolute one.
+  if (selfUrl !== undefined) dropTrailingSelfLink(root, selfUrl);
+
   return root.innerHTML;
+}
+
+/**
+ * The longest a block can be and still be a "read more" rather than prose.
+ *
+ * The real ones are two or three words — "Keep reading.", "Read more →",
+ * "Continue reading", "Read the rest of this entry" — and the point of a cap is
+ * that a PARAGRAPH which happens to link to the article is kept. Without it,
+ * the last paragraph of a feed that publishes in full and ends with a permalink
+ * would be deleted from the body, which is losing an article's ending to tidy
+ * up a teaser's footer.
+ */
+const READ_MORE_MAX_CHARS = 120;
+
+/** A `<br>`, blank text, or an element with nothing in it to read or look at. */
+function isTrailingNoise(node: ChildNode): boolean {
+  if (node.nodeType === 3 /* text */) return (node.textContent ?? "").trim() === "";
+  if (node.nodeType !== 1 /* element */) return true;
+  const element = node as Element;
+  if (element.tagName === "BR" || element.tagName === "HR") return true;
+  return (element.textContent ?? "").trim() === "" && element.querySelector("img") === null;
+}
+
+/**
+ * Drops a teaser's "Keep reading" footer.
+ *
+ * WHY IT IS A BUG AND NOT JUST CLUTTER. A summary feed ends its body with the
+ * publisher's own call to action linking at the full article — Josh Comeau's
+ * feed sends `<div><strong><a href="…">Keep reading</a>.</strong></div>` and two
+ * `<br>`s. In Cadence that link is redundant three times over: "Open original"
+ * is already on the row, §6.5's extraction is ALREADY FETCHING that exact page,
+ * and the skeleton promising the full text sits directly underneath it. So the
+ * reader is told to go and read it elsewhere while the app is in the middle of
+ * bringing it to them, and the one thing the link does is leave the app.
+ *
+ * MATCHED ON THE ADDRESS, NOT ON THE WORDS. A regex for "keep reading" would be
+ * one publisher's phrasing, in English, and would also delete a sentence that
+ * merely contains those words. The structural fact is what generalises: the
+ * LAST block of a body, short, whose links all point AT THE ARTICLE ITSELF.
+ * Every feed's version of this footer has that shape whatever it says, and
+ * `canonicalUrl` — rung 2 of the dedup ladder — is what makes "points at the
+ * article itself" an answerable question across a trailing slash, `www.` and a
+ * tracking parameter.
+ *
+ * REFUSES TO EMPTY THE BODY. A feed whose entire body IS the link (no prose at
+ * all) keeps it: an empty pane with a failed extraction underneath would leave
+ * the reader with nothing, where the link at least goes somewhere. Stripping is
+ * only ever an improvement over something, never over nothing.
+ */
+function dropTrailingSelfLink(root: Element, selfUrl: string): void {
+  const self = canonicalUrl(selfUrl);
+  if (self === null) return;
+
+  /* The `<br><br>` the footer is padded with, before the footer is even found. */
+  const trimEnd = () => {
+    while (root.lastChild !== null && isTrailingNoise(root.lastChild)) {
+      root.lastChild.remove();
+    }
+  };
+  trimEnd();
+
+  const last = root.lastElementChild;
+  if (last === null) return;
+
+  const text = (last.textContent ?? "").trim();
+  if (text.length > READ_MORE_MAX_CHARS) return;
+
+  const links = [...last.querySelectorAll("a[href]")];
+  if (links.length === 0) return;
+  /*
+   * EVERY link, not the first. A footer reading "Keep reading · Discuss on
+   * Hacker News" points somewhere else as well, and dropping it would take the
+   * reader's only route to the discussion with it.
+   */
+  const allPointHere = links.every((a) => canonicalUrl(a.getAttribute("href")) === self);
+  if (!allPointHere) return;
+
+  /* Nothing would be left to read. See the note above: keep the link. */
+  const remaining = (root.textContent ?? "").trim().length - text.length;
+  if (remaining === 0 && root.querySelector("img") === null) return;
+
+  last.remove();
+  trimEnd();
 }
 
 /**

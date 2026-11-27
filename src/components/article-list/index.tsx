@@ -115,6 +115,40 @@ function Row({
       data-article-id={article.id}
       data-open={open ? "true" : "false"}
       data-dimmed={read && !open ? "true" : "false"}
+      /*
+       * THE HEADER'S FACTS, FOR THE PANE TO PAINT ON CLICK.
+       *
+       * `pane-swap.tsx` reads these off the clicked row and renders the
+       * reading pane's real feed name, headline and byline in the same frame
+       * as the click — about a second before the server answers. They are
+       * already here as props, so skeleton bars over a headline this row is
+       * displaying would have been a placeholder for something known.
+       *
+       * ATTRIBUTES RATHER THAN SCRAPED TEXT. The title is rendered with
+       * `text-pretty` and the feed name is truncated by CSS, so reading the
+       * elements' text would hand the pane whatever the layout did to it.
+       * These carry the values themselves — the same seam `data-article-id`
+       * already is, and the same reason the list stays a Server Component.
+       *
+       * THE BUTTONS' INPUTS ARE HERE TOO, which an earlier version of this
+       * refused on the grounds that rendering Save before the server had
+       * authorized the read would be "inventing authority on the client". That
+       * was wrong, and worth recording as wrong: `toggleSaved` and
+       * `toggleRead` authorize on the SERVER — `assertCan` plus the `user_id`
+       * filter in every query — so a button pressed early cannot do anything
+       * the reader was not already allowed to do. The client was never the
+       * gate. `data-url` is the server's own value, the same one already in
+       * this row's `href`, and `resolveUrl` admitted only `http:`/`https:` at
+       * ingest, so it is as safe to render here as in the pane.
+       */
+      data-title={article.title}
+      data-feed-title={feedTitle}
+      data-published-at={article.publishedAt}
+      data-author={article.author ?? ""}
+      data-words={article.words}
+      data-url={article.url}
+      data-read={read ? "true" : "false"}
+      data-saved={article.savedAt !== null ? "true" : "false"}
     >
       <Link
         // Keeps scope, search, folder AND the page: clicking a row on page 2

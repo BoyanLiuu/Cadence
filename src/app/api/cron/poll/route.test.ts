@@ -32,7 +32,6 @@ beforeEach(async () => {
     failed: 0,
     itemsNew: 0,
     budgetSpent: false,
-    durationMs: 1,
   });
   // Silenced: the fail-closed path logs to the operator on purpose, and a test
   // run should not look like a broken deployment.

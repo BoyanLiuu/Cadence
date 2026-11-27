@@ -53,7 +53,7 @@ const FEED_BODY = (n: number) =>
   `</channel></rss>`;
 
 function respond304(soft = false) {
-  fetchFeed.mockResolvedValue({ kind: "unchanged", status: soft ? 200 : 304, soft, durationMs: 5 });
+  fetchFeed.mockResolvedValue({ kind: "unchanged", status: soft ? 200 : 304, soft });
 }
 
 function respondChanged(items = 4) {
@@ -67,7 +67,6 @@ function respondChanged(items = 4) {
     lastModified: null,
     bodyHash: new Uint8Array(32),
     finalUrl: null,
-    durationMs: 9,
     bytes: body.length,
   });
 }
@@ -78,7 +77,6 @@ function respondFailure() {
     status: 500,
     code: "http_error",
     detail: null,
-    durationMs: 7,
     retryAfterS: null,
   });
 }

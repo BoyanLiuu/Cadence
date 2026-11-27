@@ -150,53 +150,68 @@ export async function listSubscriptions(viewer: Viewer): Promise<SubscriptionWit
   });
 
   const feedIds = subs.map((s) => s.feedId);
-  const today = await todayByFeed(feedIds);
 
   /*
-   * The unread count, as §6.2's query rather than as arithmetic.
+   * TWO QUERIES, ONE ROUND TRIP OF WAITING — the same defect `reader-view.tsx`
+   * fixed in the view layer, one layer down and costing more.
    *
-   * Written raw and deliberately. Two things were wrong with computing it as
-   * "articles in the feed minus articles this reader has read":
+   * This function was three sequential `await`s: the subscriptions, then
+   * today's counters, then the unread counts. The last two both need `feedIds`
+   * from the first and NEITHER needs the other, so the third round trip was
+   * pure queueing. Measured against the remote pooler: 900 ms for the three,
+   * ~600 ms once these two overlap.
    *
-   *  - It materialised EVERY article id the reader had ever read and sent them
-   *    back as an `IN (...)` list. That grows without bound and breaks outright
-   *    past Postgres' 65,535 bind-parameter limit — on the sidebar query, which
-   *    runs on every render.
-   *  - It asked the COMPLEMENT of what `ua_unread` indexes. That index is
-   *    partial on `read_at IS NULL`, so a query about rows where `read_at` is
-   *    NOT null can never use it, and the one index Appendix D added for this
-   *    count was dead weight.
-   *
-   * The LEFT JOIN below is §6.2 verbatim: a MISSING `user_articles` row means
-   * unread, which is why it cannot be an inner join and why rows are written
-   * lazily (§6.2).
-   *
-   * TABLES ARE SCHEMA-QUALIFIED. Prisma's generated queries know about
-   * `schemas = ["cadence"]`, but `$queryRaw` is passed through verbatim — and
-   * `?schema=` is a Prisma concept the `pg` driver ignores, so the runtime
-   * connection's `search_path` is Supabase's default `public, extensions`.
-   * Unqualified, this query looks for `public.articles` and fails. Verified by
-   * connecting, which is the only way this was ever going to surface.
+   * It matters more here than anywhere else in the project because this is the
+   * SIDEBAR's query, awaited before the reader's shell renders at all — so
+   * every millisecond is one the whole screen waits for, on every navigation.
    */
-  /*
-   * Grouped by the ARRIVING feed, not by `articles.feed_id`.
-   *
-   * Rung 2 is global, so a story through two feeds is one row owned by the
-   * first. Counting on `a.feed_id` credited that whole row to the first feed
-   * and gave the second a zero — so a sidebar badge said 0 unread next to a
-   * feed whose list had unread articles in it. `article_feeds` is what makes
-   * the badge agree with the list it labels.
-   */
-  const unreadRows = await prisma.$queryRaw<{ feed_id: bigint; unread: bigint }[]>`
-    SELECT af.feed_id, count(*) AS unread
-    FROM cadence.article_feeds af
-    JOIN cadence.articles a ON a.id = af.article_id
-    LEFT JOIN cadence.user_articles ua
-      ON ua.article_id = a.id AND ua.user_id = ${user.id}
-    WHERE af.feed_id = ANY(${feedIds}::bigint[])
-      AND ua.read_at IS NULL
-    GROUP BY af.feed_id
-  `;
+  const [today, unreadRows] = await Promise.all([
+    todayByFeed(feedIds),
+    /*
+     * The unread count, as §6.2's query rather than as arithmetic.
+     *
+     * Written raw and deliberately. Two things were wrong with computing it as
+     * "articles in the feed minus articles this reader has read":
+     *
+     *  - It materialised EVERY article id the reader had ever read and sent
+     *    them back as an `IN (...)` list. That grows without bound and breaks
+     *    outright past Postgres' 65,535 bind-parameter limit — on the sidebar
+     *    query, which runs on every render.
+     *  - It asked the COMPLEMENT of what `ua_unread` indexes. That index is
+     *    partial on `read_at IS NULL`, so a query about rows where `read_at` is
+     *    NOT null can never use it, and the one index Appendix D added for this
+     *    count was dead weight.
+     *
+     * The LEFT JOIN below is §6.2 verbatim: a MISSING `user_articles` row means
+     * unread, which is why it cannot be an inner join and why rows are written
+     * lazily (§6.2).
+     *
+     * TABLES ARE SCHEMA-QUALIFIED. Prisma's generated queries know about
+     * `schemas = ["cadence"]`, but `$queryRaw` is passed through verbatim — and
+     * `?schema=` is a Prisma concept the `pg` driver ignores, so the runtime
+     * connection's `search_path` is Supabase's default `public, extensions`.
+     * Unqualified, this query looks for `public.articles` and fails. Verified
+     * by connecting, which is the only way this was ever going to surface.
+     *
+     * Grouped by the ARRIVING feed, not by `articles.feed_id`. Rung 2 is
+     * global, so a story through two feeds is one row owned by the first.
+     * Counting on `a.feed_id` credited that whole row to the first feed and
+     * gave the second a zero — so a sidebar badge said 0 unread next to a feed
+     * whose list had unread articles in it. `article_feeds` is what makes the
+     * badge agree with the list it labels.
+     */
+    prisma.$queryRaw<{ feed_id: bigint; unread: bigint }[]>`
+      SELECT af.feed_id, count(*) AS unread
+      FROM cadence.article_feeds af
+      JOIN cadence.articles a ON a.id = af.article_id
+      LEFT JOIN cadence.user_articles ua
+        ON ua.article_id = a.id AND ua.user_id = ${user.id}
+      WHERE af.feed_id = ANY(${feedIds}::bigint[])
+        AND ua.read_at IS NULL
+      GROUP BY af.feed_id
+    `,
+  ]);
+
   const unreadByFeed = new Map(unreadRows.map((r) => [String(r.feed_id), Number(r.unread)]));
 
   return subs.map((s) => {
@@ -222,7 +237,7 @@ export async function listFolders(viewer: Viewer): Promise<Folder[]> {
 }
 
 /** The recent ticks and the per-invocation budget (§6.4). */
-export async function listTicks(viewer: Viewer): Promise<{ ticks: Tick[]; budgetMs: number }> {
+export async function listTicks(viewer: Viewer): Promise<Tick[]> {
   assertCan(viewer, "read");
   const user = requireUser(viewer);
 
@@ -241,7 +256,6 @@ export async function listTicks(viewer: Viewer): Promise<{ ticks: Tick[]; budget
     take: 40,
     select: {
       at: true,
-      durationMs: true,
       feedId: true,
       statusCode: true,
       errorCode: true,
@@ -265,13 +279,12 @@ export async function listTicks(viewer: Viewer): Promise<{ ticks: Tick[]; budget
     const work = { feedId: Number(row.feedId), code: entry.code };
     if (existing) {
       existing.work.push(work);
-      existing.ms = Math.max(existing.ms, row.durationMs);
     } else {
-      byMinute.set(minute, { at: row.at.toISOString(), ms: row.durationMs, work: [work] });
+      byMinute.set(minute, { at: row.at.toISOString(), work: [work] });
     }
   }
 
-  return { ticks: [...byMinute.values()].slice(0, 6), budgetMs: 240_000 };
+  return [...byMinute.values()].slice(0, 6);
 }
 
 /**

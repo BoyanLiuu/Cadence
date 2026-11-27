@@ -119,9 +119,6 @@ export default async function FeedChecksPage({ params }: { params: Promise<{ id:
                   <th scope="col" className="py-xs pr-md text-right font-medium">
                     Items
                   </th>
-                  <th scope="col" className="py-xs text-right font-medium">
-                    Took
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -136,9 +133,6 @@ export default async function FeedChecksPage({ params }: { params: Promise<{ id:
                     </td>
                     <td className="py-sm pr-md num text-ink-2 text-right">
                       {entry.itemsSeen === 0 ? "—" : entry.itemsSeen}
-                    </td>
-                    <td className="py-sm num text-ink-2 text-right whitespace-nowrap">
-                      {(entry.ms / 1000).toFixed(1)} s
                     </td>
                   </tr>
                 ))}

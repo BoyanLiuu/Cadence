@@ -68,31 +68,25 @@ export const subscriptions: readonly Subscription[] = following.map((s) => ({
 
 /** The six most recent poll runs that fetched anything, grouped from `fetch_log`. */
 export const ticks: readonly Tick[] = [
-  { at: D("11-12T09:37"), ms: 900, work: [{ feedId: 1, code: 304 }] },
+  { at: D("11-12T09:37"), work: [{ feedId: 1, code: 304 }] },
   {
     at: D("11-12T09:33"),
-    ms: 1700,
     work: [{ feedId: 3, code: 200, note: "1 matched by address" }],
   },
-  { at: D("11-12T09:30"), ms: 1400, work: [{ feedId: 10, code: 200, note: "1 revised" }] },
+  { at: D("11-12T09:30"), work: [{ feedId: 10, code: 200, note: "1 revised" }] },
   {
     at: D("11-12T09:26"),
-    ms: 2200,
     work: [{ feedId: 2, code: 200, note: "1 new, 2 matched by address" }],
   },
-  { at: D("11-12T09:24"), ms: 10400, work: [{ feedId: 12, code: "timeout" }] },
+  { at: D("11-12T09:24"), work: [{ feedId: 12, code: "timeout" }] },
   {
     at: D("11-12T09:22"),
-    ms: 1900,
     work: [
       { feedId: 1, code: 200, note: "1 new" },
       { feedId: 7, code: 304 },
     ],
   },
 ];
-
-/** §6.4: the per-invocation wall-clock budget, in ms. */
-export const BUDGET_MS = 240_000;
 
 /*
  * Canned `POST /api/feeds/discover` answers, for the sample addresses only.

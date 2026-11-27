@@ -33,7 +33,7 @@ const describeDb = CAN_WRITE_DB ? describe : describe.skip;
 let seq = 0;
 const unique = () => `${Date.now()}-${seq++}`;
 
-const TRANSPORT = { statusCode: 200, durationMs: 120, bytes: 2048 };
+const TRANSPORT = { statusCode: 200, bytes: 2048 };
 
 const item = (o: Partial<RawItem> = {}): RawItem => ({
   guid: null,
