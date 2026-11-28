@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { feeds, subscriptions } from "@/lib/fixtures";
-import type { Article, Folder, SubscriptionWithUnread } from "@/lib/types";
+import type { Article, Folder, ListFeed, Page } from "@/lib/types";
 
 import { chooseListState, type ChooseInput } from "./choose-list-state";
 
@@ -21,15 +21,38 @@ import { chooseListState, type ChooseInput } from "./choose-list-state";
  * inside an async Server Component.
  */
 
-const sub = (feedId: number, unread = 0): SubscriptionWithUnread => {
+/*
+ * One subscribed feed as the LIST sees it — the projection `listFeedLabels`
+ * returns, built here from the same fixture rows so the test and the service
+ * agree about what a feed is called.
+ *
+ * It used to build a whole `SubscriptionWithUnread`; the chooser never read a
+ * count, and asking for one made the list pane wait on two aggregate queries
+ * per page click (see `ListFeed` in `types.ts`).
+ */
+const sub = (feedId: number): ListFeed => {
   const base = subscriptions.find((s) => s.feedId === feedId)!;
   const feed = feeds.find((f) => f.id === feedId)!;
-  return { ...base, feed, unread };
+  return {
+    feedId,
+    folderId: base.folderId,
+    title: base.customTitle ?? feed.title,
+    status: feed.status,
+    nextFetchAt: feed.nextFetchAt,
+    lastSuccessAt: feed.lastSuccessAt,
+    notFeedAt: feed.notFeedAt ?? null,
+    lastErrorAt: feed.lastError?.at ?? null,
+  };
 };
 
+/** An empty page 1, which is the "nothing paged" starting point. */
+const EMPTY: Page<Article> = { items: [], total: 0, page: 1, pages: 1 };
+
+/** An empty page the reader asked for BY NUMBER — what "past the end" means now. */
+const PAST_END: Page<Article> = { items: [], total: 120, page: 9, pages: 3 };
+
 const base = (over: Partial<ChooseInput> = {}): ChooseInput => ({
-  page: { items: [], next: null },
-  cursor: undefined,
+  page: EMPTY,
   query: "",
   unreadOnly: true,
   currentSub: undefined,
@@ -43,49 +66,46 @@ const ESSAYS: Folder = { id: 2, userId: "u", name: "Essays", position: 1 };
 
 describe("rows win over every empty state", () => {
   it("returns rows when the page has any", () => {
-    const page = { items: [{ id: 1 } as Article], next: null };
+    const page: Page<Article> = { items: [{ id: 1 } as Article], total: 1, page: 1, pages: 1 };
     expect(chooseListState(base({ page })).kind).toBe("rows");
   });
 
-  it("returns rows even with a cursor and a query, which only matter when empty", () => {
-    const page = { items: [{ id: 1 } as Article], next: null };
-    const state = chooseListState(base({ page, cursor: { publishedAt: "x", id: 1 }, query: "q" }));
-    expect(state.kind).toBe("rows");
+  it("returns rows on a later page with a query, which only matter when empty", () => {
+    const page: Page<Article> = { items: [{ id: 1 } as Article], total: 120, page: 2, pages: 3 };
+    expect(chooseListState(base({ page, query: "q" })).kind).toBe("rows");
   });
 });
 
-describe("paging past the end", () => {
-  it("says nothing is OLDER rather than that everything is read", () => {
-    // The bug: this fell through to `all-read`, so `/?before=<old cursor>`
-    // rendered "Nothing unread in any feed" beneath "All unread / 81 unread".
-    const state = chooseListState(
-      base({ cursor: { publishedAt: "2000-01-01T00:00:00Z", id: 1 }, scopedSubs: [sub(1, 13)] }),
-    );
+describe("asking for a page that is not there", () => {
+  it("says the page does not exist rather than that everything is read", () => {
+    // The bug, which outlived the cursor this now reads instead of: an empty
+    // later page fell through to `all-read`, so `?page=9` rendered "Nothing
+    // unread in any feed" beneath a heading saying "All unread / 81 unread".
+    const state = chooseListState(base({ page: PAST_END, scopedSubs: [sub(1)] }));
     expect(state.kind).toBe("past-end");
   });
 
   it("applies in a folder view too", () => {
-    const state = chooseListState(
-      base({
-        cursor: { publishedAt: "2000-01-01T00:00:00Z", id: 1 },
-        folder: ESSAYS,
-        scopedSubs: [sub(5, 9)],
-      }),
-    );
+    const state = chooseListState(base({ page: PAST_END, folder: ESSAYS, scopedSubs: [sub(5)] }));
     expect(state.kind).toBe("past-end");
   });
 
   it("applies in a feed view too, rather than claiming the feed is empty", () => {
-    const state = chooseListState(
-      base({ cursor: { publishedAt: "2000-01-01T00:00:00Z", id: 1 }, currentSub: sub(1, 13) }),
-    );
+    const state = chooseListState(base({ page: PAST_END, currentSub: sub(1) }));
     expect(state.kind).toBe("past-end");
+  });
+
+  it("does NOT fire on an empty page 1, which is a genuinely empty view", () => {
+    // The distinction the page number has to carry: page 1 empty means there
+    // is nothing to read, and the reader should be told about the next check.
+    const state = chooseListState(base({ scopedSubs: [sub(1)] }));
+    expect(state.kind).not.toBe("past-end");
   });
 
   it("still lets a search explain itself first", () => {
     // A reader who searched and paged wants to know the search found nothing,
     // which is the more useful of the two facts.
-    const state = chooseListState(base({ cursor: { publishedAt: "x", id: 1 }, query: "lathe" }));
+    const state = chooseListState(base({ page: PAST_END, query: "lathe" }));
     expect(state.kind).toBe("no-matches");
   });
 });
@@ -139,11 +159,9 @@ describe("a feed that is no longer a feed", () => {
 
   it("falls back to the error timestamp when notFeedAt is absent", () => {
     const s = sub(4);
-    const state = chooseListState(
-      base({ currentSub: { ...s, feed: { ...s.feed, notFeedAt: undefined } } }),
-    );
+    const state = chooseListState(base({ currentSub: { ...s, notFeedAt: null } }));
     if (state.kind !== "not-a-feed") throw new Error("expected not-a-feed");
-    expect(state.since).toBe(s.feed.lastError?.at);
+    expect(state.since).toBe(s.lastErrorAt);
   });
 
   it("does not claim not-a-feed for a merely failing feed", () => {

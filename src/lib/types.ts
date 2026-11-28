@@ -161,6 +161,38 @@ export type SubscriptionWithUnread = Subscription & {
   unread: number;
 };
 
+/**
+ * What the ARTICLE LIST needs to know about a subscribed feed, and no more.
+ *
+ * WHY A SECOND, SMALLER SHAPE. The list pane used to wait on
+ * `listSubscriptions`, which carries every feed's unread count and today's
+ * `fetch_log` counters. Measured against the remote pooler, that read is
+ * ~1800 ms — two round trips — while the list's own rows and count are ~1100 ms
+ * in one. So clicking page 2 cost 1800 ms, and 700 ms of it was spent waiting
+ * for numbers the list never reads: `chooseListState` touches only a feed's
+ * status, its next check and its name.
+ *
+ * A PROJECTION RATHER THAN A WEAKENED `Feed`. The alternative was to hand the
+ * list a `Feed` with zeroed counters, which is the one thing this project
+ * refuses — §6.2 is explicit that a count which silently reads zero is worse
+ * than no count. A type that never had the field cannot leak a wrong one.
+ *
+ * `title` IS ALREADY RESOLVED here (the reader's own name, falling back to the
+ * feed's), because every consumer wanted that and none wanted the two
+ * separately.
+ */
+export type ListFeed = {
+  feedId: number;
+  folderId: number | null;
+  title: string;
+  status: FeedStatus;
+  nextFetchAt: string | null;
+  lastSuccessAt: string | null;
+  notFeedAt: string | null;
+  /** When the current failure run began to show, for the not-a-feed notice. */
+  lastErrorAt: string | null;
+};
+
 // ---------------------------------------------------------------- articles
 
 /** Appendix D: `articles.extract_status` (§6.5). */
@@ -392,11 +424,45 @@ export type Capability = (typeof CAPABILITIES)[number];
 
 // ---------------------------------------------------------------- paging
 
-/**
- * Keyset cursor, ordered on `(publishedAt, id)`. Never `OFFSET` — by month
- * three an offset page scan is what makes every query slow (§3).
+/*
+ * NUMBERED PAGES, AND THE DECISION THAT CHANGED TO GET THEM.
+ *
+ * This was a keyset cursor — `{ publishedAt, id }`, carried as `?before=` —
+ * with §3 and N6 saying "never `OFFSET`, by month three an offset page scan is
+ * what makes every query slow". The list had one control: "Older". A reader
+ * could walk back and had no way forward, no idea how far they were in, and no
+ * way to reach page 4 except by pressing Older three times.
+ *
+ * Boyan's call was numbered pages, newest first. That is not buildable on a
+ * keyset cursor: jumping to page 4 means knowing the fourth page's first row,
+ * and the only ways to learn it are to walk there or to count rows — which is
+ * `OFFSET` either way. So §3's rule is reversed here deliberately rather than
+ * worked around, and `offset-only-in-list.test.ts` (which was
+ * `no-offset.test.ts`) now permits it in the ONE query that paginates while
+ * still forbidding it everywhere else.
+ *
+ * WHAT THE OLD RULE WAS RIGHT ABOUT, and the first half is the lesser half:
+ *
+ *   SPEED. `OFFSET 5000` really does make Postgres walk and discard 5000 rows.
+ *   At 50 to a page that is page 101 of a personal reader's own archive, over
+ *   an index that already orders exactly as the query does. The cost is real
+ *   and small at this product's scale; the warning was written for a scale
+ *   this is not.
+ *
+ *   STABILITY, which is the one that actually bites here. An offset counts
+ *   rows, so it is only meaningful while the set holds still — and the default
+ *   view's set does not. Reading marks articles read, read articles leave the
+ *   Unread scope, and the count the offset was computed against shrinks under
+ *   the reader. Measured: 70 unread over two pages becomes 20 over one as page
+ *   1 is marked read on scroll, and the "2" button still on screen then
+ *   returns nothing. A keyset cursor was immune by construction — it names a
+ *   ROW, and that row keeps its place however many others leave.
+ *
+ *   NOTHING IS LOST WHEN IT HAPPENS: those 20 rows are on page 1. So the fix
+ *   is honesty rather than arithmetic — the `past-end` state reports how long
+ *   the view is now, instead of implying a page went missing. See
+ *   `article-list/index.tsx`.
  */
-export type Cursor = { publishedAt: string; id: number };
 
 /**
  * Which articles a list is drawn from.
@@ -425,7 +491,23 @@ export type ListFilter = {
   query?: string;
 };
 
-export type Page<T> = { items: T[]; next: Cursor | null };
+/**
+ * One page of a result set, and the shape of the whole set around it.
+ *
+ * `total` and `pages` are what numbered buttons are drawn from, so they come
+ * back with the rows rather than being asked for separately — a page count
+ * derived from a different query than the rows is a page count that can
+ * disagree with them.
+ */
+export type Page<T> = {
+  items: T[];
+  /** Every row the scope and the search match, across all pages. */
+  total: number;
+  /** 1-based. Page 1 is the newest, which is where a reader starts. */
+  page: number;
+  /** At least 1, so an empty list is still "Page 1 of 1" rather than of 0. */
+  pages: number;
+};
 
 /** §3: 50 per page. */
 export const PAGE_SIZE = 50;

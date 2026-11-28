@@ -61,6 +61,26 @@ describeDb("the two implementations answer identically", () => {
     expect(fromDb.map((s) => s.unread)).toEqual(fromFixtures.map((s) => s.unread));
   });
 
+  it("listFeedLabels agrees field for field", async () => {
+    /*
+     * The newest read, and the one most able to drift: the two
+     * implementations each resolve a feed's DISPLAY NAME (the reader's own,
+     * falling back to the feed's) and `lastErrorAt` independently — one from
+     * a `select` on joined columns, one from a `find` over the fixture array.
+     * Compared whole rather than by id, because a wrong title or a missing
+     * status is exactly what a per-field comparison catches and an id list
+     * does not.
+     */
+    const viewer = await getViewer();
+    const fromDb = await db.listFeedLabels(viewer);
+    const fromFixtures = await fixtures.listFeedLabels(viewer);
+
+    expect(fromDb.map((f) => f.feedId)).toEqual(fromFixtures.map((f) => f.feedId));
+    for (const [i, got] of fromDb.entries()) {
+      expect(got, `feed ${got.feedId}`).toEqual(fromFixtures[i]);
+    }
+  });
+
   it("listSubscriptions' today counters agree, field by field", async () => {
     /*
      * The sharpest comparison in this suite, and writing it found that the
@@ -242,27 +262,34 @@ describeDb("the two implementations answer identically", () => {
       const fromFixtures = await fixtures.listArticles(viewer, scope);
 
       expect(fromDb.items.map((a) => a.id)).toEqual(fromFixtures.items.map((a) => a.id));
-      expect(fromDb.next).toEqual(fromFixtures.next);
+      expect(fromDb.total).toEqual(fromFixtures.total);
+      expect(fromDb.pages).toEqual(fromFixtures.pages);
     },
   );
 
   it("paginates identically, page for page", async () => {
-    // Where a keyset implementation most easily diverges: the tie-break on
-    // `(publishedAt, id)` has to be written twice, once in JS and once in SQL.
+    /*
+     * Where the two implementations most easily diverge: the ordering has to
+     * be written twice, once as a JS sort over the fixture array and once as
+     * SQL. With `skip`/`take` a disagreement no longer shows up as a differing
+     * cursor — it shows up as the same page number holding different rows,
+     * which is what this now compares.
+     */
     const viewer = await getViewer();
     const scope: Scope = { kind: "all" };
 
-    let dbCursor = (await db.listArticles(viewer, scope)).next ?? undefined;
-    let fxCursor = (await fixtures.listArticles(viewer, scope)).next ?? undefined;
-    expect(dbCursor).toEqual(fxCursor);
+    const firstDb = await db.listArticles(viewer, scope, 1);
+    expect(firstDb.pages).toBe((await fixtures.listArticles(viewer, scope, 1)).pages);
 
-    for (let page = 0; page < 3 && dbCursor; page += 1) {
-      const fromDb = await db.listArticles(viewer, scope, dbCursor);
-      const fromFixtures = await fixtures.listArticles(viewer, scope, fxCursor);
-      expect(fromDb.items.map((a) => a.id)).toEqual(fromFixtures.items.map((a) => a.id));
-      dbCursor = fromDb.next ?? undefined;
-      fxCursor = fromFixtures.next ?? undefined;
-      expect(dbCursor).toEqual(fxCursor);
+    for (let page = 1; page <= Math.min(4, firstDb.pages); page += 1) {
+      const fromDb = await db.listArticles(viewer, scope, page);
+      const fromFixtures = await fixtures.listArticles(viewer, scope, page);
+      expect(
+        fromDb.items.map((a) => a.id),
+        `page ${page}`,
+      ).toEqual(fromFixtures.items.map((a) => a.id));
+      expect(fromDb.page).toBe(page);
+      expect(fromFixtures.page).toBe(page);
     }
   });
 

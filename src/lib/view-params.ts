@@ -5,23 +5,29 @@
  * the reader was written that way, and every one of them silently dropped the
  * rest of the view: opening an article from "All articles" landed back in "All
  * unread", where that article is not listed, so the row the reader clicked
- * appeared to vanish. The Older link did worse — it applied a keyset cursor
- * taken from one result set to a different one, making every read article
- * older than the cursor unreachable.
+ * appeared to vanish. The pager did worse when it was a keyset "Older" link —
+ * it applied a cursor taken from one result set to a different one, making
+ * every read article older than the cursor unreachable.
  *
  * So links are built by MERGING into the current parameters, never by replacing
  * them. The rule that makes this safe is at the bottom: anything that changes
- * which rows are in the list must drop the cursor.
+ * which rows are in the list must drop the page number.
  */
 
 export type ReaderParams = {
-  before?: string;
+  /**
+   * The 1-based page of the list, newest first. Absent means page 1.
+   *
+   * Was `before=<publishedAt>,<id>`, a keyset cursor. A number is what
+   * numbered buttons need, and it has a property the cursor did not: it is
+   * guessable and editable, so `?page=4` is a URL a reader can type and share
+   * without having held a cursor from the exact query that produced it.
+   */
+  page?: string;
   scope?: string;
   q?: string;
   article?: string;
   folder?: string;
-  /** Opens the keyboard-shortcuts dialog. The dialog itself arrives at M14. */
-  shortcuts?: string;
 };
 
 /** A key whose value should be removed rather than set. */
@@ -43,7 +49,7 @@ export function hrefWith(current: ReaderParams, patch: Patch): string {
     else merged[key] = value;
   }
 
-  const order: (keyof ReaderParams)[] = ["scope", "folder", "q", "before", "article", "shortcuts"];
+  const order: (keyof ReaderParams)[] = ["scope", "folder", "q", "page", "article"];
   const search = new URLSearchParams();
   for (const key of order) {
     const value = merged[key];
@@ -57,14 +63,18 @@ export function hrefWith(current: ReaderParams, patch: Patch): string {
 /**
  * A link that changes WHICH ROWS the list contains.
  *
- * Drops `before`, because a keyset cursor is only meaningful for the exact
- * result set it was taken from. Carrying it across a scope or search change
- * points it at rows that may not exist, which reads to the reader as a page of
- * articles going missing. Also drops `article`, since the open article may not
- * be in the new set.
+ * Drops `page`, because a page number counts into one particular result set.
+ * Carrying it across a scope or search change lands the reader on page 4 of a
+ * list that has two — a blank "past the end" screen in answer to clicking a
+ * folder, which reads as the folder being empty. Also drops `article`, since
+ * the open one may not be in the new set.
+ *
+ * (The keyset cursor this replaced had to be dropped for a sharper version of
+ * the same reason: it named a row, and the row might not be in the new set at
+ * all.)
  */
 export function hrefForNewResultSet(current: ReaderParams, patch: Patch): string {
-  return hrefWith(current, { ...patch, before: DROP, article: DROP });
+  return hrefWith(current, { ...patch, page: DROP, article: DROP });
 }
 
 /** A path link — a feed or folder — carrying the view's shape but not its page. */

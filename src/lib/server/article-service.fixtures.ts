@@ -4,9 +4,9 @@ import { articles, feeds, folders, subscriptions, ticks } from "@/lib/fixtures";
 import {
   PAGE_SIZE,
   type Article,
-  type Cursor,
   type FetchLogEntry,
   type Folder,
+  type ListFeed,
   type ListFilter,
   type Page,
   type Scope,
@@ -110,6 +110,36 @@ export async function listFolders(viewer: Viewer): Promise<Folder[]> {
   return folders.filter((f) => f.userId === user.id).sort((a, b) => a.position - b.position);
 }
 
+/**
+ * The subscribed feeds as the LIST needs them — the fixture twin of the
+ * database projection. See `ListFeed` in `types.ts` for why it is a separate,
+ * smaller shape than what the sidebar reads.
+ *
+ * Derived from the same fixture rows `listSubscriptions` uses, so the two
+ * cannot disagree about which feeds a reader follows or what they are called.
+ */
+export async function listFeedLabels(viewer: Viewer): Promise<ListFeed[]> {
+  assertCan(viewer, "read");
+  const user = requireUser(viewer);
+
+  return subscriptions
+    .filter((s) => s.userId === user.id)
+    .sort((a, b) => a.feedId - b.feedId)
+    .map((s) => {
+      const feed = feeds.find((f) => f.id === s.feedId);
+      return {
+        feedId: s.feedId,
+        folderId: s.folderId,
+        title: s.customTitle ?? feed?.title ?? `Feed ${s.feedId}`,
+        status: feed?.status ?? "active",
+        nextFetchAt: feed?.nextFetchAt ?? null,
+        lastSuccessAt: feed?.lastSuccessAt ?? null,
+        notFeedAt: feed?.notFeedAt ?? null,
+        lastErrorAt: feed?.lastError?.at ?? null,
+      };
+    });
+}
+
 function inScope(article: Article, scope: Scope, subscribed: Set<number>, userId: string): boolean {
   /*
    * Reachable through ANY subscribed feed, not just the owning one.
@@ -167,7 +197,7 @@ function matchesFilter(article: Article, filter: ListFilter | undefined): boolea
 export async function listArticles(
   viewer: Viewer,
   scope: Scope,
-  cursor?: Cursor,
+  page?: number,
   filter?: ListFilter,
 ): Promise<Page<Article>> {
   assertCan(viewer, "read");
@@ -178,22 +208,22 @@ export async function listArticles(
     (a) => inScope(a, scope, subscribed, user.id) && matchesFilter(a, filter),
   );
 
-  const after = cursor
-    ? all.filter(
-        (a) =>
-          a.publishedAt < cursor.publishedAt ||
-          (a.publishedAt === cursor.publishedAt && a.id < cursor.id),
-      )
-    : all;
+  /*
+   * Clamped at the bottom only, and the top left alone — the same contract the
+   * database path documents, because Appendix C's parity rule is that the UI
+   * cannot tell the two implementations apart. A page past the end returns no
+   * rows here too, so both produce `past-end` rather than one of them quietly
+   * showing the last page.
+   */
+  const wanted = Math.max(1, Math.trunc(page ?? 1));
+  const items = all.slice((wanted - 1) * PAGE_SIZE, wanted * PAGE_SIZE);
 
-  const items = after.slice(0, PAGE_SIZE);
-  const last = items.at(-1);
-  // A next cursor only when a further row actually exists. Returning one on a
-  // full final page costs an empty request and an empty-state flash.
-  const next =
-    last && after.length > items.length ? { publishedAt: last.publishedAt, id: last.id } : null;
+  return { items, total: all.length, page: wanted, pages: pageCount(all.length) };
+}
 
-  return { items, next };
+/** At least one page, so an empty list reads "Page 1 of 1" and not "of 0". */
+export function pageCount(total: number): number {
+  return Math.max(1, Math.ceil(total / PAGE_SIZE));
 }
 
 /**

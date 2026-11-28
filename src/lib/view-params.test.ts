@@ -19,8 +19,9 @@ import {
  *
  *   - opening a row from "All articles" landed in "All unread", where that
  *     article is not listed, so the row they clicked appeared to vanish;
- *   - the Older link carried a cursor from one result set into another, making
- *     every read article older than the cursor unreachable;
+ *   - the pager carried a position from one result set into another: as a
+ *     keyset cursor that made every article past it unreachable, and as a page
+ *     number it lands the reader on page 4 of a two-page list;
  *   - the Unread/All toggle and the search form navigated out of a folder.
  *
  * None of that is visible in a screenshot of a working page, which is why it
@@ -36,19 +37,19 @@ describe("hrefWith keeps the rest of the view", () => {
 
   it("keeps the page when opening an article", () => {
     // The bug: clicking a row on page 2 jumped back to page 1.
-    const href = hrefWith({ scope: "all", before: "2026-10-19T03:15:00Z,215" }, { article: "300" });
-    expect(href).toContain("before=2026-10-19T03%3A15%3A00Z%2C215");
+    const href = hrefWith({ scope: "all", page: "2" }, { article: "300" });
+    expect(href).toContain("page=2");
     expect(href).toContain("article=300");
   });
 
-  it("keeps scope and search when paging older", () => {
-    const href = hrefWith({ scope: "all", q: "ferry" }, { before: "2026-01-01T00:00:00Z,9" });
+  it("keeps scope and search when changing page", () => {
+    const href = hrefWith({ scope: "all", q: "ferry" }, { page: "3" });
     expect(href).toContain("scope=all");
     expect(href).toContain("q=ferry");
   });
 
   it("overwrites a parameter it is given", () => {
-    expect(hrefWith({ before: "old" }, { before: "new" })).toBe("?before=new");
+    expect(hrefWith({ page: "2" }, { page: "5" })).toBe("?page=5");
   });
 
   it("removes a parameter set to null", () => {
@@ -70,21 +71,24 @@ describe("hrefWith keeps the rest of the view", () => {
     expect(a).toBe(b);
   });
 
-  it("encodes a cursor's comma and colons", () => {
-    // An unencoded cursor splits the query string at the wrong place.
-    const href = hrefWith({}, { before: "2026-11-12T09:12:00.000Z,101" });
-    expect(href).not.toContain(",101");
-    expect(new URLSearchParams(href.slice(1)).get("before")).toBe("2026-11-12T09:12:00.000Z,101");
+  it("leaves a page number alone, since it needs no encoding", () => {
+    // The cursor this replaced carried a comma and colons and had to be
+    // percent-encoded or it split the query string at the wrong place. A page
+    // number has no such problem, which is half the reason it reads better in
+    // a shared link.
+    const href = hrefWith({}, { page: "12" });
+    expect(href).toBe("?page=12");
   });
 });
 
 describe("hrefForNewResultSet drops what the new set invalidates", () => {
-  it("drops the cursor, because it belongs to the old result set", () => {
-    // A keyset cursor is only meaningful for the exact rows it came from.
-    // Carried across a scope change it points at rows that may not exist.
-    const href = hrefForNewResultSet({ scope: "unread", before: "x,1" }, { scope: "all" });
+  it("drops the page, because it counts into the old result set", () => {
+    // Page 4 of the unread list is not page 4 of anything else. Carried across
+    // a scope change it is a blank "no such page" screen in answer to a click
+    // on a folder, which reads as the folder being empty.
+    const href = hrefForNewResultSet({ scope: "unread", page: "4" }, { scope: "all" });
     expect(href).toBe("?scope=all");
-    expect(href).not.toContain("before");
+    expect(href).not.toContain("page");
   });
 
   it("drops the open article, which may not be in the new set", () => {
@@ -104,7 +108,7 @@ describe("hrefForNewResultSet drops what the new set invalidates", () => {
 
 describe("pathWith carries the view's shape to another route", () => {
   it("takes scope and search to a feed, but not the page", () => {
-    expect(pathWith("/feed/9", { scope: "all", q: "chuck", before: "x,1", article: "5" })).toBe(
+    expect(pathWith("/feed/9", { scope: "all", q: "chuck", page: "4", article: "5" })).toBe(
       "/feed/9?scope=all&q=chuck",
     );
   });

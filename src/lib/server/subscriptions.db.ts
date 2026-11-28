@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
 
 import { prisma } from "@/lib/db/client";
+import { toFolder } from "@/lib/db/map";
+import { FOLDER_NAME_MAX } from "@/lib/folder-name";
 import { canonicalUrl } from "@/lib/ingest/canonical-url";
-import type { Candidate, DiscoveryResult, Subscription } from "@/lib/types";
+import type { Candidate, DiscoveryResult, Folder, Subscription } from "@/lib/types";
 
 /*
  * Subscribing, filing and unsubscribing (§6.1, Appendix D).
@@ -79,6 +81,77 @@ export class NotSubscribed extends Error {
     super("You do not follow this feed.");
     this.name = "NotSubscribed";
   }
+}
+
+export class BadFolderName extends Error {
+  constructor(readonly reason: string) {
+    super(reason);
+    this.name = "BadFolderName";
+  }
+}
+
+/**
+ * Makes a folder, or returns the one that already has that name.
+ *
+ * IDEMPOTENT BY NAME, which is a product decision rather than a shortcut.
+ * `folders` is `@@unique([userId, name])`, so a second "Essays" is a constraint
+ * violation — and the only sensible thing to tell a reader who typed a name
+ * they already use is nothing at all, because what they asked for ("file it
+ * under Essays") is exactly what they get. An error here would be the app
+ * refusing to do something it can do.
+ *
+ * `upsert` ON THAT CONSTRAINT rather than find-then-create: two presses of the
+ * same button race, and find-then-create loses that race with a 500 from the
+ * unique index. The upsert's `update` is deliberately empty — matching a row
+ * means we already have what we wanted.
+ *
+ * POSITION IS LAST, not zero. Folders sort on `(position, id)`, so a new folder
+ * made with the default 0 lands at the top among the other zeroes and the
+ * sidebar reorders itself for reasons the reader did not ask for. Counting is
+ * one extra query and keeps new folders where they were put.
+ */
+export async function createFolder(userId: string, rawName: string): Promise<Folder> {
+  /*
+   * Whitespace collapsed before anything else, so "  Essays " and "Essays" are
+   * the same folder rather than two rows the unique index cannot tell apart.
+   */
+  const name = rawName.replace(/\s+/g, " ").trim();
+  if (name === "") throw new BadFolderName("A folder needs a name.");
+  if (name.length > FOLDER_NAME_MAX) {
+    throw new BadFolderName(`A folder's name can be at most ${FOLDER_NAME_MAX} characters.`);
+  }
+
+  const existing = await prisma.folder.findFirst({ where: { userId, name }, select: { id: true } });
+  if (existing !== null) {
+    const row = await prisma.folder.findUniqueOrThrow({ where: { id: existing.id } });
+    return toFolder(row);
+  }
+
+  const count = await prisma.folder.count({ where: { userId } });
+  const row = await prisma.folder
+    .upsert({
+      where: { userId_name: { userId, name } },
+      create: { userId, name, position: count },
+      // Reached when two presses raced and the other one won the SELECT.
+      update: {},
+    })
+    /*
+     * THE `catch` IS FOR THE RACE `upsert` DOES NOT CLOSE, which is the same
+     * one both other upserts in this file carry and for the same reason:
+     * Prisma implements `upsert` as a select-then-write unless the database
+     * can do it natively, so two simultaneous presses can both miss and both
+     * insert, and the loser gets P2002.
+     *
+     * Without this, that loser's raw Prisma message reached the add-feed form:
+     * `messageForActionError` returns `error.message` for anything it does not
+     * recognise, so a double-click on Follow showed the reader
+     * "Unique constraint failed on the fields: (`user_id`,`name`)".
+     */
+    .catch(async (error: unknown) => {
+      if (!isUniqueViolation(error)) throw error;
+      return prisma.folder.findUniqueOrThrow({ where: { userId_name: { userId, name } } });
+    });
+  return toFolder(row);
 }
 
 /** Confirms a folder belongs to this reader, or refuses. `null` files nowhere. */

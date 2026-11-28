@@ -61,7 +61,8 @@ describe("the saved scope", () => {
       query: "zzz-nothing-matches-this",
     });
     expect(page.items).toEqual([]);
-    expect(page.next).toBeNull();
+    expect(page.total).toBe(0);
+    expect(page.pages).toBe(1);
   });
 
   it("has a fixture saved article in the corpus at all", () => {

@@ -11,9 +11,9 @@ import {
 import {
   PAGE_SIZE,
   type Article,
-  type Cursor,
   type FetchLogEntry,
   type Folder,
+  type ListFeed,
   type ListFilter,
   type Page,
   type Scope,
@@ -236,6 +236,55 @@ export async function listFolders(viewer: Viewer): Promise<Folder[]> {
   return rows.map(toFolder);
 }
 
+/**
+ * The subscribed feeds, as the LIST needs them: labels and empty-state facts.
+ *
+ * ONE QUERY, NO AGGREGATES — which is the whole point. `listSubscriptions`
+ * costs two round trips because it also derives every feed's unread count and
+ * today's `fetch_log` counters; the list pane waited on all of it and read none
+ * of it. Measured: ~1800 ms there against ~300 ms here, on a page click that
+ * changes nothing in the sidebar.
+ *
+ * The columns are named rather than taken wholesale, so this cannot quietly
+ * grow into the expensive read it exists to avoid.
+ */
+export async function listFeedLabels(viewer: Viewer): Promise<ListFeed[]> {
+  assertCan(viewer, "read");
+  const user = requireUser(viewer);
+
+  const rows = await prisma.subscription.findMany({
+    where: { userId: user.id },
+    orderBy: { feedId: "asc" },
+    select: {
+      feedId: true,
+      folderId: true,
+      customTitle: true,
+      feed: {
+        select: {
+          title: true,
+          status: true,
+          nextFetchAt: true,
+          lastSuccessAt: true,
+          notFeedAt: true,
+          lastErrorAt: true,
+        },
+      },
+    },
+  });
+
+  return rows.map((r) => ({
+    feedId: Number(r.feedId),
+    folderId: r.folderId === null ? null : Number(r.folderId),
+    // The reader's own name wins, which is what every caller wanted.
+    title: r.customTitle ?? r.feed.title,
+    status: r.feed.status,
+    nextFetchAt: r.feed.nextFetchAt?.toISOString() ?? null,
+    lastSuccessAt: r.feed.lastSuccessAt?.toISOString() ?? null,
+    notFeedAt: r.feed.notFeedAt?.toISOString() ?? null,
+    lastErrorAt: r.feed.lastErrorAt?.toISOString() ?? null,
+  }));
+}
+
 /** The recent ticks and the per-invocation budget (§6.4). */
 export async function listTicks(viewer: Viewer): Promise<Tick[]> {
   assertCan(viewer, "read");
@@ -422,60 +471,94 @@ export async function scopedArticleWhere(userId: string, scope: Scope, filter?: 
 export async function listArticles(
   viewer: Viewer,
   scope: Scope,
-  cursor?: Cursor,
+  page?: number,
   filter?: ListFilter,
 ): Promise<Page<Article>> {
   assertCan(viewer, "read");
   const user = requireUser(viewer);
   const feedIds = await subscribedFeedIds(user.id);
-  if (feedIds.length === 0) return { items: [], next: null };
-
   const query = filter?.query?.trim();
+  /*
+   * CLAMPED AT THE BOTTOM ONLY. `?page=0` and `?page=-3` are wrong URLs
+   * anyone can send and they must not become a negative `skip`, which Prisma
+   * rejects outright — a 500 for a typo. The TOP is deliberately not clamped
+   * here: page 900 of a 7-page list returns no rows, and `chooseListState`
+   * renders "past the end" for it, which is a truer answer than silently
+   * showing the last page to a reader who asked for a page that is not there.
+   */
+  const wanted = Math.max(1, Math.trunc(page ?? 1));
 
-  const rows = await prisma.article.findMany({
-    where: {
-      ...scopeWhere(scope, feedIds, user.id),
-      ...(query ? { title: { contains: query, mode: "insensitive" as const } } : {}),
-      ...(cursor
-        ? {
-            OR: [
-              { publishedAt: { lt: new Date(cursor.publishedAt) } },
-              {
-                publishedAt: new Date(cursor.publishedAt),
-                id: { lt: BigInt(cursor.id) },
-              },
-            ],
-          }
-        : {}),
-    },
-    include: {
-      userArticles: { where: { userId: user.id } },
+  /*
+   * `page: wanted`, NOT `page: 1` — it was the latter, and the fixtures twin
+   * returned the asked-for page, so a reader with no subscriptions got
+   * `past-end` from one implementation and `all-read` from the other for the
+   * same `?page=3`. Appendix C's whole premise is that the UI cannot tell them
+   * apart, and `chooseListState` branches on exactly this field.
+   *
+   * Below the early return rather than above it, so the two paths cannot
+   * disagree about what `wanted` means.
+   */
+  if (feedIds.length === 0) {
+    return { items: [], total: 0, page: wanted, pages: 1 };
+  }
+
+  const where = {
+    AND: [
+      scopeWhere(scope, feedIds, user.id),
+      ...(query ? [{ title: { contains: query, mode: "insensitive" as const } }] : []),
+    ],
+  };
+
+  /*
+   * THE ROWS AND THE COUNT TOGETHER, in one round trip's worth of waiting.
+   *
+   * Numbered buttons need the total, and the total needs its own query — there
+   * is no "one extra row" trick that yields a page COUNT. They are independent
+   * given the same `where`, so they overlap; sequenced, this screen would pay
+   * two remote round trips to draw one list.
+   */
+  const [rows, total] = await Promise.all([
+    prisma.article.findMany({
+      where,
+      include: {
+        userArticles: { where: { userId: user.id } },
+        /*
+         * Loaded with the page, not per row.
+         *
+         * Two things need it. Appendix E's "also in 2 feeds" panel is the stated reason
+         * `article_feeds` exists. And the row's own label: the list now matches
+         * on arrivals, so an article can appear under a feed the reader follows
+         * while `articles.feed_id` names one they do not — and labelling it from
+         * `feed_id` rendered "Unknown feed".
+         */
+        arrivals: { orderBy: [{ firstSeenAt: "asc" }, { feedId: "asc" }] },
+      },
       /*
-       * Loaded with the page, not per row.
-       *
-       * Two things need it. Appendix E's "also in 2 feeds" panel is the stated reason
-       * `article_feeds` exists. And the row's own label: the list now matches
-       * on arrivals, so an article can appear under a feed the reader follows
-       * while `articles.feed_id` names one they do not — and labelling it from
-       * `feed_id` rendered "Unknown feed".
+       * NEWEST FIRST, which is what makes page 1 the page a reader wants. The
+       * tie-break on `id` is not decoration: two articles published in the same
+       * second with no second sort key can swap places between two queries, and
+       * then one row appears on two pages while another appears on none.
        */
-      arrivals: { orderBy: [{ firstSeenAt: "asc" }, { feedId: "asc" }] },
-    },
-    orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
-    // One extra row, to learn whether a further page exists without a second
-    // COUNT — and without returning a cursor on a full final page, which costs
-    // an empty request and an empty-state flash.
-    take: PAGE_SIZE + 1,
-  });
+      orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+      /*
+       * `skip` IS THE `OFFSET` §3 FORBADE. See the note on `Page` in `types.ts`
+       * for why that rule was reversed: numbered pages cannot be built on a
+       * keyset cursor, and this is the one query allowed to do it.
+       */
+      skip: (wanted - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.article.count({ where }),
+  ]);
 
-  const items = rows
-    .slice(0, PAGE_SIZE)
-    .map((r) => toArticle(r, r.userArticles[0] ?? null, r.arrivals));
-  const last = items.at(-1);
-  const next =
-    last && rows.length > PAGE_SIZE ? { publishedAt: last.publishedAt, id: last.id } : null;
+  const items = rows.map((r) => toArticle(r, r.userArticles[0] ?? null, r.arrivals));
 
-  return { items, next };
+  return { items, total, page: wanted, pages: pageCount(total) };
+}
+
+/** At least one page, so an empty list reads "Page 1 of 1" and not "of 0". */
+export function pageCount(total: number): number {
+  return Math.max(1, Math.ceil(total / PAGE_SIZE));
 }
 
 /**

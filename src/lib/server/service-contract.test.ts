@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { CAPABILITIES, PAGE_SIZE, type Cursor } from "@/lib/types";
+import { CAPABILITIES, PAGE_SIZE } from "@/lib/types";
 
 import * as service from "./article-service";
 import * as mutations from "./mutations";
@@ -52,8 +52,8 @@ describe("the service layer keeps Appendix C's contract", () => {
     expect(["db", "fixtures"]).toContain(service.dataSource);
   });
 
-  it("exports the functions Appendix C names, plus the three it did not", () => {
-    // Appendix C names three reads. Three more were added where a screen needed
+  it("exports the functions Appendix C names, plus the four it did not", () => {
+    // Appendix C names three reads. Four more were added where a screen needed
     // data and the alternative was reaching past the boundary:
     //
     //   listFolders  (M1) — the sidebar needs the folder tree.
@@ -67,16 +67,26 @@ describe("the service layer keeps Appendix C's contract", () => {
     //                       counted it twice, printing "2 unread" above a
     //                       one-row list. Distinct articles cannot be derived
     //                       from per-feed counts, so it has to be its own read.
+    //   listFeedLabels (M15) — the article list's own view of the subscribed
+    //                       feeds: names, status, next check. It exists because
+    //                       the list pane used to wait on `listSubscriptions`,
+    //                       which also derives every unread count and today's
+    //                       `fetch_log` counters — measured at ~1800 ms against
+    //                       ~300 ms here, on a page click that changes nothing
+    //                       in the sidebar. A projection rather than a `Feed`
+    //                       with zeroed counters, because §6.2 is explicit that
+    //                       a count silently reading zero is worse than none.
     //
-    // All three are deliberate and all three are listed here, so adding a
-    // fourth is a decision rather than a drift. This assertion failing means a
-    // read was added without that decision being made.
+    // All four are deliberate and all four are listed here, so adding a fifth
+    // is a decision rather than a drift. This assertion failing means a read
+    // was added without that decision being made.
     expect(Object.keys(service).sort()).toEqual([
       "countUnread",
       "dataSource",
       "getArticle",
       "getFeedHealth",
       "listArticles",
+      "listFeedLabels",
       "listFolders",
       "listSubscriptions",
       "listTicks",
@@ -349,15 +359,21 @@ describe("the viewer", () => {
 });
 
 describe("reads are scoped and paged", () => {
-  it("returns one page and a cursor that advances", async () => {
+  it("returns one page, and page 2 holds different rows", async () => {
     const viewer = await getViewer();
     const first = await service.listArticles(viewer, { kind: "unread" });
     expect(first.items.length).toBeLessThanOrEqual(PAGE_SIZE);
-    expect(first.next).not.toBeNull();
+    expect(first.page).toBe(1);
+    expect(first.pages).toBeGreaterThan(1);
 
-    const second = await service.listArticles(viewer, { kind: "unread" }, first.next!);
-    // The bug this catches is the one an OFFSET would cause: a row appearing on
-    // both pages, or a row between them going missing.
+    const second = await service.listArticles(viewer, { kind: "unread" }, 2);
+    /*
+     * THE BUG OFFSET PAGING CAN CAUSE — which is why this assertion outlived
+     * the keyset cursor it was written for. A row on both pages, or one
+     * between them missing, is exactly what `skip`/`take` produces the moment
+     * the sort is not total: two rows sharing a `published_at` with no
+     * tie-break can swap places between the two queries.
+     */
     const firstIds = new Set(first.items.map((a) => a.id));
     expect(second.items.some((a) => firstIds.has(a.id))).toBe(false);
   });
@@ -386,16 +402,18 @@ describe("reads are scoped and paged", () => {
         // assertion can be EQUALITY. A `>=` here would pass on any over-count,
         // which is precisely the drift the sidebar count must not have.
         let counted = 0;
-        let cursor = undefined as Cursor | undefined;
+        let pageNumber = 1;
+        let pages = 1;
         do {
           const page = await service.listArticles(
             viewer,
             { kind: "feed", feedId: s.feedId },
-            cursor,
+            pageNumber,
           );
           counted += page.items.filter((a) => a.readAt === null).length;
-          cursor = page.next ?? undefined;
-        } while (cursor);
+          pages = page.pages;
+          pageNumber += 1;
+        } while (pageNumber <= pages);
 
         expect(s.unread).toBe(counted);
       }

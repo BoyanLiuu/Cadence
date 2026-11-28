@@ -1,5 +1,5 @@
 import type { ListState } from "@/components/article-list";
-import type { Article, Cursor, Folder, Page, SubscriptionWithUnread } from "@/lib/types";
+import type { Article, Folder, ListFeed, Page } from "@/lib/types";
 
 /*
  * Which of the designed empty states a list is in.
@@ -26,21 +26,25 @@ import type { Article, Cursor, Folder, Page, SubscriptionWithUnread } from "@/li
 
 export type ChooseInput = {
   page: Page<Article>;
-  /** Present when the reader paged, which changes what "empty" means. */
-  cursor: Cursor | undefined;
   query: string;
   unreadOnly: boolean;
   /** The feed this view is scoped to, if any. */
-  currentSub: SubscriptionWithUnread | undefined;
+  currentSub: ListFeed | undefined;
   folder: Folder | undefined;
-  /** Only the subscriptions this view covers — never all of them. */
-  scopedSubs: SubscriptionWithUnread[];
+  /**
+   * Only the feeds this view covers — never all of them.
+   *
+   * `ListFeed` AND NOT `SubscriptionWithUnread`, which is a performance fact
+   * with a correctness edge. Nothing below reads an unread count or a today
+   * counter; asking for the wider shape made the list pane wait ~700 ms on
+   * two aggregate queries per page click. See `ListFeed` in `types.ts`.
+   */
+  scopedSubs: ListFeed[];
   feedTitleOf: (feedId: number) => string;
 };
 
 export function chooseListState({
   page,
-  cursor,
   query,
   unreadOnly,
   currentSub,
@@ -54,19 +58,22 @@ export function chooseListState({
   if (query !== "") return { kind: "no-matches", query };
 
   /*
-   * Paged past the end. Checked before every "nothing to read" state, because
-   * the reader asked for OLDER rows and there are none — which is a different
-   * fact from having read everything, and the only one that is true here.
+   * Asked for a page that is not there. Checked before every "nothing to read"
+   * state, because the reader asked for a SPECIFIC page and it does not exist
+   * — a different fact from having read everything, and the only one true
+   * here. Read off the page itself rather than a separate flag, so it cannot
+   * disagree with the rows: `page > 1` and nothing on it means exactly this.
    */
-  if (cursor) return { kind: "past-end" };
+  if (page.page > 1) return { kind: "past-end", pages: page.pages, total: page.total };
 
-  if (currentSub?.feed.status === "not_a_feed") {
-    const { feed } = currentSub;
+  if (currentSub?.status === "not_a_feed") {
     return {
       kind: "not-a-feed",
-      feedTitle: feedTitleOf(feed.id),
-      since: feed.notFeedAt ?? feed.lastError?.at ?? null,
-      lastGood: feed.lastSuccessAt,
+      feedTitle: feedTitleOf(currentSub.feedId),
+      // The verdict's own timestamp when there is one, else the last failure:
+      // §6.3's notice names when the address stopped being a feed.
+      since: currentSub.notFeedAt ?? currentSub.lastErrorAt,
+      lastGood: currentSub.lastSuccessAt,
     };
   }
 
@@ -77,11 +84,11 @@ export function chooseListState({
     // than a failure. Drawn from the SCOPED feeds; a dead or not-a-feed feed
     // has no next check and is skipped.
     const next = scopedSubs
-      .filter((s) => s.feed.nextFetchAt !== null)
-      .sort((a, b) => (a.feed.nextFetchAt! < b.feed.nextFetchAt! ? -1 : 1))[0];
+      .filter((s) => s.nextFetchAt !== null)
+      .sort((a, b) => (a.nextFetchAt! < b.nextFetchAt! ? -1 : 1))[0];
     return {
       kind: "all-read",
-      nextFetch: next ? { title: feedTitleOf(next.feedId), at: next.feed.nextFetchAt! } : null,
+      nextFetch: next ? { title: feedTitleOf(next.feedId), at: next.nextFetchAt! } : null,
     };
   }
 

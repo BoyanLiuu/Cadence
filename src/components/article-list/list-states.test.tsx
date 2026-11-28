@@ -117,23 +117,26 @@ describe("every empty state renders its designed copy", () => {
     expect(screen.queryByText(/has been checked, and it has published nothing/)).toBeNull();
   });
 
-  it("past end: says nothing is OLDER, not that everything is read", () => {
-    // Reached by paging past the last row. It used to fall through to
-    // `all-read`, which rendered "Nothing unread in any feed" under a heading
-    // reading "All unread / 81 unread" — a wrong view, not an empty one.
-    renderList({ kind: "past-end" }, { unreadCount: 81 });
+  it("past end: says the page is not there, not that everything is read", () => {
+    // Reached by asking for a page the list does not have. It used to fall
+    // through to `all-read`, which rendered "Nothing unread in any feed" under
+    // a heading reading "All unread / 81 unread" — a wrong view, not an empty
+    // one.
+    renderList({ kind: "past-end", pages: 1, total: 20 }, { unreadCount: 81 });
 
-    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(/nothing older/i);
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(/no such page/i);
     expect(screen.queryByText(/Nothing unread in any feed/)).toBeNull();
-    expect(screen.getByRole("link", { name: /back to the newest/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /back to page 1/i })).toBeTruthy();
+    // And says how long the view is NOW, because the usual way to get here is
+    // the list shrinking as it was read — not a typo. Without the real figure
+    // the screen reads as a page of articles having vanished.
+    expect(screen.getByText(/1 page long/)).toBeTruthy();
+    expect(screen.getByText(/20 articles/)).toBeTruthy();
   });
 
-  it("past end offers a link that clears the cursor", () => {
-    renderList(
-      { kind: "past-end" },
-      { params: { scope: "all", before: "2026-01-01T00:00:00Z,9" } },
-    );
-    const back = screen.getByRole("link", { name: /back to the newest/i });
+  it("past end offers a link that clears the page number", () => {
+    renderList({ kind: "past-end", pages: 1, total: 20 }, { params: { scope: "all", page: "9" } });
+    const back = screen.getByRole("link", { name: /back to page 1/i });
     expect(back.getAttribute("href")).toBe("?scope=all");
   });
 
@@ -147,7 +150,7 @@ describe("every empty state renders its designed copy", () => {
 describe("the chrome is present in every state", () => {
   const states: ListState[] = [
     { kind: "all-read", nextFetch: null },
-    { kind: "past-end" },
+    { kind: "past-end", pages: 1, total: 20 },
     { kind: "no-matches", query: "x" },
     { kind: "feed-empty", feedTitle: "A feed" },
     { kind: "not-a-feed", feedTitle: "A feed", since: null, lastGood: null },
@@ -202,7 +205,9 @@ describe("rows carry what optimistic marking needs", () => {
       kind: "rows",
       page: {
         items: [article(4242, null), article(4243, "2026-11-12T09:00:00.000Z")],
-        next: null,
+        total: 2,
+        page: 1,
+        pages: 1,
       },
     });
 

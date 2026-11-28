@@ -39,6 +39,14 @@ export const dataSource: "db" | "fixtures" = impl === db ? "db" : "fixtures";
 export const listSubscriptions: Implementation["listSubscriptions"] = (...args) =>
   impl.listSubscriptions(...args);
 export const listFolders: Implementation["listFolders"] = (...args) => impl.listFolders(...args);
+/*
+ * The LIST's cheap read of the subscribed feeds. Separate from
+ * `listSubscriptions` because that one derives unread counts and today's
+ * counters — two round trips the list pane waited on and never read. See
+ * `ListFeed` in `types.ts`.
+ */
+export const listFeedLabels: Implementation["listFeedLabels"] = (...args) =>
+  impl.listFeedLabels(...args);
 export const listTicks: Implementation["listTicks"] = (...args) => impl.listTicks(...args);
 export const listArticles: Implementation["listArticles"] = (...args) => impl.listArticles(...args);
 export const getArticle: Implementation["getArticle"] = (...args) => impl.getArticle(...args);

@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import type { Folder, SubscriptionWithUnread } from "@/lib/types";
 import { READER_PATH } from "@/lib/routes";
-import { hrefWith, pathWith, type ReaderParams } from "@/lib/view-params";
+import { pathWith, type ReaderParams } from "@/lib/view-params";
 
 /*
  * The sidebar: folders, feeds, derived counts, and the inline warning for a
@@ -178,20 +178,26 @@ export function Sidebar({
         )}
       </div>
 
-      {/* The bottom padding is load-bearing: this footer is sticky, so without
-          it the last feed rows scroll underneath and are unreachable. */}
-      <div className="gap-xs mt-xl -mx-sm px-lg pt-md border-rule bg-paper-2 sticky bottom-0 grid justify-items-start border-t pb-[calc(var(--spacing-2xl)+var(--spacing-md))] text-sm">
-        {attention.length > 0 && (
+      {/*
+       * RENDERED ONLY WHEN IT HAS SOMETHING TO SAY.
+       *
+       * It used to hold two links and was always drawn. With "Keyboard
+       * shortcuts" removed, the attention line is the only thing left in it —
+       * and an unconditional sticky bar with a top rule and this much padding
+       * is a visible empty strip across the bottom of the sidebar on the
+       * common case, which is a reader whose feeds are all fine.
+       *
+       * The bottom padding is load-bearing when it IS drawn: the bar is
+       * sticky, so without it the last feed rows scroll underneath and are
+       * unreachable.
+       */}
+      {attention.length > 0 && (
+        <div className="gap-xs mt-xl -mx-sm px-lg pt-md border-rule bg-paper-2 sticky bottom-0 grid justify-items-start border-t pb-[calc(var(--spacing-2xl)+var(--spacing-md))] text-sm">
           <Link href="/settings/feeds" className="text-ink-2 hover:text-ink">
             {attention.length} {attention.length === 1 ? "feed needs" : "feeds need"} attention
           </Link>
-        )}
-        {/* The dialog itself is M14 (ux-28); the affordance is part of the
-            shell, so it ships now rather than appearing late. */}
-        <Link href={hrefWith(params, { shortcuts: "1" })} className="text-ink-2 hover:text-ink">
-          Keyboard shortcuts
-        </Link>
-      </div>
+        </div>
+      )}
     </nav>
   );
 }

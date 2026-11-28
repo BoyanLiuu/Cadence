@@ -10,7 +10,7 @@ import { listArticles, listSubscriptions } from "@/lib/server/article-service";
 import { requireViewer } from "@/lib/server/viewer";
 import { displayFeedId } from "@/lib/article-feed";
 import { firstParam } from "@/lib/view-params";
-import type { Article, Cursor } from "@/lib/types";
+import type { Article } from "@/lib/types";
 
 import { SavedEmpty, SavedFilterEmpty } from "./empty";
 
@@ -51,6 +51,19 @@ function matches(article: Article, filter: Filter): boolean {
   if (filter === "read") return article.readAt !== null;
   return true;
 }
+
+/**
+ * How many page queries this screen will have in flight at once.
+ *
+ * The shelf is fetched whole (the counts and the tabs are derived from all of
+ * it), and the pool this runs against is small — AGENTS.md records the
+ * session-pooler ceiling. A handful at a time is the difference between
+ * "parallel" and "a thundering herd of our own making".
+ */
+const CONCURRENT_PAGES = 4;
+
+/** 2000 saved articles. Past this the shelf needs its own paginated surface. */
+const MAX_SAVED_PAGES = 40;
 
 export default async function SavedPage({
   searchParams,
@@ -110,13 +123,36 @@ async function SavedShelf({
    * silently caps is the same class of lie as a stale unread count.
    */
   const subs = await listSubscriptions(viewer);
-  const all: Article[] = [];
-  let cursor: Cursor | undefined;
-  do {
-    const page = await listArticles(viewer, { kind: "saved" }, cursor);
-    all.push(...page.items);
-    cursor = page.next ?? undefined;
-  } while (cursor);
+  /*
+   * WALKED BY PAGE NUMBER, which is what the cursor loop became when the list
+   * moved to numbered pages. The first call says how many pages there are, so
+   * the rest are asked for together rather than one after another — a shelf of
+   * 300 was six sequential round trips and is now two.
+   *
+   * BOUNDED, AND THE BOUND IS THE POINT. `Promise.all` over `pages - 1` is an
+   * unbounded fan-out: a 2000-article shelf would open 40 queries at once
+   * through a connection pool this project caps at a handful, and every one of
+   * them also runs its own `count` over the same scope. `CONCURRENT_PAGES`
+   * keeps that to a few in flight at a time.
+   *
+   * The cap on TOTAL pages is the honest half. Past it the shelf is truncated
+   * and the counts below would be wrong — so rather than report a number that
+   * silently caps (§6.2's own objection, which this page's header comment
+   * already makes), it stops and the figures describe exactly what was
+   * fetched. 40 pages is 2000 saved articles; a shelf that big needs its own
+   * paginated surface, not a longer loop.
+   */
+  const first = await listArticles(viewer, { kind: "saved" }, 1);
+  const pages = Math.min(first.pages, MAX_SAVED_PAGES);
+  const all: Article[] = [...first.items];
+  for (let from = 2; from <= pages; from += CONCURRENT_PAGES) {
+    const batch = await Promise.all(
+      Array.from({ length: Math.min(CONCURRENT_PAGES, pages - from + 1) }, (_, i) =>
+        listArticles(viewer, { kind: "saved" }, from + i),
+      ),
+    );
+    all.push(...batch.flatMap((p) => p.items));
+  }
 
   // Newest save first. The reader's own ordering is by publication, which is
   // the wrong axis here: you want what you put aside most recently.

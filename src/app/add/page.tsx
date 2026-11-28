@@ -6,14 +6,8 @@ import { AppBar } from "@/components/app-bar";
 import { SubscribeForm } from "./subscribe-form";
 import { subscribeToFeed } from "./subscribe.action";
 import { Button } from "@/components/ui/button";
+import { FolderField } from "@/components/add-feed/folder-field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { sampleAddresses } from "@/lib/fixtures/discover";
 import { effectiveIntervalSeconds } from "@/lib/schedule/interval";
 import { dataSource, listFolders, listSubscriptions } from "@/lib/server/article-service";
@@ -318,43 +312,7 @@ export default async function AddFeedPage({
               </section>
 
               <div className="gap-lg grid sm:grid-cols-2 lg:max-w-[46rem]">
-                <div className="gap-2xs grid content-start">
-                  <label htmlFor="folder" className="text-sm font-medium">
-                    Folder
-                  </label>
-                  {/*
-                   * THE SAME CONTROL AS THE DIALOG'S, for the same reason: a
-                   * native select's popup is drawn by the operating system,
-                   * which on macOS put a blue system menu over its own field
-                   * in the middle of a square, paper-and-ink page.
-                   *
-                   * THE COST IT CARRIES HERE is worth being honest about:
-                   * this page works with no client JavaScript, and a Radix
-                   * select does not. With JavaScript off the trigger renders
-                   * and will not open, where the native element would have
-                   * worked — so the page keeps its no-JS form and loses its
-                   * no-JS FOLDER. "No folder" remains the default and the
-                   * subscription still succeeds, which is the part that
-                   * matters; filing it is one click away on the feed's page.
-                   */}
-                  <Select name="folderId" defaultValue="none">
-                    <SelectTrigger id="folder">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* FIRST, so it is the default. It was last, which made
-                          the reader's first folder the default — and now that
-                          this form writes, subscribing without touching the
-                          select filed the feed somewhere nobody chose. */}
-                      <SelectItem value="none">No folder</SelectItem>
-                      {folders.map((folder) => (
-                        <SelectItem key={folder.id} value={String(folder.id)}>
-                          {folder.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <FolderField folders={folders} id="folder" />
                 <div className="gap-2xs grid content-start">
                   <label htmlFor="customTitle" className="text-sm font-medium">
                     Name in your sidebar <span className="text-muted">(optional)</span>

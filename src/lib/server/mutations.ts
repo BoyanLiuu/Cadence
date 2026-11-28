@@ -3,6 +3,7 @@ import type {
   DiscoveryResult,
   Extraction,
   FetchNowResult,
+  Folder,
   FullTextMode,
   ListFilter,
   Scope,
@@ -19,6 +20,7 @@ import { runSweep } from "@/lib/schedule/sweep";
 
 import {
   addSubscription,
+  createFolder,
   editSubscription,
   makeFeedDue,
   markFollowed,
@@ -220,6 +222,26 @@ export async function updateSubscription(
     fullTextMode: input?.fullTextMode,
     resurfaceOnRevision: input?.resurfaceOnRevision,
   });
+}
+
+/**
+ * Makes a folder for this reader (or hands back the one of that name).
+ *
+ * UNDER THE `subscribe` CAPABILITY rather than one of its own, because filing
+ * is the only thing folders do and choosing one is part of subscribing — the
+ * two places a folder is chosen are the add-feed dialog and `/add`, and both
+ * are mid-subscribe. A capability exists to distinguish things a viewer may do
+ * from things they may not, and there is no viewer here who may follow a feed
+ * but not name a shelf to put it on. Inventing `create-folder` would widen
+ * `CAPABILITIES` — which `capability-denial` iterates — without adding a
+ * distinction the product has.
+ */
+export async function createNewFolder(viewer: Viewer, name: string): Promise<Folder> {
+  assertCan(viewer, "subscribe");
+  const user = requireUser(viewer);
+  if (dataSource !== "db") throw new NoDatabase("creating a folder");
+
+  return createFolder(user.id, name);
 }
 
 /** The feed row survives while any subscriber remains. */

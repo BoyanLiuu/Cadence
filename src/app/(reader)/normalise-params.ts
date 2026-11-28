@@ -9,10 +9,11 @@ import { firstParam, trimmedParam, type ReaderParams } from "@/lib/view-params";
  *
  *   - It first read `.trim()` off the raw value, which answered 500 to
  *     `?q=a&q=b`, because the router hands over an ARRAY for a repeated key.
- *   - The fix for that listed five of the six keys and omitted `shortcuts`, so
+ *   - The fix for that listed five of the six keys and omitted one of them, so
  *     every link built from the result silently dropped it — the exact failure
  *     `view-params.ts` exists to prevent, reintroduced by a fix for something
- *     else.
+ *     else. (That key was `shortcuts`, which has since been removed with the
+ *     feature; the enumerated key list in the test is what keeps the lesson.)
  *
  * Both were invisible: the page rendered, the links worked, and one parameter
  * quietly stopped existing.
@@ -33,8 +34,7 @@ export function normaliseParams(raw: RawReaderParams): ReaderParams {
     scope: firstParam(raw.scope),
     folder: firstParam(raw.folder),
     q: q === "" ? undefined : q,
-    before: firstParam(raw.before),
+    page: firstParam(raw.page),
     article: firstParam(raw.article),
-    shortcuts: firstParam(raw.shortcuts),
   };
 }

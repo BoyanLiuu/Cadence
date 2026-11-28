@@ -14,15 +14,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { Candidate, DiscoveryResult, Folder } from "@/lib/types";
 
+import { FolderField } from "./folder-field";
 import {
   CARD_BASE,
   CandidateBody,
@@ -61,14 +55,6 @@ import {
  * — so there is one place a subscription is created however a reader got
  * there, and the redirect takes the dialog away with it.
  */
-
-/*
- * "No folder" needs a non-empty value, because Radix treats `value=""` as a
- * cleared selection and refuses it as an item value. The action already maps
- * anything unparseable to `null`, and this string is spelled out so the
- * mapping is visible from both ends rather than hiding in a falsy check.
- */
-const NO_FOLDER = "none";
 
 export function AddFeedDialog() {
   const [open, setOpen] = useState(false);
@@ -235,38 +221,7 @@ export function AddFeedDialog() {
                * and both controls begin on the same line.
                */}
               <div className="gap-md grid sm:grid-cols-2">
-                <div className="gap-2xs grid content-start">
-                  <label htmlFor="dialog-folder" className="text-sm font-medium">
-                    Folder
-                  </label>
-                  {/*
-                   * NOT A NATIVE `<select>`. Its popup is drawn by the
-                   * operating system, so on macOS the folder list opened as a
-                   * blue system menu with rounded corners overlapping its own
-                   * field — a different application inside a square,
-                   * paper-and-ink page, and unreachable by CSS.
-                   *
-                   * `name` keeps the form working: Radix renders a hidden
-                   * native select, so this still posts to the same server
-                   * action with no client state of its own.
-                   */}
-                  <Select name="folderId" defaultValue={NO_FOLDER}>
-                    <SelectTrigger id="dialog-folder">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* FIRST, so it is the default — the page learned this the
-                          hard way: last made the reader's first folder the
-                          default and filed feeds somewhere nobody chose. */}
-                      <SelectItem value={NO_FOLDER}>No folder</SelectItem>
-                      {folders.map((folder) => (
-                        <SelectItem key={folder.id} value={String(folder.id)}>
-                          {folder.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <FolderField folders={folders} id="dialog-folder" />
                 <div className="gap-2xs grid content-start">
                   <label htmlFor="dialog-title" className="text-sm font-medium">
                     Name in your sidebar <span className="text-muted">(optional)</span>

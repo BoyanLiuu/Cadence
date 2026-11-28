@@ -3,28 +3,30 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { type Article, type Cursor, type Page, type Scope } from "@/lib/types";
+import { type Article, type Page, type Scope } from "@/lib/types";
 import { hrefForNewResultSet, hrefWith, type ReaderParams } from "@/lib/view-params";
 
 import { MarkAllRead } from "./mark-all-read";
 import { MarkReadOnScroll } from "./mark-read-on-scroll";
+import { PageSwap } from "./page-swap";
 import { ScrollOpenIntoView } from "./scroll-open-into-view";
 import { ArticleBadges } from "./revised-badge";
 
 /*
- * The middle pane: a keyset-paginated list, the Unread/All toggle and title
+ * The middle pane: a numbered-page list, the Unread/All toggle and title
  * search.
  *
- * THE CURSOR LIVES IN THE URL, as `?before=<publishedAt>,<id>`. The fixture is
- * a static array and this would work just as well in React state — which is
- * exactly why it is worth writing down now. M9 makes paging real; if the
- * cursor were component state, the shape would have to change then, and every
- * deep link, reload and back-button press would behave differently before and
- * after. Keeping it in the URL costs nothing today and keeps the component
- * untouched later.
+ * THE PAGE LIVES IN THE URL, as `?page=`, and page 1 is written as no
+ * parameter at all. It would work just as well in React state, which is
+ * exactly why it is worth writing down: in state, a deep link, a reload and
+ * the back button would all behave differently from a click, and the reading
+ * pane beside this one is reached by URL too.
  *
- * NEVER `OFFSET` (N6). The service does the keying; `no-offset.test.ts` fails
- * the build if an offset appears anywhere in `src/lib/server/`.
+ * IT WAS A KEYSET CURSOR (`?before=<publishedAt>,<id>`) and §3 forbade
+ * `OFFSET` outright. Numbered pages cannot be built on a cursor, so that rule
+ * was reversed deliberately — `types.ts` holds the decision and its two costs,
+ * and `offset-only-in-list.test.ts` (which was `no-offset.test.ts`) now keeps
+ * the offset to the single query that paginates.
  */
 
 export type ListState =
@@ -35,7 +37,7 @@ export type ListState =
   /** `since` and `lastGood` are ISO instants; this component formats them. */
   | { kind: "not-a-feed"; feedTitle: string; since: string | null; lastGood: string | null }
   /** Paged past the last row. Distinct from "all read" on purpose. */
-  | { kind: "past-end" }
+  | { kind: "past-end"; pages: number; total: number }
   | { kind: "failed" };
 
 const day = (iso: string) =>
@@ -48,21 +50,126 @@ const hhmm = (iso: string) =>
     timeZone: "UTC",
   });
 
-/** `?before=<publishedAt>,<id>`, the one shape M9 must not have to change. */
-export function encodeCursor(cursor: Cursor): string {
-  return `${cursor.publishedAt},${cursor.id}`;
+/**
+ * `?page=` as a page number, or page 1.
+ *
+ * REPLACED A CURSOR CODEC — `encodeCursor`/`decodeCursor`, which packed
+ * `<publishedAt>,<id>` into the URL. A page number needs no codec, and it
+ * fails more kindly: anything that is not a positive integer lands the reader
+ * on page 1 rather than on an error, which is what a hand-edited or stale link
+ * deserves.
+ */
+export function pageFromParam(value: string | undefined): number {
+  if (value === undefined || !/^[1-9][0-9]*$/.test(value)) return 1;
+  const n = Number(value);
+  return Number.isSafeInteger(n) ? n : 1;
 }
 
-export function decodeCursor(value: string | undefined): Cursor | undefined {
-  if (!value) return undefined;
-  const comma = value.lastIndexOf(",");
-  if (comma === -1) return undefined;
-  const publishedAt = value.slice(0, comma);
-  const id = Number.parseInt(value.slice(comma + 1), 10);
-  // A malformed cursor returns undefined rather than throwing: a stale or
-  // hand-edited link should land on the first page, not on an error.
-  if (!Number.isFinite(id) || Number.isNaN(Date.parse(publishedAt))) return undefined;
-  return { publishedAt, id };
+/**
+ * How many numbered buttons to draw before falling back to a window.
+ *
+ * Seven fits the list pane's width at every breakpoint the reader uses. Past
+ * that the pager shows a window around the current page with the first and
+ * last always reachable, because "jump to the end" is a real thing readers do
+ * and a long list should not need thirty presses to reach it.
+ */
+const PAGER_WINDOW = 7;
+
+/**
+ * The page numbers to show, with `null` standing for a gap.
+ *
+ * EXPORTED, AND NOT YET TESTED — said plainly because the first version of
+ * this note implied otherwise. The arithmetic below was checked by running it
+ * over the cases that matter (a short list, the current page at either end,
+ * the middle); those outputs are recorded here so the next person can see what
+ * it is supposed to do, but nothing asserts them:
+ *
+ *   page  1 of  3   1 2 3
+ *   page  4 of  7   1 2 3 4 5 6 7
+ *   page  1 of 20   1 2 3 4 5 6 … 20
+ *   page 10 of 20   1 … 8 9 10 11 12 … 20
+ *   page 20 of 20   1 … 15 16 17 18 19 20
+ */
+export function pagesToShow(page: number, pages: number): (number | null)[] {
+  if (pages <= PAGER_WINDOW) return Array.from({ length: pages }, (_, i) => i + 1);
+
+  /*
+   * ALWAYS THE FIRST AND LAST, then a window around the current page, clamped
+   * at both ends. That keeps the pager within one slot of a fixed width (eight
+   * at the ends, nine in the middle where both gaps show) — without the clamp
+   * it grows and shrinks as the reader pages and the buttons move under the
+   * pointer pressing them.
+   */
+  const span = PAGER_WINDOW - 2;
+  let start = Math.max(2, page - Math.floor((span - 1) / 2));
+  const end = Math.min(pages - 1, start + span - 1);
+  start = Math.max(2, end - span + 1);
+
+  const out: (number | null)[] = [1];
+  if (start > 2) out.push(null);
+  for (let p = start; p <= end; p++) out.push(p);
+  if (end < pages - 1) out.push(null);
+  out.push(pages);
+  return out;
+}
+
+/**
+ * Numbered pages, newest first.
+ *
+ * REPLACED ONE "Older" BUTTON, which is worth recording because the button was
+ * not merely limited — it was one-way. A keyset cursor can only say "the rows
+ * after this one", so there was no Newer, no way to tell page 4 from page 40,
+ * and no way to reach either except by pressing Older until you arrived. The
+ * browser's Back button was the only way home.
+ *
+ * `page=1` IS WRITTEN AS NO PARAMETER AT ALL (`page: null` drops it), so the
+ * first page has one URL rather than two. Otherwise `/reader` and
+ * `/reader?page=1` are the same list under different addresses, which splits
+ * Next's prefetch cache and makes `aria-current` comparisons wrong.
+ */
+function Pager({ page, params }: { page: Page<Article>; params: ReaderParams }) {
+  if (page.pages <= 1) return null;
+
+  const href = (n: number) => hrefWith(params, { page: n === 1 ? null : String(n) });
+
+  return (
+    <nav aria-label="Pages" className="gap-2xs flex flex-wrap items-center">
+      {pagesToShow(page.page, page.pages).map((n, i) =>
+        n === null ? (
+          /* A gap, not a button. `aria-hidden` because "…" read aloud between
+             two page numbers is noise, and the numbers either side say it. */
+          <span key={`gap-${i}`} aria-hidden="true" className="text-muted px-2xs text-sm">
+            …
+          </span>
+        ) : (
+          <Button
+            key={n}
+            asChild
+            size="sm"
+            variant={n === page.page ? "default" : "outline"}
+            /*
+             * The current page is still a LINK rather than a disabled button:
+             * pressing it reloads the page a reader is on, which is harmless
+             * and is what every pager does. `aria-current` is what announces
+             * it, and `variant` is what shows it.
+             */
+            className="num min-w-9"
+          >
+            <Link
+              href={href(n)}
+              aria-current={n === page.page ? "page" : undefined}
+              /* Read by `page-swap.tsx` to paint skeleton rows on the click.
+                 An attribute rather than a selector on the nav's label, which
+                 would break silently the day the label is reworded. */
+              data-page-link={n}
+            >
+              {n}
+            </Link>
+          </Button>
+        ),
+      )}
+    </nav>
+  );
 }
 
 function Row({
@@ -251,13 +358,32 @@ function Empty({
     case "past-end":
       return (
         <div className={wrap}>
-          <h2 className="font-display text-2xl">Nothing older</h2>
+          <h2 className="font-display text-2xl">No such page</h2>
+          {/*
+           * SAYS HOW LONG THE VIEW IS NOW, which is the whole point of this
+           * state after the move to numbered pages.
+           *
+           * The common way to arrive here is not a typo. In the Unread view
+           * the set SHRINKS as you read: measured, 70 unread over two pages
+           * becomes 20 unread over one as page 1 is marked read on scroll —
+           * and the "2" button is still on screen from the render before. So
+           * the reader presses a real button and lands on an empty screen.
+           *
+           * Nothing is lost: those 20 rows moved to page 1. This state has to
+           * say so, or it reads as a page of articles having vanished, which
+           * is the one thing §6.2 says this product cannot look like. (A
+           * keyset cursor could not produce this; `types.ts` records it as the
+           * cost of the reversal.)
+           */}
           <p className="max-w-[46ch]">
-            You have reached the end of this view. Older articles may have been pruned, or this is
-            simply all there is.
+            {state.total === 0
+              ? "There is nothing in this view to page through."
+              : `This view is ${state.pages} ${state.pages === 1 ? "page" : "pages"} long — ${
+                  state.total
+                } ${state.total === 1 ? "article" : "articles"}. It may have got shorter as you read it, or the number was edited by hand.`}
           </p>
           <Button asChild variant="outline">
-            <Link href={hrefWith(params, { before: null })}>Back to the newest</Link>
+            <Link href={hrefWith(params, { page: null })}>Back to page 1</Link>
           </Button>
         </div>
       );
@@ -391,30 +517,31 @@ export function ArticleList({
              * the two do not fight. See the note in the component.
              */}
             <ScrollOpenIntoView articleId={openArticleId} />
-            <ul className="m-0 list-none p-0">
-              {state.page.items.map((a) => (
-                <Row
-                  key={a.id}
-                  article={a}
-                  feedTitle={articleFeedTitle(a)}
-                  open={a.id === openArticleId}
-                  params={params}
-                />
-              ))}
-            </ul>
-            <div className="px-lg py-lg gap-sm flex items-center justify-between">
+            <PageSwap page={state.page.page}>
+              <ul className="m-0 list-none p-0">
+                {state.page.items.map((a) => (
+                  <Row
+                    key={a.id}
+                    article={a}
+                    feedTitle={articleFeedTitle(a)}
+                    open={a.id === openArticleId}
+                    params={params}
+                  />
+                ))}
+              </ul>
+            </PageSwap>
+            <div className="px-lg py-lg gap-sm grid">
+              {/*
+               * THE WHOLE SET, not this page's slice. It said "50 articles"
+               * on every full page of a 340-article list, which told the
+               * reader the size of the page they could already see and
+               * nothing about the list they were in.
+               */}
               <span className="text-muted num text-xs">
-                {state.page.items.length} {state.page.items.length === 1 ? "article" : "articles"}
+                {state.page.total} {state.page.total === 1 ? "article" : "articles"}
+                {state.page.pages > 1 ? `, page ${state.page.page} of ${state.page.pages}` : ""}
               </span>
-              {state.page.next && (
-                <Button asChild variant="outline" size="sm">
-                  {/* Keeps scope, search and folder: a cursor taken from one
-                      result set is meaningless applied to another. */}
-                  <Link href={hrefWith(params, { before: encodeCursor(state.page.next) })}>
-                    Older
-                  </Link>
-                </Button>
-              )}
+              <Pager page={state.page} params={params} />
             </div>
           </>
         ) : (

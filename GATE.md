@@ -56,8 +56,9 @@ assumed.
 
 - **Accessibility.** M14's axe and `prefers-reduced-motion` checks were cut;
   N13 is unverified. See `decisions.md` in the memo.
-- **Keyboard shortcuts.** `j`/`k`/`o`/`m`/`s`/`r` (Appendix A item 17) are not
-  built, so there is nothing to gate.
+- **Keyboard shortcuts.** `j`/`k`/`o`/`m`/`s`/`r` (Appendix A item 17) were
+  never built, and at M15 the affordance that advertised them was removed too.
+  Nothing to gate, and now nothing claiming otherwise on screen.
 - **Etiquette.** `pnpm audit:etiquette` talks to 20 real publishers and is run
   deliberately, never in CI — a job hitting them on every push is the thing
   §6.4 exists to prevent.

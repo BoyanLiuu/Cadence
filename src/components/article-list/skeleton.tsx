@@ -47,11 +47,27 @@ export function ArticleListSkeleton() {
         </div>
       </div>
 
-      {/*
-       * Eight rows: enough to fill the pane at the common heights without
-       * being so many that the real list is shorter than the skeleton and the
-       * pane shrinks on arrival.
-       */}
+      <ArticleRowsSkeleton />
+    </section>
+  );
+}
+
+/**
+ * Just the rows, for when the header is real and only the list is changing.
+ *
+ * `page-swap.tsx` uses this on a page click: the heading, the Unread/All
+ * toggle, the search field and the pager are all still true, and replacing
+ * them would take away the control the reader just pressed. Shared with
+ * `ArticleListSkeleton` so the two states cannot drift into looking like
+ * different lists.
+ *
+ * Eight rows: enough to fill the pane at the common heights without being so
+ * many that the real list is shorter than the skeleton and the pane shrinks on
+ * arrival.
+ */
+export function ArticleRowsSkeleton() {
+  return (
+    <>
       {Array.from({ length: 8 }, (_, i) => (
         <div key={i} className="px-lg py-md border-rule gap-2xs grid border-b" aria-hidden="true">
           <div className="flex items-baseline justify-between">
@@ -62,6 +78,6 @@ export function ArticleListSkeleton() {
           <div className="bg-paper-3 h-4 w-[60%] animate-pulse rounded-[2px]" />
         </div>
       ))}
-    </section>
+    </>
   );
 }
